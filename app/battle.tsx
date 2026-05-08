@@ -1,13 +1,21 @@
 import { useNavigation } from "@react-navigation/native";
 import { useRouter } from "expo-router";
-import { ImageBackground, StyleSheet, Text } from "react-native";
+import { useState } from "react";
+import { ImageBackground, StyleSheet, Text, View } from "react-native";
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing } from "react-native-reanimated";
 import { FadeIn } from "@/components/fade-in";
+import { GameField } from "@/components/game-field";
 import { HapticPressable } from "@/components/haptic-pressable";
+import { createGameField } from "@/models/game-factory";
+import type { Player } from "@/models/types";
+
+const PLAYER: Player = { id: "1", name: "CAPTAIN", isAI: false };
 
 export default function BattleScreen() {
   const router = useRouter();
   const navigation = useNavigation();
+
+  const [gameField] = useState(() => createGameField(PLAYER));
 
   const screenTranslateY = useSharedValue(0);
 
@@ -29,16 +37,23 @@ export default function BattleScreen() {
         resizeMode="cover"
       >
         <Animated.View style={[StyleSheet.absoluteFill, styles.overlay]} />
-        <Animated.View style={styles.content}>
-          <FadeIn translateY={-40}>
-            <Animated.Text style={styles.title}>⚔ BATTLE STATION ⚔</Animated.Text>
+
+        <View style={styles.content}>
+          {/* Top: Title & subtitle */}
+          <FadeIn translateY={-30}>
+            <View style={styles.topSection}>
+              <Text style={styles.title}>⚔ BATTLE STATION ⚔</Text>
+              <Text style={styles.subtitle}>PLACE YOUR FLEET, CAPTAIN</Text>
+            </View>
           </FadeIn>
-          <FadeIn delay={300} scale={0.85}>
-            <Animated.Text style={styles.subtitle}>
-              HOLD THE LINE, CAPTAIN.{"\n"}THE ENEMY APPROACHES.
-            </Animated.Text>
+
+          {/* Center: Game field */}
+          <FadeIn delay={250} scale={0.9}>
+            <GameField fields={gameField.fields} />
           </FadeIn>
-          <FadeIn delay={600} translateY={30}>
+
+          {/* Bottom: Retreat button */}
+          <FadeIn delay={500} translateY={30}>
             <HapticPressable
               onPress={handleRetreat}
               style={({ pressed }) => [
@@ -49,7 +64,7 @@ export default function BattleScreen() {
               <Text style={styles.cancelButtonText}>↩ RETREAT</Text>
             </HapticPressable>
           </FadeIn>
-        </Animated.View>
+        </View>
       </ImageBackground>
     </Animated.View>
   );
@@ -65,13 +80,18 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     alignItems: "center",
-    justifyContent: "center",
-    gap: 24,
+    justifyContent: "space-between",
+    paddingTop: 64,
+    paddingBottom: 48,
     paddingHorizontal: 32,
+  },
+  topSection: {
+    alignItems: "center",
+    gap: 8,
   },
   title: {
     color: "#fff",
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: "900",
     letterSpacing: 4,
     textAlign: "center",
@@ -80,15 +100,13 @@ const styles = StyleSheet.create({
     textShadowRadius: 8,
   },
   subtitle: {
-    color: "rgba(255,255,255,0.8)",
-    fontSize: 18,
+    color: "rgba(255,255,255,0.65)",
+    fontSize: 13,
     fontWeight: "600",
-    letterSpacing: 2,
+    letterSpacing: 3,
     textAlign: "center",
-    lineHeight: 28,
   },
   cancelButton: {
-    marginTop: 48,
     paddingHorizontal: 36,
     paddingVertical: 14,
     borderWidth: 2,
