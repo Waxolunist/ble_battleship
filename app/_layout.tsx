@@ -20,11 +20,17 @@ export default function RootLayout() {
     SplashScreen.hideAsync();
   }, []);
 
+  const theme = colorScheme === 'dark' ? DarkTheme : { ...DefaultTheme, colors: { ...DefaultTheme.colors, background: '#1a1a1a' } };
+
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+    <ThemeProvider value={theme}>
+      <Stack screenOptions={{ contentStyle: { backgroundColor: "#1a1a1a" } }}>
+        <Stack.Screen name="(tabs)" options={{ headerShown: false, contentStyle: { backgroundColor: "#1a1a1a" } }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+        <Stack.Screen
+          name="battle"
+          options={{ headerShown: false, animation: "fade_from_bottom" }}
+        />
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>
