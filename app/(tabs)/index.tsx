@@ -1,98 +1,141 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
-
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+import { Image } from "expo-image";
+import { useRef, useState } from "react";
+import {
+  ImageBackground,
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 
 export default function HomeScreen() {
-  return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+  const [name, setName] = useState("");
+  const inputRef = useRef<TextInput>(null);
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+  const handleConfirm = async () => {
+    if (Platform.OS !== "web") {
+      const { impactAsync, ImpactFeedbackStyle } = await import("expo-haptics");
+      impactAsync(ImpactFeedbackStyle.Medium);
+    }
+    inputRef.current?.blur();
+    Keyboard.dismiss();
+  };
+
+  return (
+    <ImageBackground
+      source={require("@/assets/images/bg.jpeg")}
+      style={styles.background}
+      resizeMode="cover"
+    >
+      <View style={styles.overlay} />
+      <KeyboardAvoidingView
+        style={styles.content}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 80 : 0}
+      >
+        <Image
+          source={require("@/assets/images/title.webp")}
+          style={styles.title}
+          contentFit="contain"
+        />
+        <View style={styles.nameContainer}>
+          <Text style={styles.label}>Your Name</Text>
+          <View style={styles.inputRow}>
+            <TextInput
+              ref={inputRef}
+              style={styles.input}
+              value={name}
+              onChangeText={(text) => setName(text.toUpperCase())}
+              autoCapitalize="characters"
+              placeholder="ENTER YOUR NAME"
+              placeholderTextColor="rgba(255, 255, 255, 0.4)"
+            />
+            <Pressable
+              onPress={handleConfirm}
+              style={({ pressed }) => [
+                styles.confirmButton,
+                pressed && styles.confirmButtonPressed,
+              ]}
+            >
+              <Text style={styles.checkmark}>✓</Text>
+            </Pressable>
+          </View>
+        </View>
+      </KeyboardAvoidingView>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  background: {
+    flex: 1,
+  },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0, 0, 0, 0.3)",
+  },
+  content: {
+    flex: 1,
+    alignItems: "center",
+    paddingTop: "15%",
+    justifyContent: "space-between",
+    paddingBottom: 60,
+  },
+  title: {
+    width: "80%",
+    aspectRatio: 0.8,
+  },
+  nameContainer: {
+    width: "80%",
+    alignItems: "center",
     gap: 8,
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  label: {
+    color: "rgba(255, 255, 255, 0.8)",
+    fontSize: 14,
+    fontWeight: "600",
+    letterSpacing: 2,
+    textTransform: "uppercase",
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  inputRow: {
+    flexDirection: "row",
+    width: "100%",
+    gap: 8,
+  },
+  input: {
+    flex: 1,
+    height: 48,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.5)",
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "600",
+    letterSpacing: 2,
+    textAlign: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.4)",
+  },
+  confirmButtonPressed: {
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+  },
+  confirmButton: {
+    width: 48,
+    height: 48,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.5)",
+    borderRadius: 8,
+    backgroundColor: "rgba(0, 0, 0, 0.4)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  checkmark: {
+    color: "#fff",
+    fontSize: 22,
+    fontWeight: "700",
   },
 });
