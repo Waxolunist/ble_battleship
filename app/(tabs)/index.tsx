@@ -5,22 +5,18 @@ import {
   Keyboard,
   KeyboardAvoidingView,
   Platform,
-  Pressable,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from "react-native";
+import { HapticPressable } from "@/components/haptic-pressable";
 
 export default function HomeScreen() {
   const [name, setName] = useState("");
   const inputRef = useRef<TextInput>(null);
 
-  const handleConfirm = async () => {
-    if (Platform.OS !== "web") {
-      const { impactAsync, ImpactFeedbackStyle } = await import("expo-haptics");
-      impactAsync(ImpactFeedbackStyle.Medium);
-    }
+  const handleConfirm = () => {
     inputRef.current?.blur();
     Keyboard.dismiss();
   };
@@ -43,7 +39,6 @@ export default function HomeScreen() {
           contentFit="contain"
         />
         <View style={styles.nameContainer}>
-          <Text style={styles.label}>Your Name</Text>
           <View style={styles.inputRow}>
             <TextInput
               ref={inputRef}
@@ -54,7 +49,7 @@ export default function HomeScreen() {
               placeholder="ENTER YOUR NAME"
               placeholderTextColor="rgba(255, 255, 255, 0.4)"
             />
-            <Pressable
+            <HapticPressable
               onPress={handleConfirm}
               style={({ pressed }) => [
                 styles.confirmButton,
@@ -62,7 +57,7 @@ export default function HomeScreen() {
               ]}
             >
               <Text style={styles.checkmark}>✓</Text>
-            </Pressable>
+            </HapticPressable>
           </View>
         </View>
       </KeyboardAvoidingView>
