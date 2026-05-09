@@ -11,6 +11,7 @@ import { ShipTray } from "@/components/ship-tray";
 import { createGameField } from "@/models/game-factory";
 import type { Field, Ship, ShipPart, ShipType } from "@/models/types";
 import { SHIP_FLEET, SHIP_SIZES } from "@/models/types";
+import { IMAGES } from "@/constants/assets";
 
 const PLAYER = { id: "1", name: "CAPTAIN", isAI: false };
 const GRID_SIZE = 10;
@@ -258,7 +259,7 @@ export default function BattleScreen() {
   return (
     <Animated.View style={[styles.background, screenStyle]}>
       <ImageBackground
-        source={require("@/assets/images/bg.jpeg")}
+        source={IMAGES.bg}
         style={styles.background}
         resizeMode="cover"
       >

@@ -13,6 +13,7 @@ import {
   View,
 } from "react-native";
 import { HapticPressable } from "@/components/haptic-pressable";
+import { IMAGES } from "@/constants/assets";
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -29,7 +30,7 @@ export default function HomeScreen() {
 
   return (
     <ImageBackground
-      source={require("@/assets/images/bg.jpeg")}
+      source={IMAGES.bg}
       style={styles.background}
       resizeMode="cover"
     >
@@ -41,7 +42,7 @@ export default function HomeScreen() {
       >
         <FadeIn translateY={-40}>
           <Image
-            source={require("@/assets/images/title.webp")}
+            source={IMAGES.title}
             style={styles.title}
             contentFit="contain"
           />

@@ -3,14 +3,15 @@ import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import type { SharedValue } from "react-native-reanimated";
 import type { ShipType } from "@/models/types";
 import { SHIP_SIZES } from "@/models/types";
+import { IMAGES } from "@/constants/assets";
 
 const CELL_SIZE = 28;
 const CELL_GAP = 2;
 
 const SHIP_IMAGES: Partial<Record<ShipType, ImageSourcePropType>> = {
-  Carrier: require("@/assets/images/carrier.png"),
-  Submarine: require("@/assets/images/submarine.png"),
-  Destroyer: require("@/assets/images/destroyer.png"),
+  Carrier: IMAGES.carrier,
+  Submarine: IMAGES.submarine,
+  Destroyer: IMAGES.destroyer,
 };
 
 function SpriteCell({

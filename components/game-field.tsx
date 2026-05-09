@@ -4,6 +4,7 @@ import Animated, { runOnJS } from "react-native-reanimated";
 import type { SharedValue } from "react-native-reanimated";
 import { Image, ImageSourcePropType, Pressable, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import type { Field, ShipPart, ShipType } from "@/models/types";
+import { IMAGES } from "@/constants/assets";
 
 const ROW_LABELS = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"];
 const COL_LABELS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"];
@@ -13,9 +14,9 @@ const GRID_PADDING = 32;
 const GRID_CELL_GAP = 1; // gap between cells in the grid body
 
 const SHIP_IMAGES: Partial<Record<ShipType, ImageSourcePropType>> = {
-  Carrier: require("@/assets/images/carrier.png"),
-  Submarine: require("@/assets/images/submarine.png"),
-  Destroyer: require("@/assets/images/destroyer.png"),
+  Carrier: IMAGES.carrier,
+  Submarine: IMAGES.submarine,
+  Destroyer: IMAGES.destroyer,
 };
 
 // Within the grid body (padding:1, gap:1 between rows), field (x,y) starts at:
