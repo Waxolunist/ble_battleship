@@ -6,6 +6,7 @@ import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing } from "
 import { FadeIn } from "@/components/fade-in";
 import { GameField } from "@/components/game-field";
 import { HapticPressable } from "@/components/haptic-pressable";
+import { ShipTray } from "@/components/ship-tray";
 import { createGameField } from "@/models/game-factory";
 import type { Player } from "@/models/types";
 
@@ -47,9 +48,12 @@ export default function BattleScreen() {
             </View>
           </FadeIn>
 
-          {/* Center: Game field */}
+          {/* Center: Game field + ship tray */}
           <FadeIn delay={250} scale={0.9}>
-            <GameField fields={gameField.fields} />
+            <View style={styles.fieldSection}>
+              <GameField fields={gameField.fields} />
+              <ShipTray />
+            </View>
           </FadeIn>
 
           {/* Bottom: Retreat button */}
@@ -85,13 +89,17 @@ const styles = StyleSheet.create({
     paddingBottom: 48,
     paddingHorizontal: 32,
   },
+  fieldSection: {
+    gap: 16,
+    alignItems: "center",
+  },
   topSection: {
     alignItems: "center",
     gap: 8,
   },
   title: {
     color: "#fff",
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: "900",
     letterSpacing: 4,
     textAlign: "center",
