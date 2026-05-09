@@ -1,22 +1,33 @@
-import { useNavigation } from "@react-navigation/native";
-import { useRouter } from "expo-router";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { ImageBackground, StyleSheet, Text, useWindowDimensions, View } from "react-native";
-import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing } from "react-native-reanimated";
 import { DragPreview } from "@/components/drag-preview";
 import { FadeIn } from "@/components/fade-in";
-import { GameField, computeCell, LABEL_SIZE } from "@/components/game-field";
+import { computeCell, GameField, LABEL_SIZE } from "@/components/game-field";
 import { HapticPressable } from "@/components/haptic-pressable";
 import { ShipTray } from "@/components/ship-tray";
+import { IMAGES } from "@/constants/assets";
 import { createGameField } from "@/models/game-factory";
 import type { Field, Ship, ShipPart, ShipType } from "@/models/types";
 import { SHIP_FLEET, SHIP_SIZES } from "@/models/types";
-import { IMAGES } from "@/constants/assets";
+import { useNavigation } from "@react-navigation/native";
+import { useRouter } from "expo-router";
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  ImageBackground,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from "react-native";
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
 
 const PLAYER = { id: "1", name: "CAPTAIN", isAI: false };
 const GRID_SIZE = 10;
 const GRID_PADDING = 32;
-const DRAG_OFFSET_X = 48;
+const DRAG_OFFSET_X = 24;
 const DRAG_OFFSET_Y = 3 * 48;
 
 type Orientation = "horizontal" | "vertical";
@@ -25,7 +36,7 @@ function buildPreviewCells(
   shipType: ShipType,
   startX: number,
   startY: number,
-  orientation: Orientation
+  orientation: Orientation,
 ): { x: number; y: number }[] {
   const size = SHIP_SIZES[shipType];
   return Array.from({ length: size }, (_, i) => ({
@@ -37,7 +48,7 @@ function buildPreviewCells(
 function isValidPlacement(
   cells: { x: number; y: number }[],
   fields: Field[][],
-  excludeShipId?: string
+  excludeShipId?: string,
 ): boolean {
   return cells.every(({ x, y }) => {
     if (x < 0 || x >= GRID_SIZE || y < 0 || y >= GRID_SIZE) return false;
@@ -51,7 +62,7 @@ function placeship(
   fields: Field[][],
   shipType: ShipType,
   cells: { x: number; y: number }[],
-  orientation: Orientation
+  orientation: Orientation,
 ): Field[][] {
   const ship: Ship = {
     id: `${shipType}-${Date.now()}`,
@@ -79,13 +90,23 @@ export default function BattleScreen() {
   const navigation = useNavigation();
   const { width } = useWindowDimensions();
 
-  const cellSize = Math.floor((width - GRID_PADDING * 2 - LABEL_SIZE) / GRID_SIZE);
+  const cellSize = Math.floor(
+    (width - GRID_PADDING * 2 - LABEL_SIZE) / GRID_SIZE,
+  );
 
   // Game state
-  const [fields, setFields] = useState<Field[][]>(() => createGameField(PLAYER).fields);
+  const [fields, setFields] = useState<Field[][]>(
+    () => createGameField(PLAYER).fields,
+  );
   const [placedShips, setPlacedShips] = useState<Set<ShipType>>(new Set());
-  const [orientations, setOrientations] = useState<Record<ShipType, Orientation>>(
-    () => Object.fromEntries(SHIP_FLEET.map((t) => [t, "horizontal"])) as Record<ShipType, Orientation>
+  const [orientations, setOrientations] = useState<
+    Record<ShipType, Orientation>
+  >(
+    () =>
+      Object.fromEntries(SHIP_FLEET.map((t) => [t, "horizontal"])) as Record<
+        ShipType,
+        Orientation
+      >,
   );
 
   // Drag state
@@ -105,7 +126,12 @@ export default function BattleScreen() {
 
   // Cached ship tray bounds (measured on grid-ship drag start)
   const trayRef = useRef<View>(null);
-  const trayBoundsRef = useRef<{ x: number; y: number; width: number; height: number } | null>(null);
+  const trayBoundsRef = useRef<{
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  } | null>(null);
 
   // Measure grid position after layout and on width changes
   useEffect(() => {
@@ -123,14 +149,24 @@ export default function BattleScreen() {
       if (!origin) return;
 
       const orientation = orientations[ship];
-      const { x: startX, y: startY } = computeCell(pageX + DRAG_OFFSET_X, pageY - DRAG_OFFSET_Y, origin.x, origin.y, cellSize);
+      const { x: startX, y: startY } = computeCell(
+        pageX + DRAG_OFFSET_X,
+        pageY - DRAG_OFFSET_Y,
+        origin.x,
+        origin.y,
+        cellSize,
+      );
       const cells = buildPreviewCells(ship, startX, startY, orientation);
-      const valid = isValidPlacement(cells, fields, draggingFromGridRef.current ?? undefined);
+      const valid = isValidPlacement(
+        cells,
+        fields,
+        draggingFromGridRef.current ?? undefined,
+      );
 
       setPreviewCells(new Set(cells.map((c) => `${c.x}-${c.y}`)));
       setIsPreviewValid(valid);
     },
-    [orientations, cellSize, fields]
+    [orientations, cellSize, fields],
   );
 
   const startDrag = useCallback(
@@ -142,14 +178,14 @@ export default function BattleScreen() {
       setDraggingShip(ship);
       updatePreview(ship, pageX, pageY);
     },
-    [updatePreview]
+    [updatePreview],
   );
 
   const handleDragStart = useCallback(
     (ship: ShipType, pageX: number, pageY: number) => {
       startDrag(ship, pageX, pageY);
     },
-    [startDrag]
+    [startDrag],
   );
 
   const handleGridShipDragStart = useCallback(
@@ -172,7 +208,7 @@ export default function BattleScreen() {
       });
       startDrag(shipType, pageX, pageY);
     },
-    [fields, startDrag]
+    [fields, startDrag],
   );
 
   const handleDragging = useCallback(
@@ -181,7 +217,7 @@ export default function BattleScreen() {
       if (!ship) return;
       updatePreview(ship, pageX, pageY);
     },
-    [updatePreview]
+    [updatePreview],
   );
 
   const handleDragEnd = useCallback(
@@ -199,20 +235,38 @@ export default function BattleScreen() {
       if (!origin) return;
 
       const orientation = orientations[ship];
-      const { x: startX, y: startY } = computeCell(pageX + DRAG_OFFSET_X, pageY - DRAG_OFFSET_Y, origin.x, origin.y, cellSize);
+      const { x: startX, y: startY } = computeCell(
+        pageX + DRAG_OFFSET_X,
+        pageY - DRAG_OFFSET_Y,
+        origin.x,
+        origin.y,
+        cellSize,
+      );
       const cells = buildPreviewCells(ship, startX, startY, orientation);
-      const valid = isValidPlacement(cells, fields, fromGridShipId ?? undefined);
+      const valid = isValidPlacement(
+        cells,
+        fields,
+        fromGridShipId ?? undefined,
+      );
 
       // If dragged from the grid and dropped over the tray without a valid placement, remove the ship
       if (!valid && fromGridShipId) {
         const tray = trayBoundsRef.current;
         if (
           tray &&
-          pageX >= tray.x && pageX <= tray.x + tray.width &&
-          pageY >= tray.y && pageY <= tray.y + tray.height
+          pageX >= tray.x &&
+          pageX <= tray.x + tray.width &&
+          pageY >= tray.y &&
+          pageY <= tray.y + tray.height
         ) {
           setFields((prev) =>
-            prev.map((row) => row.map((f) => (f.shipPart?.ship.id === fromGridShipId ? { ...f, shipPart: null } : f)))
+            prev.map((row) =>
+              row.map((f) =>
+                f.shipPart?.ship.id === fromGridShipId
+                  ? { ...f, shipPart: null }
+                  : f,
+              ),
+            ),
           );
           setPlacedShips((prev) => {
             const next = new Set(prev);
@@ -227,13 +281,19 @@ export default function BattleScreen() {
 
       setFields((prev) => {
         const withoutOld = fromGridShipId
-          ? prev.map((row) => row.map((f) => (f.shipPart?.ship.id === fromGridShipId ? { ...f, shipPart: null } : f)))
+          ? prev.map((row) =>
+              row.map((f) =>
+                f.shipPart?.ship.id === fromGridShipId
+                  ? { ...f, shipPart: null }
+                  : f,
+              ),
+            )
           : prev;
         return placeship(withoutOld, ship, cells, orientation);
       });
       setPlacedShips((prev) => new Set([...prev, ship]));
     },
-    [orientations, cellSize, fields]
+    [orientations, cellSize, fields],
   );
 
   const handleOrientationToggle = useCallback((ship: ShipType) => {
@@ -246,9 +306,14 @@ export default function BattleScreen() {
   // Screen exit animation
   const screenTranslateY = useSharedValue(0);
 
+  const allShipsPlaced = placedShips.size === SHIP_FLEET.length;
+
   const handleRetreat = () => {
     navigation.setOptions({ animation: "none" });
-    screenTranslateY.value = withTiming(-1000, { duration: 350, easing: Easing.in(Easing.cubic) });
+    screenTranslateY.value = withTiming(-1000, {
+      duration: 350,
+      easing: Easing.in(Easing.cubic),
+    });
     setTimeout(() => router.back(), 350);
   };
 
@@ -303,17 +368,39 @@ export default function BattleScreen() {
             </View>
           </FadeIn>
 
-          {/* Bottom: Retreat button */}
-          <FadeIn delay={500} translateY={30}>
-            <HapticPressable
-              onPress={handleRetreat}
-              style={({ pressed }) => [
-                styles.cancelButton,
-                pressed && styles.cancelButtonPressed,
-              ]}
-            >
-              <Text style={styles.cancelButtonText}>↩ RETREAT</Text>
-            </HapticPressable>
+          {/* Bottom: Retreat + Fire at Will buttons */}
+          <FadeIn delay={500} translateY={30} style={{ alignSelf: "stretch" }}>
+            <View style={styles.bottomButtons}>
+              <HapticPressable
+                onPress={handleRetreat}
+                style={({ pressed }) => [
+                  styles.cancelButton,
+                  pressed && styles.cancelButtonPressed,
+                ]}
+              >
+                <Text style={styles.cancelButtonText} numberOfLines={2}>
+                  ↩{"\n"}RETREAT
+                </Text>
+              </HapticPressable>
+              <HapticPressable
+                disabled={!allShipsPlaced}
+                style={({ pressed }) => [
+                  styles.fireButton,
+                  !allShipsPlaced && styles.fireButtonDisabled,
+                  pressed && allShipsPlaced && styles.fireButtonPressed,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.fireButtonText,
+                    !allShipsPlaced && styles.fireButtonTextDisabled,
+                  ]}
+                  numberOfLines={2}
+                >
+                   ⚡{"\n"}FIRE AT WILL
+                </Text>
+              </HapticPressable>
+            </View>
           </FadeIn>
         </View>
 
@@ -372,8 +459,9 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   cancelButton: {
-    paddingHorizontal: 36,
-    paddingVertical: 14,
+    flex: 1,
+    paddingHorizontal: 4,
+    paddingVertical: 8,
     borderWidth: 2,
     borderColor: "rgba(255,255,255,0.6)",
     borderRadius: 4,
@@ -387,6 +475,39 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "800",
     letterSpacing: 3,
+    lineHeight: 26,
     textAlign: "center",
+  },
+  bottomButtons: {
+    flexDirection: "row",
+    alignSelf: "stretch",
+    gap: 12,
+  },
+  fireButton: {
+    flex: 1,
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+    borderWidth: 2,
+    borderColor: "#e8c84a",
+    borderRadius: 4,
+    backgroundColor: "rgba(232,200,74,0.15)",
+  },
+  fireButtonDisabled: {
+    borderColor: "rgba(255,255,255,0.2)",
+    backgroundColor: "rgba(0,0,0,0.3)",
+  },
+  fireButtonPressed: {
+    backgroundColor: "rgba(232,200,74,0.35)",
+  },
+  fireButtonText: {
+    color: "#e8c84a",
+    fontSize: 16,
+    fontWeight: "800",
+    letterSpacing: 3,
+    lineHeight: 26,
+    textAlign: "center",
+  },
+  fireButtonTextDisabled: {
+    color: "rgba(255,255,255,0.25)",
   },
 });
