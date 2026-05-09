@@ -15,6 +15,8 @@ import { SHIP_FLEET, SHIP_SIZES } from "@/models/types";
 const PLAYER = { id: "1", name: "CAPTAIN", isAI: false };
 const GRID_SIZE = 10;
 const GRID_PADDING = 32;
+const DRAG_OFFSET_X = 48;
+const DRAG_OFFSET_Y = 3 * 48;
 
 type Orientation = "horizontal" | "vertical";
 
@@ -120,7 +122,7 @@ export default function BattleScreen() {
       if (!origin) return;
 
       const orientation = orientations[ship];
-      const { x: startX, y: startY } = computeCell(pageX, pageY, origin.x, origin.y, cellSize);
+      const { x: startX, y: startY } = computeCell(pageX + DRAG_OFFSET_X, pageY - DRAG_OFFSET_Y, origin.x, origin.y, cellSize);
       const cells = buildPreviewCells(ship, startX, startY, orientation);
       const valid = isValidPlacement(cells, fields, draggingFromGridRef.current ?? undefined);
 
@@ -192,8 +194,16 @@ export default function BattleScreen() {
 
       if (!ship) return;
 
-      // If dragged from the grid and dropped over the tray, remove the ship
-      if (fromGridShipId) {
+      const origin = gridOriginRef.current;
+      if (!origin) return;
+
+      const orientation = orientations[ship];
+      const { x: startX, y: startY } = computeCell(pageX + DRAG_OFFSET_X, pageY - DRAG_OFFSET_Y, origin.x, origin.y, cellSize);
+      const cells = buildPreviewCells(ship, startX, startY, orientation);
+      const valid = isValidPlacement(cells, fields, fromGridShipId ?? undefined);
+
+      // If dragged from the grid and dropped over the tray without a valid placement, remove the ship
+      if (!valid && fromGridShipId) {
         const tray = trayBoundsRef.current;
         if (
           tray &&
@@ -212,14 +222,7 @@ export default function BattleScreen() {
         }
       }
 
-      const origin = gridOriginRef.current;
-      if (!origin) return;
-
-      const orientation = orientations[ship];
-      const { x: startX, y: startY } = computeCell(pageX, pageY, origin.x, origin.y, cellSize);
-      const cells = buildPreviewCells(ship, startX, startY, orientation);
-
-      if (!isValidPlacement(cells, fields, fromGridShipId ?? undefined)) return;
+      if (!valid) return;
 
       setFields((prev) => {
         const withoutOld = fromGridShipId

@@ -54,7 +54,7 @@ export function DragPreview({ ship, orientation, dragX, dragY }: DragPreviewProp
   // Rotating around the element center keeps (dragX, dragY) at the visual center.
   const animStyle = useAnimatedStyle(() => ({
     left: dragX.value - totalWidth / 2,
-    top: dragY.value - totalHeight / 2,
+    top: dragY.value - totalHeight / 2 - 48,
     opacity: ship ? 0.88 : 0,
     transform: [{ rotate: orientation === "vertical" ? "90deg" : "0deg" }],
   }));
