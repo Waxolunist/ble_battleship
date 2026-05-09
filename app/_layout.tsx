@@ -3,7 +3,9 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
+import 'react-native-gesture-handler';
 import 'react-native-reanimated';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
@@ -23,17 +25,19 @@ export default function RootLayout() {
   const theme = colorScheme === 'dark' ? DarkTheme : { ...DefaultTheme, colors: { ...DefaultTheme.colors, background: '#1a1a1a' } };
 
   return (
-    <ThemeProvider value={theme}>
-      <Stack screenOptions={{ contentStyle: { backgroundColor: "#1a1a1a" } }}>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false, contentStyle: { backgroundColor: "#1a1a1a" } }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-        <Stack.Screen
-          name="battle"
-          options={{ headerShown: false, animation: "fade_from_bottom" }}
-        />
-      </Stack>
-      <StatusBar style="auto" />
-    </ThemeProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <ThemeProvider value={theme}>
+        <Stack screenOptions={{ contentStyle: { backgroundColor: "#1a1a1a" } }}>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false, contentStyle: { backgroundColor: "#1a1a1a" } }} />
+          <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+          <Stack.Screen
+            name="battle"
+            options={{ headerShown: false, animation: "fade_from_bottom" }}
+          />
+        </Stack>
+        <StatusBar style="auto" />
+      </ThemeProvider>
+    </GestureHandlerRootView>
   );
 }
 

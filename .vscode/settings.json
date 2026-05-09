@@ -1,4 +1,6 @@
 {
+  "editor.tokenColorCustomizations": {},
+  "editor.semanticHighlighting.enabled": true,
   "editor.codeActionsOnSave": {
     "source.fixAll": "explicit",
     "source.organizeImports": "explicit",
