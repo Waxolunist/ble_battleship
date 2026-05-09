@@ -1,3 +1,4 @@
+import { forwardRef } from "react";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, { runOnJS } from "react-native-reanimated";
 import type { SharedValue } from "react-native-reanimated";
@@ -130,7 +131,7 @@ export interface ShipTrayProps {
   dragY: SharedValue<number>;
 }
 
-export function ShipTray({
+export const ShipTray = forwardRef<View, ShipTrayProps>(function ShipTray({
   placedShips,
   orientations,
   onOrientationToggle,
@@ -139,9 +140,9 @@ export function ShipTray({
   onDragEnd,
   dragX,
   dragY,
-}: ShipTrayProps) {
+}: ShipTrayProps, ref) {
   return (
-    <View style={styles.tray}>
+    <View ref={ref} style={styles.tray}>
       <Text style={styles.trayTitle}>FLEET</Text>
       <View style={styles.shipList}>
         {SHIP_FLEET.map((type) => (
@@ -161,7 +162,7 @@ export function ShipTray({
       </View>
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   tray: {

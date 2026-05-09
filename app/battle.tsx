@@ -100,6 +100,10 @@ export default function BattleScreen() {
   const gridBodyRef = useRef<View>(null);
   const gridOriginRef = useRef<{ x: number; y: number } | null>(null);
 
+  // Cached ship tray bounds (measured on grid-ship drag start)
+  const trayRef = useRef<View>(null);
+  const trayBoundsRef = useRef<{ x: number; y: number; width: number; height: number } | null>(null);
+
   // Measure grid position after layout and on width changes
   useEffect(() => {
     const id = setTimeout(() => {
@@ -159,6 +163,10 @@ export default function BattleScreen() {
         if (shipId) break;
       }
       draggingFromGridRef.current = shipId;
+      // Cache tray bounds so we can detect drops over it in handleDragEnd
+      trayRef.current?.measureInWindow((x, y, width, height) => {
+        trayBoundsRef.current = { x, y, width, height };
+      });
       startDrag(shipType, pageX, pageY);
     },
     [fields, startDrag]
@@ -183,6 +191,26 @@ export default function BattleScreen() {
       setPreviewCells(new Set());
 
       if (!ship) return;
+
+      // If dragged from the grid and dropped over the tray, remove the ship
+      if (fromGridShipId) {
+        const tray = trayBoundsRef.current;
+        if (
+          tray &&
+          pageX >= tray.x && pageX <= tray.x + tray.width &&
+          pageY >= tray.y && pageY <= tray.y + tray.height
+        ) {
+          setFields((prev) =>
+            prev.map((row) => row.map((f) => (f.shipPart?.ship.id === fromGridShipId ? { ...f, shipPart: null } : f)))
+          );
+          setPlacedShips((prev) => {
+            const next = new Set(prev);
+            next.delete(ship);
+            return next;
+          });
+          return;
+        }
+      }
 
       const origin = gridOriginRef.current;
       if (!origin) return;
@@ -258,6 +286,7 @@ export default function BattleScreen() {
                 dragY={dragY}
               />
               <ShipTray
+                ref={trayRef}
                 placedShips={placedShips}
                 orientations={orientations}
                 onOrientationToggle={handleOrientationToggle}
