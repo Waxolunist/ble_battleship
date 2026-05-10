@@ -14,9 +14,9 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from "react-native-reanimated";
-import { BattleView } from "./views/battle-view";
-import { PlacementView } from "./views/placement-view";
-import type { Orientation } from "./views/placement-view";
+import { BattleView } from "@/components/views/battle-view";
+import { PlacementView } from "@/components/views/placement-view";
+import type { Orientation } from "@/components/views/placement-view";
 
 const PLAYER = { id: "1", name: "CAPTAIN", isAI: false };
 const AI_PLAYER = { id: "2", name: "ENEMY", isAI: true };
