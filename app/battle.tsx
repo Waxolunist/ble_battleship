@@ -19,12 +19,15 @@ import {
 } from "react-native";
 import Animated, {
   Easing,
+  FadeInDown,
   useAnimatedStyle,
   useSharedValue,
+  withDelay,
   withTiming,
 } from "react-native-reanimated";
 
 const PLAYER = { id: "1", name: "CAPTAIN", isAI: false };
+const AI_PLAYER = { id: "2", name: "ENEMY", isAI: true };
 const GRID_SIZE = 10;
 const GRID_PADDING = 32;
 const DRAG_OFFSET_X = 24;
@@ -97,6 +100,9 @@ export default function BattleScreen() {
   // Game state
   const [fields, setFields] = useState<Field[][]>(
     () => createGameField(PLAYER).fields,
+  );
+  const [opponentFields] = useState<Field[][]>(
+    () => createGameField(AI_PLAYER).fields,
   );
   const [placedShips, setPlacedShips] = useState<Set<ShipType>>(new Set());
   const [orientations, setOrientations] = useState<
@@ -306,7 +312,45 @@ export default function BattleScreen() {
   // Screen exit animation
   const screenTranslateY = useSharedValue(0);
 
+  // Fire at Will animation
+  const fireOpacity = useSharedValue(1);
+  const fireTopTranslateY = useSharedValue(0);
+  const fireBottomTranslateY = useSharedValue(0);
+  const [showOpponentField, setShowOpponentField] = useState(false);
+  const fieldSectionTranslateY = useSharedValue(0);
+  const playerFieldTranslateY = useSharedValue(0);
+
+  const fireTopStyle = useAnimatedStyle(() => ({
+    opacity: fireOpacity.value,
+    transform: [{ translateY: fireTopTranslateY.value }],
+  }));
+
+  const fireBottomStyle = useAnimatedStyle(() => ({
+    opacity: fireOpacity.value,
+    transform: [{ translateY: fireBottomTranslateY.value }],
+  }));
+
+  const fieldSectionAnimStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: fieldSectionTranslateY.value }],
+  }));
+
+  const playerFieldAnimStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: playerFieldTranslateY.value }],
+  }));
+
   const allShipsPlaced = placedShips.size === SHIP_FLEET.length;
+
+  const handleFireAtWill = () => {
+    const fadeConfig = { duration: 350, easing: Easing.in(Easing.cubic) };
+    fireOpacity.value = withTiming(0, fadeConfig);
+    fireTopTranslateY.value = withTiming(-60, fadeConfig);
+    fireBottomTranslateY.value = withTiming(60, fadeConfig);
+
+    const battleConfig = { duration: 600, easing: Easing.out(Easing.cubic) };
+    fieldSectionTranslateY.value = withDelay(350, withTiming(-60, battleConfig));
+    playerFieldTranslateY.value = withDelay(350, withTiming(-10, battleConfig));
+    setTimeout(() => setShowOpponentField(true), 350);
+  };
 
   const handleRetreat = () => {
     navigation.setOptions({ animation: "none" });
@@ -332,43 +376,63 @@ export default function BattleScreen() {
 
         <View style={styles.content}>
           {/* Top: Title & subtitle */}
-          <FadeIn translateY={-30}>
-            <View style={styles.topSection}>
-              <Text style={styles.title}>⚔ BATTLE STATION ⚔</Text>
-              <Text style={styles.subtitle}>PLACE YOUR FLEET, CAPTAIN</Text>
-            </View>
-          </FadeIn>
+          <Animated.View style={fireTopStyle}>
+            <FadeIn translateY={-30}>
+              <View style={styles.topSection}>
+                <Text style={styles.title}>⚔ BATTLE STATION ⚔</Text>
+                <Text style={styles.subtitle}>PLACE YOUR FLEET, CAPTAIN</Text>
+              </View>
+            </FadeIn>
+          </Animated.View>
 
-          {/* Center: Game field + ship tray */}
+          {/* Center: Game field + opponent field + ship tray */}
+          <Animated.View style={fieldSectionAnimStyle}>
           <FadeIn delay={250} scale={0.9}>
             <View style={styles.fieldSection}>
-              <GameField
-                ref={gridBodyRef}
-                fields={fields}
-                previewCells={previewCells}
-                isPreviewValid={isPreviewValid}
-                draggingShip={draggingShip}
-                onShipDragStart={handleGridShipDragStart}
-                onShipDragging={handleDragging}
-                onShipDragEnd={handleDragEnd}
-                dragX={dragX}
-                dragY={dragY}
-              />
-              <ShipTray
-                ref={trayRef}
-                placedShips={placedShips}
-                orientations={orientations}
-                onOrientationToggle={handleOrientationToggle}
-                onDragStart={handleDragStart}
-                onDragging={handleDragging}
-                onDragEnd={handleDragEnd}
-                dragX={dragX}
-                dragY={dragY}
-              />
+              <Animated.View style={playerFieldAnimStyle}>
+                <GameField
+                  ref={gridBodyRef}
+                  fields={fields}
+                  previewCells={previewCells}
+                  isPreviewValid={isPreviewValid}
+                  draggingShip={draggingShip}
+                  onShipDragStart={handleGridShipDragStart}
+                  onShipDragging={handleDragging}
+                  onShipDragEnd={handleDragEnd}
+                  dragX={dragX}
+                  dragY={dragY}
+                />
+              </Animated.View>
+              {/* Opponent field — mounts below the player field on Fire at Will */}
+              {showOpponentField && (
+                <Animated.View entering={FadeInDown.duration(500).easing(Easing.out(Easing.cubic))}>
+                  <View style={styles.battleDivider}>
+                    <View style={styles.battleDividerLine} />
+                    <Text style={styles.battleDividerText}>ENEMY WATERS</Text>
+                    <View style={styles.battleDividerLine} />
+                  </View>
+                  <GameField fields={opponentFields} tint="rgba(255, 80, 80, 0.35)" />
+                </Animated.View>
+              )}
+              <Animated.View style={fireBottomStyle}>
+                <ShipTray
+                  ref={trayRef}
+                  placedShips={placedShips}
+                  orientations={orientations}
+                  onOrientationToggle={handleOrientationToggle}
+                  onDragStart={handleDragStart}
+                  onDragging={handleDragging}
+                  onDragEnd={handleDragEnd}
+                  dragX={dragX}
+                  dragY={dragY}
+                />
+              </Animated.View>
             </View>
           </FadeIn>
+          </Animated.View>
 
           {/* Bottom: Retreat + Fire at Will buttons */}
+          <Animated.View style={[{ alignSelf: "stretch" }, fireBottomStyle]}>
           <FadeIn delay={500} translateY={30} style={{ alignSelf: "stretch" }}>
             <View style={styles.bottomButtons}>
               <HapticPressable
@@ -384,6 +448,7 @@ export default function BattleScreen() {
               </HapticPressable>
               <HapticPressable
                 disabled={!allShipsPlaced}
+                onPress={handleFireAtWill}
                 style={({ pressed }) => [
                   styles.fireButton,
                   !allShipsPlaced && styles.fireButtonDisabled,
@@ -402,6 +467,7 @@ export default function BattleScreen() {
               </HapticPressable>
             </View>
           </FadeIn>
+          </Animated.View>
         </View>
 
         {/* Floating drag preview — rendered last so it draws on top */}
@@ -457,6 +523,24 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     letterSpacing: 3,
     textAlign: "center",
+  },
+  battleDivider: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 12,
+    paddingHorizontal: 4,
+  },
+  battleDividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: "rgba(255,255,255,0.25)",
+  },
+  battleDividerText: {
+    color: "rgba(255,255,255,0.45)",
+    fontSize: 10,
+    fontWeight: "700",
+    letterSpacing: 3,
   },
   cancelButton: {
     flex: 1,

@@ -93,6 +93,7 @@ function ShipCellSprite({ part, cellSize }: { part: ShipPart; cellSize: number }
 
 interface GameFieldProps {
   fields: Field[][];
+  tint?: string;
   onCellPress?: (x: number, y: number) => void;
   previewCells?: Set<string>;
   isPreviewValid?: boolean;
@@ -166,6 +167,7 @@ export const GameField = forwardRef<View, GameFieldProps>(
   function GameField(
     {
       fields,
+      tint = "rgba(80, 160, 255, 0.35)",
       onCellPress,
       previewCells = new Set(),
       isPreviewValid = true,
@@ -197,7 +199,7 @@ export const GameField = forwardRef<View, GameFieldProps>(
         {/* Grid body — ref used to measure absolute position for drag-drop */}
         <View
           ref={ref}
-          style={[styles.gridBody, { gap: 1, backgroundColor: "rgba(80, 160, 255, 0.35)", padding: 1 }]}
+          style={[styles.gridBody, { gap: 1, backgroundColor: tint, padding: 1 }]}
         >
           {fields.map((row, rowIndex) => (
             <View key={rowIndex} style={[styles.row, { gap: 1 }]}>
