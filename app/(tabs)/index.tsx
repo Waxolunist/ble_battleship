@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
 import { FadeIn } from '@/components/fade-in';
 import { useGameStore } from '@/store/useGameStore';
+import { useCaptainStore } from '@/store/useCaptainStore';
 import {
   ImageBackground,
   Keyboard,
@@ -19,15 +20,17 @@ import { IMAGES } from '@/constants/assets';
 export default function HomeScreen() {
   const router = useRouter();
   const resetGame = useGameStore(s => s.resetGame);
-  const [name, setName] = useState('');
-  const [confirmed, setConfirmed] = useState(false);
+  const { captainName, setCaptainName, clearCaptainName } = useCaptainStore();
+  const [inputName, setInputName] = useState('');
   const inputRef = useRef<TextInput>(null);
 
+  const confirmed = captainName.length > 0;
+
   const handleConfirm = () => {
-    if (!name.trim()) return;
+    if (!inputName.trim()) return;
     inputRef.current?.blur();
     Keyboard.dismiss();
-    setConfirmed(true);
+    setCaptainName(inputName.trim());
   };
 
   return (
@@ -45,7 +48,7 @@ export default function HomeScreen() {
             <>
               <Text style={styles.welcomeText}>
                 ⚓ ALL HANDS ON DECK!{'\n'}
-                CAPTAIN {name} HAS TAKEN THE HELM.{'\n'}
+                CAPTAIN {captainName} HAS TAKEN THE HELM.{'\n'}
                 THE SEA DEMANDS BLOOD.
               </Text>
               <HapticPressable
@@ -62,8 +65,8 @@ export default function HomeScreen() {
               <TextInput
                 ref={inputRef}
                 style={styles.input}
-                value={name}
-                onChangeText={text => setName(text.toUpperCase())}
+                value={inputName}
+                onChangeText={text => setInputName(text.toUpperCase())}
                 autoCapitalize="characters"
                 placeholder="ENTER YOUR NAME"
                 placeholderTextColor="rgba(255, 255, 255, 0.4)"
@@ -83,8 +86,8 @@ export default function HomeScreen() {
       {confirmed && (
         <HapticPressable
           onPress={() => {
-            setConfirmed(false);
-            setName('');
+            clearCaptainName();
+            setInputName('');
           }}
           style={({ pressed }) => [
             styles.changeNameButton,

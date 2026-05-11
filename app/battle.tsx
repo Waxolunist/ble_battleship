@@ -8,6 +8,7 @@ import { useCombat } from '@/hooks/useCombat';
 import { usePlacementGestures } from '@/hooks/usePlacementGestures';
 import { SHIP_FLEET } from '@/models/types';
 import { useGameStore } from '@/store/useGameStore';
+import { useCaptainStore } from '@/store/useCaptainStore';
 import { useRouter } from 'expo-router';
 import { Image, ImageBackground, StyleSheet, useWindowDimensions, View } from 'react-native';
 import Animated from 'react-native-reanimated';
@@ -29,6 +30,8 @@ export default function BattleScreen() {
   const showOpponentField = useGameStore(s => s.showOpponentField);
   const sunkEvent = useGameStore(s => s.sunkEvent);
   const resetGame = useGameStore(s => s.resetGame);
+  const sinkAllOpponentShips = useGameStore(s => s.sinkAllOpponentShips);
+  const captainName = useCaptainStore(s => s.captainName);
 
   // Hooks
   const gestures = usePlacementGestures(cellSize);
@@ -36,6 +39,20 @@ export default function BattleScreen() {
   const { onPlayerFire, shotPhase } = useCombat();
 
   const handleRetreat = () => {
+    resetGame();
+    router.replace('/(tabs)/');
+  };
+
+  const handleVictory = () => {
+    sinkAllOpponentShips();
+  };
+
+  const handlePlayAgain = () => {
+    resetGame();
+    router.replace('/battle');
+  };
+
+  const handleMakePort = () => {
     resetGame();
     router.replace('/(tabs)/');
   };
@@ -72,6 +89,7 @@ export default function BattleScreen() {
             onFireAtWill={animations.onFireAtWill}
             onRetreat={animations.onRetreat}
             onRandomize={gestures.onRandomize}
+            captainName={captainName}
           />
         </Animated.View>
 
@@ -88,6 +106,9 @@ export default function BattleScreen() {
             shotPhase={shotPhase}
             onEnemyCellPress={onPlayerFire}
             onRetreat={handleRetreat}
+            onVictory={handleVictory}
+            onPlayAgain={handlePlayAgain}
+            onMakePort={handleMakePort}
           />
         </Animated.View>
 

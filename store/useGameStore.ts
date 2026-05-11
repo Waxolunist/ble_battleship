@@ -46,6 +46,7 @@ interface GameActions {
   setSunkEvent: (event: { shipType: ShipType; owner: 'player' | 'enemy' } | null) => void;
   startBattle: () => void;
   resetGame: () => void;
+  sinkAllOpponentShips: () => void;
 }
 
 export const useGameStore = create<GameState & GameActions>((set, get) => ({
@@ -141,6 +142,18 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
       showOpponentField: false,
       sunkEvent: null,
     });
+  },
+
+  sinkAllOpponentShips() {
+    set(s => ({
+      opponentFields: s.opponentFields.map(row =>
+        row.map(f =>
+          f.shipPart
+            ? { ...f, status: 'sunk' as const, shipPart: { ...f.shipPart, isHit: true } }
+            : f,
+        ),
+      ),
+    }));
   },
 
   startBattle() {

@@ -1,7 +1,8 @@
 import { GameField } from '@/components/game-field';
 import type { Field, ShotPhase, ShipType } from '@/models/types';
 import { GameColors } from '@/constants/theme';
-import { useEffect, useState } from 'react';
+import { DEV_SHOW_FORCE_VICTORY } from '@/constants/dev';
+import { useEffect, useRef, useState } from 'react';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   Easing,
@@ -50,6 +51,9 @@ export type BattleViewProps = {
   shotPhase?: ShotPhase;
   onEnemyCellPress?: (x: number, y: number) => void;
   onRetreat?: () => void;
+  onVictory?: () => void;
+  onPlayAgain?: () => void;
+  onMakePort?: () => void;
 };
 
 export function BattleView({
@@ -61,6 +65,9 @@ export function BattleView({
   shotPhase,
   onEnemyCellPress,
   onRetreat,
+  onVictory,
+  onPlayAgain,
+  onMakePort,
 }: BattleViewProps) {
   // 0 = player's turn, 1 = enemy's turn — transitions smoothly on change
   const turnSV = useSharedValue(0);
@@ -157,6 +164,39 @@ export function BattleView({
   const playerShipsRemaining = countShipsRemaining(fields);
   const enemyShipsRemaining = countShipsRemaining(opponentFields);
 
+  // --- Victory visualization ---
+  const [isVictory, setIsVictory] = useState(false);
+  const [showVictoryButtons, setShowVictoryButtons] = useState(false);
+  const hasTriggeredVictory = useRef(false);
+
+  const victoryGridFlashOpacity = useSharedValue(0);
+  const victoryOverlayOpacity = useSharedValue(0);
+  const victoryWordScale = useSharedValue(0.5);
+  const victoryWordOpacity = useSharedValue(0);
+  const victorySubtitleOpacity = useSharedValue(0);
+  const playerPulseOpacity = useSharedValue(0);
+  const victoryButtonsOpacity = useSharedValue(0);
+
+  const victoryGridFlashStyle = useAnimatedStyle(() => ({
+    opacity: victoryGridFlashOpacity.value,
+  }));
+  const victoryOverlayStyle = useAnimatedStyle(() => ({
+    opacity: victoryOverlayOpacity.value,
+  }));
+  const victoryWordStyle = useAnimatedStyle(() => ({
+    opacity: victoryWordOpacity.value,
+    transform: [{ scale: victoryWordScale.value }],
+  }));
+  const victorySubtitleStyle = useAnimatedStyle(() => ({
+    opacity: victorySubtitleOpacity.value,
+  }));
+  const playerPulseStyle = useAnimatedStyle(() => ({
+    opacity: playerPulseOpacity.value,
+  }));
+  const victoryButtonsStyle = useAnimatedStyle(() => ({
+    opacity: victoryButtonsOpacity.value,
+  }));
+
   // --- Screen shake on impact beat ---
   const shakeX = useSharedValue(0);
   const shakeY = useSharedValue(0);
@@ -189,6 +229,96 @@ export function BattleView({
   const shakeStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: shakeX.value }, { translateY: shakeY.value }],
   }));
+
+  useEffect(() => {
+    if (!showOpponentField || hasTriggeredVictory.current || enemyShipsRemaining !== 0) return;
+    hasTriggeredVictory.current = true;
+    setIsVictory(true);
+
+    (async () => {
+      // Haptics: medium × 3 → heavy
+      if (Platform.OS !== 'web') {
+        const { impactAsync, ImpactFeedbackStyle } = await import('expo-haptics');
+        impactAsync(ImpactFeedbackStyle.Medium).catch(() => {});
+        setTimeout(() => impactAsync(ImpactFeedbackStyle.Medium).catch(() => {}), 200);
+        setTimeout(() => impactAsync(ImpactFeedbackStyle.Medium).catch(() => {}), 400);
+        setTimeout(() => impactAsync(ImpactFeedbackStyle.Heavy).catch(() => {}), 600);
+      }
+
+      // Three screen-shake bursts (0, 200, 400ms)
+      const doShake = () => {
+        shakeX.value = withSequence(
+          withTiming(4, { duration: 25 }),
+          withTiming(-4, { duration: 25 }),
+          withTiming(3, { duration: 25 }),
+          withTiming(-3, { duration: 25 }),
+          withTiming(0, { duration: 25 }),
+        );
+        shakeY.value = withSequence(
+          withTiming(-3, { duration: 25 }),
+          withTiming(3, { duration: 25 }),
+          withTiming(-2, { duration: 25 }),
+          withTiming(2, { duration: 25 }),
+          withTiming(0, { duration: 25 }),
+        );
+      };
+      doShake();
+      setTimeout(doShake, 200);
+      setTimeout(doShake, 400);
+
+      // Gold flash over enemy grid × 3 (0–0.6s)
+      victoryGridFlashOpacity.value = withSequence(
+        withTiming(0.7, { duration: 100 }),
+        withTiming(0, { duration: 150 }),
+        withTiming(0.7, { duration: 100 }),
+        withTiming(0, { duration: 150 }),
+        withTiming(0.7, { duration: 100 }),
+        withTiming(0, { duration: 150 }),
+      );
+
+      // Dark overlay + VICTORY slams in (0.6s)
+      setTimeout(() => {
+        victoryOverlayOpacity.value = withTiming(0.82, { duration: 400 });
+        victoryWordScale.value = 0.5;
+        victoryWordOpacity.value = 0;
+        victoryWordScale.value = withTiming(1, { duration: 350, easing: Easing.out(Easing.cubic) });
+        victoryWordOpacity.value = withTiming(1, {
+          duration: 200,
+          easing: Easing.out(Easing.cubic),
+        });
+      }, 600);
+
+      // Subtitle fades in (1.0s)
+      setTimeout(() => {
+        victorySubtitleOpacity.value = withTiming(1, {
+          duration: 300,
+          easing: Easing.out(Easing.cubic),
+        });
+      }, 1000);
+
+      // Player fleet pulse (1.2s, loops indefinitely)
+      setTimeout(() => {
+        playerPulseOpacity.value = withRepeat(
+          withSequence(
+            withTiming(0.4, { duration: 600, easing: Easing.inOut(Easing.sin) }),
+            withTiming(0.15, { duration: 600, easing: Easing.inOut(Easing.sin) }),
+          ),
+          -1,
+          false,
+        );
+      }, 1200);
+
+      // Post-game buttons fade in (3.0s)
+      setTimeout(() => {
+        setShowVictoryButtons(true);
+        victoryButtonsOpacity.value = withTiming(1, {
+          duration: 400,
+          easing: Easing.out(Easing.cubic),
+        });
+      }, 3000);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [enemyShipsRemaining, showOpponentField]);
 
   // --- Divider verdict flash (HIT / MISS / SUNK) ---
   const [verdictFlash, setVerdictFlash] = useState<{ text: string; color: string } | null>(null);
@@ -261,12 +391,15 @@ export function BattleView({
   const [confirmingRetreat, setConfirmingRetreat] = useState(false);
   const [isRetreating, setIsRetreating] = useState(false);
   const [submergeX, setSubmergeX] = useState(-1);
+  const [showDefeatButtons, setShowDefeatButtons] = useState(false);
 
   const flagOpacity = useSharedValue(0);
   const flagTranslateY = useSharedValue(10);
   const darkOverlayOpacity = useSharedValue(0);
   const retreatWordOpacity = useSharedValue(0);
-  const blackoutOpacity = useSharedValue(0);
+  const defeatGridFlashOpacity = useSharedValue(0);
+  const defeatSubtitleOpacity = useSharedValue(0);
+  const defeatButtonsOpacity = useSharedValue(0);
 
   const flagAnimStyle = useAnimatedStyle(() => ({
     opacity: flagOpacity.value,
@@ -278,8 +411,14 @@ export function BattleView({
   const retreatWordStyle = useAnimatedStyle(() => ({
     opacity: retreatWordOpacity.value,
   }));
-  const blackoutStyle = useAnimatedStyle(() => ({
-    opacity: blackoutOpacity.value,
+  const defeatGridFlashStyle = useAnimatedStyle(() => ({
+    opacity: defeatGridFlashOpacity.value,
+  }));
+  const defeatSubtitleStyle = useAnimatedStyle(() => ({
+    opacity: defeatSubtitleOpacity.value,
+  }));
+  const defeatButtonsStyle = useAnimatedStyle(() => ({
+    opacity: defeatButtonsOpacity.value,
   }));
 
   // Dims to 50% during enemy turn
@@ -299,6 +438,37 @@ export function BattleView({
       setTimeout(() => impactAsync(ImpactFeedbackStyle.Heavy).catch(() => {}), 400);
     }
 
+    // Three screen-shake bursts (0, 200, 400ms) — mirrors victory
+    const doShake = () => {
+      shakeX.value = withSequence(
+        withTiming(4, { duration: 25 }),
+        withTiming(-4, { duration: 25 }),
+        withTiming(3, { duration: 25 }),
+        withTiming(-3, { duration: 25 }),
+        withTiming(0, { duration: 25 }),
+      );
+      shakeY.value = withSequence(
+        withTiming(-3, { duration: 25 }),
+        withTiming(3, { duration: 25 }),
+        withTiming(-2, { duration: 25 }),
+        withTiming(2, { duration: 25 }),
+        withTiming(0, { duration: 25 }),
+      );
+    };
+    doShake();
+    setTimeout(doShake, 200);
+    setTimeout(doShake, 400);
+
+    // Red flash over player grid × 3 (0–0.6s) — mirrors victory's gold flash
+    defeatGridFlashOpacity.value = withSequence(
+      withTiming(0.7, { duration: 100 }),
+      withTiming(0, { duration: 150 }),
+      withTiming(0.7, { duration: 100 }),
+      withTiming(0, { duration: 150 }),
+      withTiming(0.7, { duration: 100 }),
+      withTiming(0, { duration: 150 }),
+    );
+
     // 1. Flag raised (0–0.4s)
     flagOpacity.value = withTiming(1, { duration: 300, easing: Easing.out(Easing.cubic) });
     flagTranslateY.value = withTiming(-5, { duration: 400, easing: Easing.out(Easing.cubic) });
@@ -308,24 +478,28 @@ export function BattleView({
       setTimeout(() => setSubmergeX(col), 400 + col * 100);
     }
 
-    // 3. Screen darkens + RETREAT word (1.0–1.8s)
+    // 3. Screen darkens + title (1.0s)
     setTimeout(() => {
       darkOverlayOpacity.value = withTiming(0.85, { duration: 800 });
       retreatWordOpacity.value = withTiming(1, { duration: 200, easing: Easing.out(Easing.cubic) });
     }, 1000);
 
-    // 4. Fade to black (1.8–2.5s)
+    // 4. Subtitle fades in (1.4s)
     setTimeout(() => {
-      blackoutOpacity.value = withTiming(1, {
-        duration: 700,
-        easing: Easing.inOut(Easing.cubic),
+      defeatSubtitleOpacity.value = withTiming(1, {
+        duration: 300,
+        easing: Easing.out(Easing.cubic),
       });
-    }, 1800);
+    }, 1400);
 
-    // 5. Navigate
+    // 5. Buttons appear (3.0s)
     setTimeout(() => {
-      onRetreat?.();
-    }, 2500);
+      setShowDefeatButtons(true);
+      defeatButtonsOpacity.value = withTiming(1, {
+        duration: 400,
+        easing: Easing.out(Easing.cubic),
+      });
+    }, 3000);
   };
 
   const handleRetreatPress = async () => {
@@ -350,6 +524,18 @@ export function BattleView({
 
   return (
     <Animated.View style={[styles.battleContent, shakeStyle]}>
+      {/* Dev: force-outcome buttons — bottom-right, battle phase only */}
+      {DEV_SHOW_FORCE_VICTORY && showOpponentField && !isRetreating && !isVictory && (
+        <View style={styles.devButtonsContainer}>
+          <Pressable onPress={onVictory} style={styles.devVictoryButton}>
+            <Text style={styles.devVictoryText}>V</Text>
+          </Pressable>
+          <Pressable onPress={triggerRetreatVisualization} style={styles.devDefeatButton}>
+            <Text style={styles.devDefeatText}>L</Text>
+          </Pressable>
+        </View>
+      )}
+
       {/* Retreat button — bottom-left, dims during enemy turn, hidden once animation begins */}
       {!isRetreating && (
         <Animated.View style={[styles.retreatButton, retreatButtonStyle]}>
@@ -402,6 +588,20 @@ export function BattleView({
         )}
         {/* Player grid — dims on player's turn, glows red on enemy's turn */}
         <Animated.View style={[styles.gridWrapper, playerFieldStyle]}>
+          {/* Defeat: red flash over player grid */}
+          {isRetreating && (
+            <Animated.View
+              style={[StyleSheet.absoluteFill, styles.defeatGridFlash, defeatGridFlashStyle]}
+              pointerEvents="none"
+            />
+          )}
+          {/* Victory: bright pulse over surviving player ship cells */}
+          {isVictory && (
+            <Animated.View
+              style={[StyleSheet.absoluteFill, styles.playerPulseOverlay, playerPulseStyle]}
+              pointerEvents="none"
+            />
+          )}
           {/* White flag — fades in and floats up at retreat start */}
           {isRetreating && (
             <Animated.View style={[styles.retreatFlagWrapper, flagAnimStyle]} pointerEvents="none">
@@ -509,12 +709,59 @@ export function BattleView({
                 ]}
                 pointerEvents="none"
               />
+              {/* Victory: cannon-fire gold flash */}
+              {isVictory && (
+                <Animated.View
+                  style={[StyleSheet.absoluteFill, styles.victoryGridFlash, victoryGridFlashStyle]}
+                  pointerEvents="none"
+                />
+              )}
             </Animated.View>
           </Animated.View>
         )}
       </Animated.View>
 
-      {/* Retreat visualization overlays — rendered last so they sit above all game UI */}
+      {/* Victory visualization overlays */}
+      {isVictory && (
+        <>
+          {/* Dark navy overlay fades in behind the callout */}
+          <Animated.View
+            style={[StyleSheet.absoluteFill, styles.victoryOverlay, victoryOverlayStyle]}
+            pointerEvents="none"
+          />
+          {/* VICTORY callout + subtitle + post-game buttons */}
+          <Animated.View
+            style={[StyleSheet.absoluteFill, styles.victoryCalloutWrapper]}
+            pointerEvents={showVictoryButtons ? 'box-none' : 'none'}>
+            <Animated.Text style={[styles.victoryText, victoryWordStyle]}>VICTORY</Animated.Text>
+            <Animated.Text style={[styles.victorySubtitle, victorySubtitleStyle]}>
+              Enemy fleet destroyed.
+            </Animated.Text>
+            {showVictoryButtons && (
+              <Animated.View style={[styles.victoryButtons, victoryButtonsStyle]}>
+                <Pressable
+                  onPress={onPlayAgain}
+                  style={({ pressed }) => [
+                    styles.playAgainButton,
+                    pressed && styles.playAgainButtonPressed,
+                  ]}>
+                  <Text style={styles.playAgainText}>PLAY AGAIN</Text>
+                </Pressable>
+                <Pressable
+                  onPress={onMakePort}
+                  style={({ pressed }) => [
+                    styles.makePortButton,
+                    pressed && styles.makePortButtonPressed,
+                  ]}>
+                  <Text style={styles.makePortText}>MAKE PORT</Text>
+                </Pressable>
+              </Animated.View>
+            )}
+          </Animated.View>
+        </>
+      )}
+
+      {/* Defeat visualization overlays — rendered last so they sit above all game UI */}
       {isRetreating && (
         <>
           {/* Deep navy screen darkens over 800ms */}
@@ -522,17 +769,37 @@ export function BattleView({
             style={[StyleSheet.absoluteFill, styles.retreatDarkOverlay, darkOverlayStyle]}
             pointerEvents="none"
           />
-          {/* RETREAT word slams in after screen darkens */}
+          {/* Loss title + subtitle + post-game buttons */}
           <Animated.View
-            style={[StyleSheet.absoluteFill, styles.retreatWordOverlay, retreatWordStyle]}
-            pointerEvents="none">
-            <Text style={styles.retreatWordText}>RETREAT</Text>
+            style={[StyleSheet.absoluteFill, styles.retreatWordOverlay]}
+            pointerEvents={showDefeatButtons ? 'box-none' : 'none'}>
+            <Animated.Text style={[styles.retreatWordText, retreatWordStyle]}>
+              LOST AT SEA
+            </Animated.Text>
+            <Animated.Text style={[styles.victorySubtitle, defeatSubtitleStyle]}>
+              Your fleet was lost.
+            </Animated.Text>
+            {showDefeatButtons && (
+              <Animated.View style={[styles.victoryButtons, defeatButtonsStyle]}>
+                <Pressable
+                  onPress={onPlayAgain}
+                  style={({ pressed }) => [
+                    styles.playAgainButton,
+                    pressed && styles.playAgainButtonPressed,
+                  ]}>
+                  <Text style={styles.playAgainText}>REVENGE</Text>
+                </Pressable>
+                <Pressable
+                  onPress={onMakePort}
+                  style={({ pressed }) => [
+                    styles.makePortButton,
+                    pressed && styles.makePortButtonPressed,
+                  ]}>
+                  <Text style={styles.makePortText}>MAKE PORT</Text>
+                </Pressable>
+              </Animated.View>
+            )}
           </Animated.View>
-          {/* Final fade to black before navigation fires */}
-          <Animated.View
-            style={[StyleSheet.absoluteFill, styles.retreatBlackout, blackoutStyle]}
-            pointerEvents="none"
-          />
         </>
       )}
     </Animated.View>
@@ -757,8 +1024,117 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 3 },
     textShadowRadius: 12,
   },
-  retreatBlackout: {
-    zIndex: 30,
-    backgroundColor: '#000000',
+  playerPulseOverlay: {
+    backgroundColor: 'rgba(120, 200, 255, 0.9)',
+    borderRadius: 2,
+  },
+  defeatGridFlash: {
+    backgroundColor: GameColors.red,
+    borderRadius: 2,
+  },
+  victoryGridFlash: {
+    backgroundColor: GameColors.fireGlow,
+    borderRadius: 2,
+  },
+  victoryOverlay: {
+    zIndex: 20,
+    backgroundColor: GameColors.retreatOverlay,
+  },
+  victoryCalloutWrapper: {
+    zIndex: 21,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+  },
+  victoryText: {
+    fontFamily: 'BlackOpsOne',
+    fontSize: 52,
+    letterSpacing: 4,
+    color: GameColors.gold,
+    textShadowColor: 'rgba(255, 200, 0, 0.4)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 20,
+  },
+  victorySubtitle: {
+    fontFamily: 'BlackOpsOne',
+    fontSize: 14,
+    letterSpacing: 2,
+    color: GameColors.label,
+  },
+  victoryButtons: {
+    flexDirection: 'row',
+    gap: 16,
+    marginTop: 32,
+  },
+  playAgainButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderWidth: 2,
+    borderColor: GameColors.fireGold,
+    borderRadius: 4,
+  },
+  playAgainButtonPressed: {
+    backgroundColor: GameColors.fireGoldBgPressed,
+  },
+  playAgainText: {
+    fontFamily: 'BlackOpsOne',
+    fontSize: 13,
+    letterSpacing: 2,
+    color: GameColors.fireGold,
+  },
+  makePortButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderWidth: 1,
+    borderColor: GameColors.blueBorder,
+    borderRadius: 4,
+  },
+  makePortButtonPressed: {
+    backgroundColor: 'rgba(80, 160, 255, 0.1)',
+  },
+  makePortText: {
+    fontFamily: 'BlackOpsOne',
+    fontSize: 13,
+    letterSpacing: 2,
+    color: GameColors.label,
+  },
+  devButtonsContainer: {
+    position: 'absolute',
+    bottom: 24,
+    right: 24,
+    flexDirection: 'row',
+    gap: 8,
+  },
+  devVictoryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: GameColors.fireGold,
+    borderRadius: 4,
+  },
+  devVictoryText: {
+    fontFamily: 'BlackOpsOne',
+    fontSize: 11,
+    letterSpacing: 3,
+    color: GameColors.fireGold,
+  },
+  devDefeatButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: GameColors.red,
+    borderRadius: 4,
+  },
+  devDefeatText: {
+    fontFamily: 'BlackOpsOne',
+    fontSize: 11,
+    letterSpacing: 3,
+    color: GameColors.red,
   },
 });

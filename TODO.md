@@ -1,4 +1,5 @@
 # Tools to install
 
-* lsof
-* tree
+- lsof
+- tree
+- python3
