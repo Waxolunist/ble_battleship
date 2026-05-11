@@ -90,6 +90,14 @@ export const GameColors = {
   fireGold: '#e8c84a',
   fireGoldBg: 'rgba(232, 200, 74, 0.15)',
   fireGoldBgPressed: 'rgba(232, 200, 74, 0.35)',
+
+  // ── Endgame overlays ────────────────────────────────────────────────
+  /** Bright blue pulse over surviving player fleet on victory */
+  playerPulse: 'rgba(120, 200, 255, 0.9)',
+  /** Warm gold glow behind VICTORY text */
+  goldShadow: 'rgba(255, 200, 0, 0.4)',
+  /** Subtle blue highlight on pressed secondary buttons */
+  bluePressedBg: 'rgba(80, 160, 255, 0.1)',
 } as const;
 
 const tintColorLight = '#0a7ea4';

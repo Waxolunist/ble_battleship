@@ -3,6 +3,7 @@ import type { Field, ShotPhase, ShipType } from '@/models/types';
 import { GameColors } from '@/constants/theme';
 import { DEV_SHOW_FORCE_VICTORY } from '@/constants/dev';
 import { useEffect, useRef, useState } from 'react';
+import { HapticPressable } from '@/components/haptic-pressable';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   Easing,
@@ -739,22 +740,22 @@ export function BattleView({
             </Animated.Text>
             {showVictoryButtons && (
               <Animated.View style={[styles.victoryButtons, victoryButtonsStyle]}>
-                <Pressable
+                <HapticPressable
                   onPress={onPlayAgain}
                   style={({ pressed }) => [
                     styles.playAgainButton,
                     pressed && styles.playAgainButtonPressed,
                   ]}>
                   <Text style={styles.playAgainText}>PLAY AGAIN</Text>
-                </Pressable>
-                <Pressable
+                </HapticPressable>
+                <HapticPressable
                   onPress={onMakePort}
                   style={({ pressed }) => [
                     styles.makePortButton,
                     pressed && styles.makePortButtonPressed,
                   ]}>
                   <Text style={styles.makePortText}>MAKE PORT</Text>
-                </Pressable>
+                </HapticPressable>
               </Animated.View>
             )}
           </Animated.View>
@@ -781,22 +782,22 @@ export function BattleView({
             </Animated.Text>
             {showDefeatButtons && (
               <Animated.View style={[styles.victoryButtons, defeatButtonsStyle]}>
-                <Pressable
+                <HapticPressable
                   onPress={onPlayAgain}
                   style={({ pressed }) => [
                     styles.playAgainButton,
                     pressed && styles.playAgainButtonPressed,
                   ]}>
                   <Text style={styles.playAgainText}>REVENGE</Text>
-                </Pressable>
-                <Pressable
+                </HapticPressable>
+                <HapticPressable
                   onPress={onMakePort}
                   style={({ pressed }) => [
                     styles.makePortButton,
                     pressed && styles.makePortButtonPressed,
                   ]}>
                   <Text style={styles.makePortText}>MAKE PORT</Text>
-                </Pressable>
+                </HapticPressable>
               </Animated.View>
             )}
           </Animated.View>
@@ -917,7 +918,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   retreatButtonPressed: {
-    backgroundColor: 'rgba(80, 160, 255, 0.1)',
+    backgroundColor: GameColors.bluePressedBg,
   },
   retreatIcon: {
     fontSize: 10,
@@ -971,7 +972,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   holdButtonPressed: {
-    backgroundColor: 'rgba(80, 160, 255, 0.1)',
+    backgroundColor: GameColors.bluePressedBg,
   },
   holdButtonText: {
     fontFamily: 'BlackOpsOne',
@@ -1025,7 +1026,7 @@ const styles = StyleSheet.create({
     textShadowRadius: 12,
   },
   playerPulseOverlay: {
-    backgroundColor: 'rgba(120, 200, 255, 0.9)',
+    backgroundColor: GameColors.playerPulse,
     borderRadius: 2,
   },
   defeatGridFlash: {
@@ -1051,7 +1052,7 @@ const styles = StyleSheet.create({
     fontSize: 52,
     letterSpacing: 4,
     color: GameColors.gold,
-    textShadowColor: 'rgba(255, 200, 0, 0.4)',
+    textShadowColor: GameColors.goldShadow,
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 20,
   },
@@ -1090,7 +1091,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   makePortButtonPressed: {
-    backgroundColor: 'rgba(80, 160, 255, 0.1)',
+    backgroundColor: GameColors.bluePressedBg,
   },
   makePortText: {
     fontFamily: 'BlackOpsOne',
