@@ -358,6 +358,9 @@ export default function BattleScreen() {
   const fieldsRef = useRef(fields);
   useEffect(() => { fieldsRef.current = fields; }, [fields]);
 
+  // Fired when a ship is sunk — consumed by BattleView to show floating label
+  const [sunkEvent, setSunkEvent] = useState<{ shipType: ShipType; owner: "player" | "enemy" } | null>(null);
+
   // Player fires at an enemy cell
   const handlePlayerFire = useCallback((x: number, y: number) => {
     const cell = opponentFields[y][x];
@@ -370,15 +373,32 @@ export default function BattleScreen() {
     );
     setTimeout(() => {
       const isHit = !!cell.shipPart;
-      setOpponentFields((prev) =>
-        prev.map((row) =>
+
+      // Determine sunk before updating state, using captured opponentFields snapshot
+      let sunkShip: Ship | null = null;
+      if (isHit && cell.shipPart) {
+        const ship = cell.shipPart.ship;
+        const allOtherPartsHit = ship.parts
+          .filter(({ field: pf }) => !(pf.x === x && pf.y === y))
+          .every(({ field: pf }) => opponentFields[pf.y][pf.x].shipPart?.isHit === true);
+        if (allOtherPartsHit) sunkShip = ship;
+      }
+
+      setOpponentFields((prev) => {
+        const withHit = prev.map((row) =>
           row.map((f) =>
             f.x === x && f.y === y
               ? { ...f, status: isHit ? ("hit" as const) : ("miss" as const), shipPart: f.shipPart ? { ...f.shipPart, isHit: true } : null }
               : f,
           ),
-        ),
-      );
+        );
+        if (!sunkShip) return withHit;
+        return withHit.map((row) =>
+          row.map((f) => (f.shipPart?.ship.id === sunkShip!.id ? { ...f, status: "sunk" as const } : f)),
+        );
+      });
+
+      if (sunkShip) setSunkEvent({ shipType: sunkShip.type, owner: "enemy" });
       setTurn("enemy");
     }, 500);
   }, [opponentFields]);
@@ -408,15 +428,33 @@ export default function BattleScreen() {
 
       const t2 = setTimeout(() => {
         const isHit = !!cell.shipPart;
-        setFields((prev) =>
-          prev.map((row) =>
+
+        // Determine sunk using fieldsRef (always latest player fields)
+        let sunkShip: Ship | null = null;
+        if (isHit && cell.shipPart) {
+          const ship = cell.shipPart.ship;
+          const currentFields = fieldsRef.current;
+          const allOtherPartsHit = ship.parts
+            .filter(({ field: pf }) => !(pf.x === x && pf.y === y))
+            .every(({ field: pf }) => currentFields[pf.y][pf.x].shipPart?.isHit === true);
+          if (allOtherPartsHit) sunkShip = ship;
+        }
+
+        setFields((prev) => {
+          const withHit = prev.map((row) =>
             row.map((f) =>
               f.x === x && f.y === y
                 ? { ...f, status: isHit ? ("hit" as const) : ("miss" as const), shipPart: f.shipPart ? { ...f.shipPart, isHit: true } : null }
                 : f,
             ),
-          ),
-        );
+          );
+          if (!sunkShip) return withHit;
+          return withHit.map((row) =>
+            row.map((f) => (f.shipPart?.ship.id === sunkShip!.id ? { ...f, status: "sunk" as const } : f)),
+          );
+        });
+
+        if (sunkShip) setSunkEvent({ shipType: sunkShip.type, owner: "player" });
         setTurn("player");
       }, 500);
 
@@ -547,6 +585,7 @@ export default function BattleScreen() {
             opponentFields={opponentFields}
             showOpponentField={showOpponentField}
             turn={turn}
+            sunkEvent={sunkEvent}
             onEnemyCellPress={handlePlayerFire}
           />
         </Animated.View>

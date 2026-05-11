@@ -25,7 +25,7 @@ export interface Player {
 export interface Field {
   x: number;
   y: number;
-  status: "empty" | "targeted" | "hit" | "miss";
+  status: "empty" | "targeted" | "hit" | "miss" | "sunk";
   shipPart: ShipPart | null;
 }
 

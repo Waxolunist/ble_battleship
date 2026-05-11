@@ -40,7 +40,7 @@ export function computeCell(
 // Renders the ship sprite image clipped to a single grid cell.
 // Horizontal: shifts the image left so the correct column shows.
 // Vertical: rotates 90° and translates so the correct row shows.
-function ShipCellSprite({ part, cellSize }: { part: ShipPart; cellSize: number }) {
+function ShipCellSprite({ part, cellSize, opacity = 1 }: { part: ShipPart; cellSize: number; opacity?: number }) {
   const { ship } = part;
   const image = SHIP_IMAGES[ship.type];
   if (!image) return null;
@@ -63,6 +63,7 @@ function ShipCellSprite({ part, cellSize }: { part: ShipPart; cellSize: number }
           left: -index * (cellSize + GRID_CELL_GAP),
           width: totalSpriteWidth,
           height: cellSize,
+          opacity,
         }}
         resizeMode="stretch"
       />
@@ -70,9 +71,6 @@ function ShipCellSprite({ part, cellSize }: { part: ShipPart; cellSize: number }
   }
 
   // Vertical: rotate the sprite 90° CW.
-  // The full image (totalSpriteWidth × cellSize) is rotated around its own center.
-  // topOffset/leftOffset position the image so that after rotation, the slice
-  // corresponding to `index` aligns with the cell bounds (overflow:hidden clips the rest).
   const topOffset = totalSpriteWidth / 2 - cellSize / 2 - index * (cellSize + GRID_CELL_GAP);
   const leftOffset = cellSize / 2 - totalSpriteWidth / 2;
   return (
@@ -85,6 +83,7 @@ function ShipCellSprite({ part, cellSize }: { part: ShipPart; cellSize: number }
         width: totalSpriteWidth,
         height: cellSize,
         transform: [{ rotate: "90deg" }],
+        opacity,
       }}
       resizeMode="stretch"
     />
@@ -159,6 +158,7 @@ function cellColor(field: Field, previewCells: Set<string>, isPreviewValid: bool
     return isPreviewValid ? "rgba(80, 210, 120, 0.8)" : "rgba(210, 60, 60, 0.8)";
   }
   if (field.status === "targeted") return "rgba(220, 30, 30, 0.9)";
+  if (field.status === "sunk") return "rgba(90, 30, 30, 0.95)";
   if (field.status === "hit") return "rgba(255, 120, 0, 0.9)";
   if (field.status === "miss") return "rgba(10, 10, 15, 0.95)";
   if (field.shipPart && !hideShips) return "rgba(60, 110, 210, 0.75)";
@@ -237,7 +237,10 @@ export const GameField = forwardRef<View, GameFieldProps>(
                     ]}
                     onPress={() => onCellPress?.(field.x, field.y)}
                   >
-                    {field.shipPart && !hideShips && (
+                    {field.shipPart && !hideShips && field.status !== "sunk" && (
+                      <ShipCellSprite part={field.shipPart} cellSize={cellSize} />
+                    )}
+                    {field.shipPart && field.status === "sunk" && (
                       <ShipCellSprite part={field.shipPart} cellSize={cellSize} />
                     )}
                   </Pressable>
