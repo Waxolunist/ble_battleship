@@ -1,6 +1,12 @@
-import { forwardRef } from 'react';
+import { forwardRef, useEffect } from 'react';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import Animated, { runOnJS } from 'react-native-reanimated';
+import Animated, {
+  Easing,
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import type { SharedValue } from 'react-native-reanimated';
 import {
   Image,
@@ -11,7 +17,7 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
-import type { Field, ShipPart, ShipType } from '@/models/types';
+import type { Field, ShipPart, ShotPhase, ShipType } from '@/models/types';
 import { IMAGES } from '@/constants/assets';
 
 const ROW_LABELS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
@@ -117,6 +123,157 @@ interface GameFieldProps {
   onShipDragEnd?: (pageX: number, pageY: number) => void;
   dragX?: SharedValue<number>;
   dragY?: SharedValue<number>;
+  shotAnim?: ShotPhase;
+}
+
+// Animated overlay that plays the three-beat shot resolution effects over the targeted cell.
+// Rendered absolutely inside the wrapper so effects can extend beyond cell bounds.
+function ShotAnimationOverlay({
+  shotAnim,
+  cellSize,
+}: {
+  shotAnim: NonNullable<ShotPhase>;
+  cellSize: number;
+}) {
+  const { x, y, beat, result, reticleColor } = shotAnim;
+
+  // Cell origin within wrapper (header row height + gridBody padding offsets)
+  const cellLeft = LABEL_SIZE + 2 + x * (cellSize + GRID_CELL_GAP);
+  const cellTop = LABEL_SIZE + 3 + y * (cellSize + GRID_CELL_GAP); // 3 = marginBottom(2) + padding(1)
+
+  const reticleScale = useSharedValue(1.8);
+  const reticleOpacity = useSharedValue(0);
+  const flashOpacity = useSharedValue(0);
+  const glowOpacity = useSharedValue(0);
+  const glowScale = useSharedValue(1);
+  const rippleScale = useSharedValue(1);
+  const rippleOpacity = useSharedValue(0);
+
+  useEffect(() => {
+    if (beat === 'locked') {
+      reticleScale.value = 1.8;
+      reticleOpacity.value = 1;
+      flashOpacity.value = 0;
+      glowOpacity.value = 0;
+      rippleOpacity.value = 0;
+      reticleScale.value = withTiming(1, { duration: 400, easing: Easing.out(Easing.cubic) });
+    } else if (beat === 'impact') {
+      reticleOpacity.value = withTiming(0, { duration: 80 });
+      flashOpacity.value = 1;
+      flashOpacity.value = withTiming(0, { duration: 80 });
+    } else if (beat === 'verdict') {
+      if (result === 'hit' || result === 'sunk') {
+        glowOpacity.value = 0.7;
+        glowScale.value = 1;
+        glowScale.value = withTiming(2.5, { duration: 500, easing: Easing.out(Easing.quad) });
+        glowOpacity.value = withTiming(0, { duration: 500, easing: Easing.out(Easing.quad) });
+      } else if (result === 'miss') {
+        rippleScale.value = 1;
+        rippleOpacity.value = 0.35;
+        rippleScale.value = withTiming(3, { duration: 400, easing: Easing.out(Easing.quad) });
+        rippleOpacity.value = withTiming(0, { duration: 400 });
+      }
+    }
+  }, [
+    beat,
+    result,
+    reticleScale,
+    reticleOpacity,
+    flashOpacity,
+    glowOpacity,
+    glowScale,
+    rippleScale,
+    rippleOpacity,
+  ]);
+
+  const reticleStyle = useAnimatedStyle(() => ({
+    opacity: reticleOpacity.value,
+    transform: [{ scale: reticleScale.value }],
+  }));
+  const flashStyle = useAnimatedStyle(() => ({ opacity: flashOpacity.value }));
+  const glowStyle = useAnimatedStyle(() => ({
+    opacity: glowOpacity.value,
+    transform: [{ scale: glowScale.value }],
+  }));
+  const rippleStyle = useAnimatedStyle(() => ({
+    opacity: rippleOpacity.value,
+    transform: [{ scale: rippleScale.value }],
+  }));
+
+  // Glow circle: 2-cell radius on each side of the targeted cell
+  const glowSize = cellSize * 5;
+  const glowOffset = (glowSize - cellSize) / 2;
+
+  return (
+    <>
+      {/* Targeting reticle — gold (player shot) or red (enemy shot), shrinks 1.8x → 1x */}
+      <Animated.View
+        pointerEvents="none"
+        style={[
+          {
+            position: 'absolute',
+            top: cellTop,
+            left: cellLeft,
+            width: cellSize,
+            height: cellSize,
+            borderWidth: 1.5,
+            borderColor: reticleColor,
+            borderRadius: 2,
+          },
+          reticleStyle,
+        ]}
+      />
+      {/* Impact flash — white overlay, 80 ms */}
+      <Animated.View
+        pointerEvents="none"
+        style={[
+          {
+            position: 'absolute',
+            top: cellTop,
+            left: cellLeft,
+            width: cellSize,
+            height: cellSize,
+            backgroundColor: 'white',
+            borderRadius: 1,
+          },
+          flashStyle,
+        ]}
+      />
+      {/* Fire glow — orange radial bloom for hit / sunk, fades over 500 ms */}
+      <Animated.View
+        pointerEvents="none"
+        style={[
+          {
+            position: 'absolute',
+            top: cellTop - glowOffset,
+            left: cellLeft - glowOffset,
+            width: glowSize,
+            height: glowSize,
+            borderRadius: glowSize / 2,
+            backgroundColor: 'rgba(255, 100, 20, 0.55)',
+          },
+          glowStyle,
+        ]}
+      />
+      {/* Ripple ring — expanding circle for miss, fades over 400 ms */}
+      <Animated.View
+        pointerEvents="none"
+        style={[
+          {
+            position: 'absolute',
+            top: cellTop,
+            left: cellLeft,
+            width: cellSize,
+            height: cellSize,
+            borderWidth: 1.5,
+            borderColor: 'rgba(100, 180, 255, 0.5)',
+            borderRadius: cellSize / 2,
+          },
+          rippleStyle,
+        ]}
+      />
+    </>
+  );
 }
 
 function DraggableShipCell({
@@ -207,6 +364,7 @@ export const GameField = forwardRef<View, GameFieldProps>(function GameField(
     onShipDragEnd,
     dragX,
     dragY,
+    shotAnim,
   },
   ref,
 ) {
@@ -272,6 +430,15 @@ export const GameField = forwardRef<View, GameFieldProps>(function GameField(
           </View>
         ))}
       </View>
+
+      {/* Shot animation overlay — absolutely positioned so effects can extend beyond cell bounds */}
+      {shotAnim && (
+        <ShotAnimationOverlay
+          key={`${shotAnim.x}-${shotAnim.y}`}
+          shotAnim={shotAnim}
+          cellSize={cellSize}
+        />
+      )}
     </View>
   );
 });

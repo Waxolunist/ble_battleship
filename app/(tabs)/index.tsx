@@ -2,6 +2,7 @@ import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
 import { FadeIn } from '@/components/fade-in';
+import { useGameStore } from '@/store/useGameStore';
 import {
   ImageBackground,
   Keyboard,
@@ -17,6 +18,7 @@ import { IMAGES } from '@/constants/assets';
 
 export default function HomeScreen() {
   const router = useRouter();
+  const resetGame = useGameStore(s => s.resetGame);
   const [name, setName] = useState('');
   const [confirmed, setConfirmed] = useState(false);
   const inputRef = useRef<TextInput>(null);
@@ -47,7 +49,7 @@ export default function HomeScreen() {
                 THE SEA DEMANDS BLOOD.
               </Text>
               <HapticPressable
-                onPress={() => router.push('/battle')}
+                onPress={() => { resetGame(); router.push('/battle'); }}
                 style={({ pressed }) => [styles.readyButton, pressed && styles.readyButtonPressed]}>
                 <Text style={styles.readyButtonText}>⚔ TO THE BATTLE STATION</Text>
               </HapticPressable>

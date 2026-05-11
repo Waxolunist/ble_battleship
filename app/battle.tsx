@@ -29,7 +29,7 @@ export default function BattleScreen() {
   // Hooks
   const gestures = usePlacementGestures(cellSize);
   const animations = useBattleAnimations();
-  const { onPlayerFire } = useCombat();
+  const { onPlayerFire, shotPhase } = useCombat();
 
   return (
     <Animated.View style={[styles.background, animations.screenStyle]}>
@@ -76,6 +76,7 @@ export default function BattleScreen() {
             showOpponentField={showOpponentField}
             turn={turn}
             sunkEvent={sunkEvent}
+            shotPhase={shotPhase}
             onEnemyCellPress={onPlayerFire}
           />
         </Animated.View>

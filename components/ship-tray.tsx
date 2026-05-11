@@ -1,3 +1,4 @@
+import { HapticPressable } from '@/components/haptic-pressable';
 import { IMAGES } from '@/constants/assets';
 import type { ShipType } from '@/models/types';
 import { SHIP_FLEET, SHIP_SIZES } from '@/models/types';
@@ -161,9 +162,11 @@ export const ShipTray = forwardRef<View, ShipTrayProps>(function ShipTray(
           />
         ))}
       </View>
-      <Pressable onPress={onRandomize} style={styles.shuffleButton}>
+      <HapticPressable
+        onPress={onRandomize}
+        style={({ pressed }) => [styles.shuffleButton, pressed && styles.shuffleButtonPressed]}>
         <Text style={styles.shuffleIcon}>⇄</Text>
-      </Pressable>
+      </HapticPressable>
     </View>
   );
 });
@@ -261,6 +264,9 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  shuffleButtonPressed: {
+    backgroundColor: 'rgba(255,255,255,0.15)',
   },
   shuffleIcon: {
     color: '#fff',

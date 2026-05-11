@@ -45,6 +45,7 @@ interface GameActions {
   setTurn: (turn: 'player' | 'enemy') => void;
   setSunkEvent: (event: { shipType: ShipType; owner: 'player' | 'enemy' } | null) => void;
   startBattle: () => void;
+  resetGame: () => void;
 }
 
 export const useGameStore = create<GameState & GameActions>((set, get) => ({
@@ -130,7 +131,25 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     set({ sunkEvent: event });
   },
 
+  resetGame() {
+    set({
+      fields: createGameField(PLAYER).fields,
+      opponentFields: makeInitialOpponentFields(),
+      placedShips: new Set(),
+      orientations: makeInitialOrientations(),
+      turn: 'player',
+      showOpponentField: false,
+      sunkEvent: null,
+    });
+  },
+
   startBattle() {
-    set({ showOpponentField: true });
+    set(s => ({
+      showOpponentField: true,
+      opponentFields: makeInitialOpponentFields(),
+      fields: s.fields.map(row => row.map(f => ({ ...f, status: 'empty' as const }))),
+      turn: 'player',
+      sunkEvent: null,
+    }));
   },
 }));

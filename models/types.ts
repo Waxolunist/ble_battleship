@@ -60,3 +60,12 @@ export interface Game {
   players: [Player, Player];
   gameFields: [GameField, GameField];
 }
+
+export type ShotPhase = {
+  x: number;
+  y: number;
+  grid: 'player' | 'opponent';
+  beat: 'locked' | 'impact' | 'verdict';
+  result?: 'hit' | 'miss' | 'sunk';
+  reticleColor: string;
+} | null;
