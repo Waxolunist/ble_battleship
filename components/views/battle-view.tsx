@@ -54,6 +54,8 @@ export type BattleViewProps = {
   onVictory?: () => void;
   onPlayAgain?: () => void;
   onMakePort?: () => void;
+  onGameEnd?: (outcome: 'victory' | 'defeat') => void;
+  onSinkAllPlayerShips?: () => void;
 };
 
 export function BattleView({
@@ -67,6 +69,8 @@ export function BattleView({
   onVictory,
   onPlayAgain,
   onMakePort,
+  onGameEnd,
+  onSinkAllPlayerShips,
 }: BattleViewProps) {
   // 0 = player's turn, 1 = enemy's turn — transitions smoothly on change
   const turnSV = useSharedValue(0);
@@ -233,6 +237,7 @@ export function BattleView({
     if (!showOpponentField || hasTriggeredVictory.current || enemyShipsRemaining !== 0) return;
     hasTriggeredVictory.current = true;
     setIsVictory(true);
+    onGameEnd?.('victory');
 
     (async () => {
       // Haptics: medium × 3 → heavy
@@ -428,6 +433,7 @@ export function BattleView({
   const triggerRetreatVisualization = async () => {
     setConfirmingRetreat(false);
     setIsRetreating(true);
+    onGameEnd?.('defeat');
 
     // Haptics: light → light → heavy (defeat sequence)
     if (Platform.OS !== 'web') {
@@ -529,7 +535,12 @@ export function BattleView({
           <Pressable onPress={onVictory} style={styles.devVictoryButton}>
             <Text style={styles.devVictoryText}>V</Text>
           </Pressable>
-          <Pressable onPress={triggerRetreatVisualization} style={styles.devDefeatButton}>
+          <Pressable
+            onPress={() => {
+              onSinkAllPlayerShips?.();
+              triggerRetreatVisualization();
+            }}
+            style={styles.devDefeatButton}>
             <Text style={styles.devDefeatText}>L</Text>
           </Pressable>
         </View>

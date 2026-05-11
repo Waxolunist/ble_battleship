@@ -98,6 +98,18 @@ export const GameColors = {
   goldShadow: 'rgba(255, 200, 0, 0.4)',
   /** Subtle blue highlight on pressed secondary buttons */
   bluePressedBg: 'rgba(80, 160, 255, 0.1)',
+
+  // ── Stats screen ─────────────────────────────────────────────────────
+  /** Stats section card background */
+  statSectionBg: 'rgba(8, 20, 60, 0.65)',
+  /** Empty portion of a stat bar */
+  statBarTrack: 'rgba(255, 255, 255, 0.08)',
+  /** Win-rate / accuracy bar fill */
+  statBarWin: 'rgba(255, 200, 50, 0.85)',
+  /** Loss / ships-lost bar fill */
+  statBarLoss: 'rgba(255, 80, 80, 0.75)',
+  /** Kill bar fill */
+  statBarKill: 'rgba(100, 210, 160, 0.8)',
 } as const;
 
 const tintColorLight = '#0a7ea4';

@@ -9,6 +9,7 @@ import { usePlacementGestures } from '@/hooks/usePlacementGestures';
 import { SHIP_FLEET } from '@/models/types';
 import { useGameStore } from '@/store/useGameStore';
 import { useCaptainStore } from '@/store/useCaptainStore';
+import { useStatsStore, computeFieldShotStats, computeSunkShipTypes } from '@/store/useStatsStore';
 import { useRouter } from 'expo-router';
 import { Image, ImageBackground, StyleSheet, useWindowDimensions, View } from 'react-native';
 import Animated from 'react-native-reanimated';
@@ -31,7 +32,9 @@ export default function BattleScreen() {
   const sunkEvent = useGameStore(s => s.sunkEvent);
   const resetGame = useGameStore(s => s.resetGame);
   const sinkAllOpponentShips = useGameStore(s => s.sinkAllOpponentShips);
+  const sinkAllPlayerShips = useGameStore(s => s.sinkAllPlayerShips);
   const captainName = useCaptainStore(s => s.captainName);
+  const recordGame = useStatsStore(s => s.recordGame);
 
   // Hooks
   const gestures = usePlacementGestures(cellSize);
@@ -40,6 +43,18 @@ export default function BattleScreen() {
 
   const handleVictory = () => {
     sinkAllOpponentShips();
+  };
+
+  const handleGameEnd = (outcome: 'victory' | 'defeat') => {
+    const { fields: f, opponentFields: of_ } = useGameStore.getState();
+    const { hits, misses } = computeFieldShotStats(of_);
+    recordGame({
+      outcome,
+      hits,
+      misses,
+      enemyShipsSunk: computeSunkShipTypes(of_),
+      playerShipsLost: computeSunkShipTypes(f),
+    });
   };
 
   const handlePlayAgain = () => {
@@ -103,6 +118,8 @@ export default function BattleScreen() {
             onVictory={handleVictory}
             onPlayAgain={handlePlayAgain}
             onMakePort={handleMakePort}
+            onGameEnd={handleGameEnd}
+            onSinkAllPlayerShips={sinkAllPlayerShips}
           />
         </Animated.View>
 

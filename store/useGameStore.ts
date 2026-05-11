@@ -47,6 +47,7 @@ interface GameActions {
   startBattle: () => void;
   resetGame: () => void;
   sinkAllOpponentShips: () => void;
+  sinkAllPlayerShips: () => void;
 }
 
 export const useGameStore = create<GameState & GameActions>((set, get) => ({
@@ -147,6 +148,18 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
   sinkAllOpponentShips() {
     set(s => ({
       opponentFields: s.opponentFields.map(row =>
+        row.map(f =>
+          f.shipPart
+            ? { ...f, status: 'sunk' as const, shipPart: { ...f.shipPart, isHit: true } }
+            : f,
+        ),
+      ),
+    }));
+  },
+
+  sinkAllPlayerShips() {
+    set(s => ({
+      fields: s.fields.map(row =>
         row.map(f =>
           f.shipPart
             ? { ...f, status: 'sunk' as const, shipPart: { ...f.shipPart, isHit: true } }
