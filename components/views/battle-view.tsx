@@ -16,6 +16,30 @@ import Animated, {
 
 type SunkEvent = { shipType: ShipType; owner: 'player' | 'enemy' } | null;
 
+const PLAYER_COUNTER_COLOR = 'rgba(100, 160, 255, 0.9)';
+const ENEMY_COUNTER_COLOR = '#FF5050';
+
+function countShipsRemaining(fields: Field[][]): number {
+  const shipSunkMap = new Map<string, boolean>();
+  for (const row of fields) {
+    for (const cell of row) {
+      if (!cell.shipPart) continue;
+      const id = cell.shipPart.ship.id;
+      if (!shipSunkMap.has(id)) {
+        shipSunkMap.set(id, true);
+      }
+      if (cell.status !== 'sunk') {
+        shipSunkMap.set(id, false);
+      }
+    }
+  }
+  let remaining = 0;
+  for (const isSunk of shipSunkMap.values()) {
+    if (!isSunk) remaining++;
+  }
+  return remaining;
+}
+
 export type BattleViewProps = {
   fields: Field[][];
   opponentFields: Field[][];
@@ -83,6 +107,52 @@ export function BattleView({
   const dividerLineStyle = useAnimatedStyle(() => ({
     opacity: dividerPulse.value,
   }));
+
+  // --- Counter animations ---
+  const playerCountScale = useSharedValue(1);
+  const enemyCountScale = useSharedValue(1);
+  const playerFlashOpacity = useSharedValue(0);
+  const enemyFlashOpacity = useSharedValue(0);
+  const [playerFlashColor, setPlayerFlashColor] = useState<string | null>(null);
+  const [enemyFlashColor, setEnemyFlashColor] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!sunkEvent) return;
+
+    const scaleSV = sunkEvent.owner === 'player' ? playerCountScale : enemyCountScale;
+    const flashOpacitySV = sunkEvent.owner === 'player' ? playerFlashOpacity : enemyFlashOpacity;
+    const flashColor = sunkEvent.owner === 'player' ? '#FF5050' : '#FFC832';
+    const setFlash = sunkEvent.owner === 'player' ? setPlayerFlashColor : setEnemyFlashColor;
+
+    setFlash(flashColor);
+    scaleSV.value = withSequence(
+      withTiming(1.4, { duration: 200 }),
+      withTiming(1, { duration: 200 }),
+    );
+    flashOpacitySV.value = withSequence(
+      withTiming(1, { duration: 80 }),
+      withTiming(1, { duration: 240 }),
+      withTiming(0, { duration: 200 }),
+    );
+    const t = setTimeout(() => setFlash(null), 520);
+    return () => clearTimeout(t);
+  }, [sunkEvent, playerCountScale, enemyCountScale, playerFlashOpacity, enemyFlashOpacity]);
+
+  const playerCountScaleStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: playerCountScale.value }],
+  }));
+  const enemyCountScaleStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: enemyCountScale.value }],
+  }));
+  const playerFlashOpacityStyle = useAnimatedStyle(() => ({
+    opacity: playerFlashOpacity.value,
+  }));
+  const enemyFlashOpacityStyle = useAnimatedStyle(() => ({
+    opacity: enemyFlashOpacity.value,
+  }));
+
+  const playerShipsRemaining = countShipsRemaining(fields);
+  const enemyShipsRemaining = countShipsRemaining(opponentFields);
 
   // --- Screen shake on impact beat ---
   const shakeX = useSharedValue(0);
@@ -217,6 +287,22 @@ export function BattleView({
           <Animated.View entering={FadeInDown.duration(500).easing(Easing.out(Easing.cubic))}>
             {/* Divider — swaps text and color with each turn; flashes verdict on shot resolve */}
             <View style={styles.divider}>
+              {/* Left counter — player ships remaining */}
+              <Animated.View style={[styles.counterWrapper, playerCountScaleStyle]}>
+                <View style={styles.shipIconPlayer} />
+                <View style={styles.counterTextContainer}>
+                  <Text style={[styles.counterText, { color: PLAYER_COUNTER_COLOR }]}>
+                    {playerShipsRemaining}
+                  </Text>
+                  {playerFlashColor && (
+                    <Animated.Text
+                      style={[styles.counterText, styles.counterFlashText, { color: playerFlashColor }, playerFlashOpacityStyle]}>
+                      {playerShipsRemaining}
+                    </Animated.Text>
+                  )}
+                </View>
+              </Animated.View>
+
               <Animated.View
                 style={[styles.dividerLine, dividerLineStyle, { backgroundColor: dividerColor }]}
               />
@@ -239,6 +325,22 @@ export function BattleView({
               <Animated.View
                 style={[styles.dividerLine, dividerLineStyle, { backgroundColor: dividerColor }]}
               />
+
+              {/* Right counter — enemy ships remaining */}
+              <Animated.View style={[styles.counterWrapper, enemyCountScaleStyle]}>
+                <View style={styles.counterTextContainer}>
+                  <Text style={[styles.counterText, { color: ENEMY_COUNTER_COLOR }]}>
+                    {enemyShipsRemaining}
+                  </Text>
+                  {enemyFlashColor && (
+                    <Animated.Text
+                      style={[styles.counterText, styles.counterFlashText, { color: enemyFlashColor }, enemyFlashOpacityStyle]}>
+                      {enemyShipsRemaining}
+                    </Animated.Text>
+                  )}
+                </View>
+                <View style={styles.shipIconEnemy} />
+              </Animated.View>
             </View>
 
             {/* Enemy grid — glows gold on player's turn, dims on enemy's turn */}
@@ -310,6 +412,43 @@ const styles = StyleSheet.create({
     position: 'absolute',
     fontFamily: 'BlackOpsOne',
     fontSize: 13,
+  },
+  counterWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  shipIconPlayer: {
+    width: 0,
+    height: 0,
+    borderTopWidth: 3,
+    borderBottomWidth: 3,
+    borderLeftWidth: 6,
+    borderTopColor: 'transparent',
+    borderBottomColor: 'transparent',
+    borderLeftColor: PLAYER_COUNTER_COLOR,
+  },
+  shipIconEnemy: {
+    width: 0,
+    height: 0,
+    borderTopWidth: 3,
+    borderBottomWidth: 3,
+    borderRightWidth: 6,
+    borderTopColor: 'transparent',
+    borderBottomColor: 'transparent',
+    borderRightColor: ENEMY_COUNTER_COLOR,
+  },
+  counterTextContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  counterText: {
+    fontSize: 20,
+    fontWeight: '700',
+    letterSpacing: 3,
+  },
+  counterFlashText: {
+    position: 'absolute',
   },
   sunkLabel: {
     position: 'absolute',
