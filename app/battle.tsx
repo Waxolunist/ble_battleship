@@ -4,11 +4,10 @@ import { BattleView } from "@/components/views/battle-view";
 import { PlacementView } from "@/components/views/placement-view";
 import { IMAGES } from "@/constants/assets";
 import { pickAiTarget } from "@/engine/ai";
-import { applyFire } from "@/engine/combat";
-import { buildPreviewCells, isValidPlacement, placeShip, tryRandomPlacement } from "@/engine/placement";
-import { createGameField } from "@/models/game-factory";
-import type { Field, Orientation, ShipType } from "@/models/types";
+import { buildPreviewCells, isValidPlacement } from "@/engine/placement";
+import type { ShipType } from "@/models/types";
 import { SHIP_FLEET } from "@/models/types";
+import { useGameStore } from "@/store/useGameStore";
 import { useNavigation } from "@react-navigation/native";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -27,8 +26,6 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 
-const PLAYER = { id: "1", name: "CAPTAIN", isAI: false };
-const AI_PLAYER = { id: "2", name: "ENEMY", isAI: true };
 const GRID_PADDING = 32;
 const DRAG_OFFSET_X = 24;
 const DRAG_OFFSET_Y = 3 * 48;
@@ -42,26 +39,25 @@ export default function BattleScreen() {
     (width - GRID_PADDING * 2 - LABEL_SIZE) / 10,
   );
 
-  // Game state
-  const [fields, setFields] = useState<Field[][]>(
-    () => createGameField(PLAYER).fields,
-  );
-  const [opponentFields, setOpponentFields] = useState<Field[][]>(() => {
-    const result = tryRandomPlacement(createGameField(AI_PLAYER).fields);
-    return result ? result.fields : createGameField(AI_PLAYER).fields;
-  });
-  const [placedShips, setPlacedShips] = useState<Set<ShipType>>(new Set());
-  const [orientations, setOrientations] = useState<
-    Record<ShipType, Orientation>
-  >(
-    () =>
-      Object.fromEntries(SHIP_FLEET.map((t) => [t, "horizontal"])) as Record<
-        ShipType,
-        Orientation
-      >,
-  );
+  // Game state from store
+  const fields = useGameStore((s) => s.fields);
+  const opponentFields = useGameStore((s) => s.opponentFields);
+  const placedShips = useGameStore((s) => s.placedShips);
+  const orientations = useGameStore((s) => s.orientations);
+  const turn = useGameStore((s) => s.turn);
+  const showOpponentField = useGameStore((s) => s.showOpponentField);
+  const sunkEvent = useGameStore((s) => s.sunkEvent);
 
-  // Drag state
+  const placeShipOnBoard = useGameStore((s) => s.placeShipOnBoard);
+  const removeShipFromBoard = useGameStore((s) => s.removeShipFromBoard);
+  const toggleOrientation = useGameStore((s) => s.toggleOrientation);
+  const randomizeFleet = useGameStore((s) => s.randomizeFleet);
+  const markTargeted = useGameStore((s) => s.markTargeted);
+  const resolveShot = useGameStore((s) => s.resolveShot);
+  const setTurn = useGameStore((s) => s.setTurn);
+  const startBattle = useGameStore((s) => s.startBattle);
+
+  // Local drag UI state
   const [draggingShip, setDraggingShip] = useState<ShipType | null>(null);
   const draggingShipRef = useRef<ShipType | null>(null);
   const draggingFromGridRef = useRef<string | null>(null);
@@ -105,11 +101,7 @@ export default function BattleScreen() {
         cellSize,
       );
       const cells = buildPreviewCells(ship, startX, startY, orientation);
-      const valid = isValidPlacement(
-        cells,
-        fields,
-        draggingFromGridRef.current ?? undefined,
-      );
+      const valid = isValidPlacement(cells, fields, draggingFromGridRef.current ?? undefined);
 
       setPreviewCells(new Set(cells.map((c) => `${c.x}-${c.y}`)));
       setIsPreviewValid(valid);
@@ -189,11 +181,7 @@ export default function BattleScreen() {
         cellSize,
       );
       const cells = buildPreviewCells(ship, startX, startY, orientation);
-      const valid = isValidPlacement(
-        cells,
-        fields,
-        fromGridShipId ?? undefined,
-      );
+      const valid = isValidPlacement(cells, fields, fromGridShipId ?? undefined);
 
       if (!valid && fromGridShipId) {
         const tray = trayBoundsRef.current;
@@ -204,116 +192,51 @@ export default function BattleScreen() {
           pageY >= tray.y &&
           pageY <= tray.y + tray.height
         ) {
-          setFields((prev) =>
-            prev.map((row) =>
-              row.map((f) =>
-                f.shipPart?.ship.id === fromGridShipId
-                  ? { ...f, shipPart: null }
-                  : f,
-              ),
-            ),
-          );
-          setPlacedShips((prev) => {
-            const next = new Set(prev);
-            next.delete(ship);
-            return next;
-          });
+          removeShipFromBoard(ship, fromGridShipId);
           return;
         }
       }
 
       if (!valid) return;
 
-      setFields((prev) => {
-        const withoutOld = fromGridShipId
-          ? prev.map((row) =>
-              row.map((f) =>
-                f.shipPart?.ship.id === fromGridShipId
-                  ? { ...f, shipPart: null }
-                  : f,
-              ),
-            )
-          : prev;
-        return placeShip(withoutOld, ship, cells, orientation);
-      });
-      setPlacedShips((prev) => new Set([...prev, ship]));
+      placeShipOnBoard(ship, cells, orientation, fromGridShipId);
     },
-    [orientations, cellSize, fields],
+    [orientations, cellSize, fields, placeShipOnBoard, removeShipFromBoard],
   );
 
   const handleOrientationToggle = useCallback((ship: ShipType) => {
-    setOrientations((prev) => ({
-      ...prev,
-      [ship]: prev[ship] === "horizontal" ? "vertical" : "horizontal",
-    }));
-  }, []);
+    toggleOrientation(ship);
+  }, [toggleOrientation]);
 
   const handleRandomize = useCallback(() => {
-    const result = tryRandomPlacement(createGameField(PLAYER).fields);
-    if (!result) return;
-    setFields(result.fields);
-    setOrientations(result.orientations);
-    setPlacedShips(new Set(SHIP_FLEET));
-  }, []);
-
-  // Screen exit animation
-  const screenTranslateY = useSharedValue(0);
-
-  // Placement phase fade-out animations
-  const fireOpacity = useSharedValue(1);
-  const fireTopTranslateY = useSharedValue(0);
-  const fireBottomTranslateY = useSharedValue(0);
-  const playerFieldTranslateY = useSharedValue(0);
-
-  // Battle phase fade-in
-  const battlePhaseOpacity = useSharedValue(0);
-  const [showOpponentField, setShowOpponentField] = useState(false);
-  const [turn, setTurn] = useState<"player" | "enemy">("player");
-
-  // Ref so AI effect always reads latest player fields without stale closure
-  const fieldsRef = useRef(fields);
-  useEffect(() => { fieldsRef.current = fields; }, [fields]);
-
-  // Fired when a ship is sunk — consumed by BattleView to show floating label
-  const [sunkEvent, setSunkEvent] = useState<{ shipType: ShipType; owner: "player" | "enemy" } | null>(null);
+    randomizeFleet();
+  }, [randomizeFleet]);
 
   // Player fires at an enemy cell
   const handlePlayerFire = useCallback((x: number, y: number) => {
-    if (opponentFields[y][x].status !== "empty") return;
+    if (useGameStore.getState().opponentFields[y][x].status !== "empty") return;
 
-    setOpponentFields((prev) =>
-      prev.map((row) =>
-        row.map((f) => (f.x === x && f.y === y ? { ...f, status: "targeted" as const } : f)),
-      ),
-    );
+    markTargeted("opponent", x, y);
     setTimeout(() => {
-      const { fields: next, sunkShip } = applyFire(opponentFields, x, y);
-      setOpponentFields(next);
-      if (sunkShip) setSunkEvent({ shipType: sunkShip.type, owner: "enemy" });
+      resolveShot("opponent", x, y);
       setTurn("enemy");
     }, 500);
-  }, [opponentFields]);
+  }, [markTargeted, resolveShot, setTurn]);
 
   // Enemy AI turn
   useEffect(() => {
     if (turn !== "enemy") return;
 
-    const target = pickAiTarget(fieldsRef.current);
+    const target = pickAiTarget(useGameStore.getState().fields);
     if (!target) return;
 
     const { x, y } = target;
 
     const t1 = setTimeout(() => {
-      setFields((prev) =>
-        prev.map((row) =>
-          row.map((f) => (f.x === x && f.y === y ? { ...f, status: "targeted" as const } : f)),
-        ),
-      );
+      markTargeted("player", x, y);
 
       const t2 = setTimeout(() => {
-        const { fields: next, sunkShip } = applyFire(fieldsRef.current, x, y);
-        setFields(next);
-        if (sunkShip) setSunkEvent({ shipType: sunkShip.type, owner: "player" });
+        resolveShot("player", x, y);
         setTurn("player");
       }, 500);
 
@@ -321,9 +244,15 @@ export default function BattleScreen() {
     }, 800);
 
     return () => clearTimeout(t1);
-  }, [turn]);
+  }, [turn, markTargeted, resolveShot, setTurn]);
 
-  // Commence firing flash
+  // Animations
+  const screenTranslateY = useSharedValue(0);
+  const fireOpacity = useSharedValue(1);
+  const fireTopTranslateY = useSharedValue(0);
+  const fireBottomTranslateY = useSharedValue(0);
+  const playerFieldTranslateY = useSharedValue(0);
+  const battlePhaseOpacity = useSharedValue(0);
   const flashOpacity = useSharedValue(0);
   const flashScale = useSharedValue(0.2);
 
@@ -370,7 +299,7 @@ export default function BattleScreen() {
       easing: Easing.out(Easing.cubic),
     });
     setTimeout(() => {
-      setShowOpponentField(true);
+      startBattle();
       flashScale.value = 0.2;
       flashOpacity.value = withSequence(
         withTiming(1, { duration: 600, easing: Easing.out(Easing.cubic) }),
