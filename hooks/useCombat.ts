@@ -43,7 +43,14 @@ export function useCombat(): {
         const field = useGameStore.getState().opponentFields[y][x];
         const result: 'hit' | 'miss' | 'sunk' =
           field.status === 'sunk' ? 'sunk' : field.status === 'hit' ? 'hit' : 'miss';
-        setShotPhase({ x, y, grid: 'opponent', beat: 'verdict', result, reticleColor: GameColors.gold });
+        setShotPhase({
+          x,
+          y,
+          grid: 'opponent',
+          beat: 'verdict',
+          result,
+          reticleColor: GameColors.gold,
+        });
         const hapticStyle =
           result === 'sunk'
             ? Haptics.ImpactFeedbackStyle.Heavy

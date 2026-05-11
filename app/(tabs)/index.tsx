@@ -49,7 +49,10 @@ export default function HomeScreen() {
                 THE SEA DEMANDS BLOOD.
               </Text>
               <HapticPressable
-                onPress={() => { resetGame(); router.push('/battle'); }}
+                onPress={() => {
+                  resetGame();
+                  router.push('/battle');
+                }}
                 style={({ pressed }) => [styles.readyButton, pressed && styles.readyButtonPressed]}>
                 <Text style={styles.readyButtonText}>⚔ TO THE BATTLE STATION</Text>
               </HapticPressable>
