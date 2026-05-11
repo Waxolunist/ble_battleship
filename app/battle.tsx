@@ -351,6 +351,7 @@ export default function BattleScreen() {
   // Battle phase fade-in
   const battlePhaseOpacity = useSharedValue(0);
   const [showOpponentField, setShowOpponentField] = useState(false);
+  const [turn, setTurn] = useState<"player" | "enemy">("player");
 
   // Commence firing flash
   const flashOpacity = useSharedValue(0);
@@ -472,6 +473,7 @@ export default function BattleScreen() {
             fields={fields}
             opponentFields={opponentFields}
             showOpponentField={showOpponentField}
+            turn={turn}
           />
         </Animated.View>
 
