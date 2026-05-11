@@ -257,37 +257,91 @@ export function BattleView({
   const dividerText = isPlayerTurn ? 'SELECT TARGET' : 'INCOMING FIRE';
   const dividerColor = isPlayerTurn ? GameColors.gold : GameColors.red;
 
-  // --- Retreat button ---
+  // --- Retreat button + visualization ---
   const [confirmingRetreat, setConfirmingRetreat] = useState(false);
+  const [isRetreating, setIsRetreating] = useState(false);
+  const [submergeX, setSubmergeX] = useState(-1);
+
+  const flagOpacity = useSharedValue(0);
+  const flagTranslateY = useSharedValue(10);
+  const darkOverlayOpacity = useSharedValue(0);
+  const retreatWordOpacity = useSharedValue(0);
+  const blackoutOpacity = useSharedValue(0);
+
+  const flagAnimStyle = useAnimatedStyle(() => ({
+    opacity: flagOpacity.value,
+    transform: [{ translateY: flagTranslateY.value }],
+  }));
+  const darkOverlayStyle = useAnimatedStyle(() => ({
+    opacity: darkOverlayOpacity.value,
+  }));
+  const retreatWordStyle = useAnimatedStyle(() => ({
+    opacity: retreatWordOpacity.value,
+  }));
+  const blackoutStyle = useAnimatedStyle(() => ({
+    opacity: blackoutOpacity.value,
+  }));
 
   // Dims to 50% during enemy turn
   const retreatButtonStyle = useAnimatedStyle(() => ({
     opacity: interpolate(turnSV.value, [0, 1], [1, 0.5]),
   }));
 
+  const triggerRetreatVisualization = async () => {
+    setConfirmingRetreat(false);
+    setIsRetreating(true);
+
+    // Haptics: light → light → heavy (defeat sequence)
+    if (Platform.OS !== 'web') {
+      const { impactAsync, ImpactFeedbackStyle } = await import('expo-haptics');
+      impactAsync(ImpactFeedbackStyle.Light).catch(() => {});
+      setTimeout(() => impactAsync(ImpactFeedbackStyle.Light).catch(() => {}), 200);
+      setTimeout(() => impactAsync(ImpactFeedbackStyle.Heavy).catch(() => {}), 400);
+    }
+
+    // 1. Flag raised (0–0.4s)
+    flagOpacity.value = withTiming(1, { duration: 300, easing: Easing.out(Easing.cubic) });
+    flagTranslateY.value = withTiming(-5, { duration: 400, easing: Easing.out(Easing.cubic) });
+
+    // 2. Fleet submersion wave (0.4–1.4s), one column per 100ms
+    for (let col = 0; col < 10; col++) {
+      setTimeout(() => setSubmergeX(col), 400 + col * 100);
+    }
+
+    // 3. Screen darkens + RETREAT word (1.0–1.8s)
+    setTimeout(() => {
+      darkOverlayOpacity.value = withTiming(0.85, { duration: 800 });
+      retreatWordOpacity.value = withTiming(1, { duration: 200, easing: Easing.out(Easing.cubic) });
+    }, 1000);
+
+    // 4. Fade to black (1.8–2.5s)
+    setTimeout(() => {
+      blackoutOpacity.value = withTiming(1, {
+        duration: 700,
+        easing: Easing.inOut(Easing.cubic),
+      });
+    }, 1800);
+
+    // 5. Navigate
+    setTimeout(() => {
+      onRetreat?.();
+    }, 2500);
+  };
+
   const handleRetreatPress = async () => {
     if (Platform.OS !== 'web') {
       const { impactAsync, ImpactFeedbackStyle } = await import('expo-haptics');
-      impactAsync(ImpactFeedbackStyle.Medium);
+      impactAsync(ImpactFeedbackStyle.Medium).catch(() => {});
     }
     setConfirmingRetreat(true);
   };
 
-  const handleRetreatLongPress = async () => {
-    if (Platform.OS !== 'web') {
-      const { impactAsync, ImpactFeedbackStyle } = await import('expo-haptics');
-      impactAsync(ImpactFeedbackStyle.Heavy);
-    }
-    onRetreat?.();
+  const handleRetreatLongPress = () => {
+    triggerRetreatVisualization();
   };
 
-  const handleRetreatConfirm = async () => {
-    if (Platform.OS !== 'web') {
-      const { impactAsync, ImpactFeedbackStyle } = await import('expo-haptics');
-      impactAsync(ImpactFeedbackStyle.Heavy);
-    }
-    setConfirmingRetreat(false);
-    onRetreat?.();
+  const handleRetreatConfirm = () => {
+    triggerRetreatVisualization();
   };
 
   // Route shot animation to the correct grid
@@ -296,17 +350,22 @@ export function BattleView({
 
   return (
     <Animated.View style={[styles.battleContent, shakeStyle]}>
-      {/* Retreat button — bottom-left, dims during enemy turn */}
-      <Animated.View style={[styles.retreatButton, retreatButtonStyle]}>
-        <Pressable
-          onPress={handleRetreatPress}
-          onLongPress={handleRetreatLongPress}
-          delayLongPress={600}
-          style={({ pressed }) => [styles.retreatButtonInner, pressed && styles.retreatButtonPressed]}>
-          <Text style={styles.retreatIcon}>⚓</Text>
-          <Text style={styles.retreatText}>RETREAT</Text>
-        </Pressable>
-      </Animated.View>
+      {/* Retreat button — bottom-left, dims during enemy turn, hidden once animation begins */}
+      {!isRetreating && (
+        <Animated.View style={[styles.retreatButton, retreatButtonStyle]}>
+          <Pressable
+            onPress={handleRetreatPress}
+            onLongPress={handleRetreatLongPress}
+            delayLongPress={600}
+            style={({ pressed }) => [
+              styles.retreatButtonInner,
+              pressed && styles.retreatButtonPressed,
+            ]}>
+            <Text style={styles.retreatIcon}>⚓</Text>
+            <Text style={styles.retreatText}>RETREAT</Text>
+          </Pressable>
+        </Animated.View>
+      )}
 
       {/* Confirmation overlay */}
       {confirmingRetreat && (
@@ -343,7 +402,13 @@ export function BattleView({
         )}
         {/* Player grid — dims on player's turn, glows red on enemy's turn */}
         <Animated.View style={[styles.gridWrapper, playerFieldStyle]}>
-          <GameField fields={fields} shotAnim={playerGridShot} />
+          {/* White flag — fades in and floats up at retreat start */}
+          {isRetreating && (
+            <Animated.View style={[styles.retreatFlagWrapper, flagAnimStyle]} pointerEvents="none">
+              <Text style={styles.retreatFlagText}>🏳️</Text>
+            </Animated.View>
+          )}
+          <GameField fields={fields} shotAnim={playerGridShot} retreatSubmergeX={submergeX} />
           <Animated.View
             style={[
               StyleSheet.absoluteFill,
@@ -448,6 +513,28 @@ export function BattleView({
           </Animated.View>
         )}
       </Animated.View>
+
+      {/* Retreat visualization overlays — rendered last so they sit above all game UI */}
+      {isRetreating && (
+        <>
+          {/* Deep navy screen darkens over 800ms */}
+          <Animated.View
+            style={[StyleSheet.absoluteFill, styles.retreatDarkOverlay, darkOverlayStyle]}
+            pointerEvents="none"
+          />
+          {/* RETREAT word slams in after screen darkens */}
+          <Animated.View
+            style={[StyleSheet.absoluteFill, styles.retreatWordOverlay, retreatWordStyle]}
+            pointerEvents="none">
+            <Text style={styles.retreatWordText}>RETREAT</Text>
+          </Animated.View>
+          {/* Final fade to black before navigation fires */}
+          <Animated.View
+            style={[StyleSheet.absoluteFill, styles.retreatBlackout, blackoutStyle]}
+            pointerEvents="none"
+          />
+        </>
+      )}
     </Animated.View>
   );
 }
@@ -640,5 +727,38 @@ const styles = StyleSheet.create({
     fontSize: 11,
     letterSpacing: 2,
     color: GameColors.red,
+  },
+  retreatFlagWrapper: {
+    position: 'absolute',
+    top: -44,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    zIndex: 15,
+  },
+  retreatFlagText: {
+    fontSize: 28,
+  },
+  retreatDarkOverlay: {
+    zIndex: 20,
+    backgroundColor: GameColors.retreatOverlay,
+  },
+  retreatWordOverlay: {
+    zIndex: 21,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  retreatWordText: {
+    fontFamily: 'BlackOpsOne',
+    fontSize: 48,
+    letterSpacing: 4,
+    color: GameColors.red,
+    textShadowColor: 'rgba(0,0,0,0.9)',
+    textShadowOffset: { width: 0, height: 3 },
+    textShadowRadius: 12,
+  },
+  retreatBlackout: {
+    zIndex: 30,
+    backgroundColor: '#000000',
   },
 });

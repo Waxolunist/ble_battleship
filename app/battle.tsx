@@ -8,6 +8,7 @@ import { useCombat } from '@/hooks/useCombat';
 import { usePlacementGestures } from '@/hooks/usePlacementGestures';
 import { SHIP_FLEET } from '@/models/types';
 import { useGameStore } from '@/store/useGameStore';
+import { useRouter } from 'expo-router';
 import { Image, ImageBackground, StyleSheet, useWindowDimensions, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
@@ -17,6 +18,8 @@ export default function BattleScreen() {
   const { width } = useWindowDimensions();
   const cellSize = Math.floor((width - GRID_PADDING * 2 - LABEL_SIZE) / 10);
 
+  const router = useRouter();
+
   // Store state
   const fields = useGameStore(s => s.fields);
   const opponentFields = useGameStore(s => s.opponentFields);
@@ -25,11 +28,17 @@ export default function BattleScreen() {
   const turn = useGameStore(s => s.turn);
   const showOpponentField = useGameStore(s => s.showOpponentField);
   const sunkEvent = useGameStore(s => s.sunkEvent);
+  const resetGame = useGameStore(s => s.resetGame);
 
   // Hooks
   const gestures = usePlacementGestures(cellSize);
   const animations = useBattleAnimations();
   const { onPlayerFire, shotPhase } = useCombat();
+
+  const handleRetreat = () => {
+    resetGame();
+    router.replace('/(tabs)/');
+  };
 
   return (
     <Animated.View style={[styles.background, animations.screenStyle]}>
@@ -78,6 +87,7 @@ export default function BattleScreen() {
             sunkEvent={sunkEvent}
             shotPhase={shotPhase}
             onEnemyCellPress={onPlayerFire}
+            onRetreat={handleRetreat}
           />
         </Animated.View>
 

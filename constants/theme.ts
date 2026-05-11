@@ -21,6 +21,8 @@ export const GameColors = {
   // ── Grid / tray backgrounds ─────────────────────────────────────────
   /** Dark navy: empty cell background and grid base */
   navyBg: 'rgba(8, 25, 70, 0.85)',
+  /** Deeper navy for retreat visualization screen overlay — darker than navyBg */
+  retreatOverlay: 'rgba(8, 15, 40, 0.85)',
   /** Dark navy: ship tray panel background (slightly lighter) */
   trayBg: 'rgba(8, 25, 70, 0.75)',
 

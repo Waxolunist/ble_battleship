@@ -125,6 +125,7 @@ interface GameFieldProps {
   dragX?: SharedValue<number>;
   dragY?: SharedValue<number>;
   shotAnim?: ShotPhase;
+  retreatSubmergeX?: number;
 }
 
 // Animated overlay that plays the three-beat shot resolution effects over the targeted cell.
@@ -351,6 +352,46 @@ function cellColor(
   return GameColors.cellEmpty;
 }
 
+// Renders cellSunk-colored overlays on all player ship cells up to and including column retreatSubmergeX.
+// Uses the same absolute positioning math as ShotAnimationOverlay.
+function RetreatSubmergeOverlay({
+  fields,
+  retreatSubmergeX,
+  cellSize,
+}: {
+  fields: Field[][];
+  retreatSubmergeX: number;
+  cellSize: number;
+}) {
+  const cells: { x: number; y: number }[] = [];
+  for (const row of fields) {
+    for (const field of row) {
+      if (field.shipPart && field.x <= retreatSubmergeX) {
+        cells.push({ x: field.x, y: field.y });
+      }
+    }
+  }
+  return (
+    <>
+      {cells.map(({ x, y }) => (
+        <View
+          key={`${x}-${y}`}
+          pointerEvents="none"
+          style={{
+            position: 'absolute',
+            left: LABEL_SIZE + 2 + x * (cellSize + GRID_CELL_GAP),
+            top: LABEL_SIZE + 3 + y * (cellSize + GRID_CELL_GAP),
+            width: cellSize,
+            height: cellSize,
+            backgroundColor: GameColors.cellSunk,
+            borderRadius: 1,
+          }}
+        />
+      ))}
+    </>
+  );
+}
+
 export const GameField = forwardRef<View, GameFieldProps>(function GameField(
   {
     fields,
@@ -366,6 +407,7 @@ export const GameField = forwardRef<View, GameFieldProps>(function GameField(
     dragX,
     dragY,
     shotAnim,
+    retreatSubmergeX,
   },
   ref,
 ) {
@@ -437,6 +479,15 @@ export const GameField = forwardRef<View, GameFieldProps>(function GameField(
         <ShotAnimationOverlay
           key={`${shotAnim.x}-${shotAnim.y}`}
           shotAnim={shotAnim}
+          cellSize={cellSize}
+        />
+      )}
+
+      {/* Retreat submersion overlay — covers ship cells left-to-right as retreat wave progresses */}
+      {retreatSubmergeX !== undefined && retreatSubmergeX >= 0 && (
+        <RetreatSubmergeOverlay
+          fields={fields}
+          retreatSubmergeX={retreatSubmergeX}
           cellSize={cellSize}
         />
       )}
