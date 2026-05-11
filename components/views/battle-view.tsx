@@ -19,6 +19,7 @@ export type BattleViewProps = {
   opponentFields: Field[][];
   showOpponentField: boolean;
   turn: "player" | "enemy";
+  onEnemyCellPress?: (x: number, y: number) => void;
 };
 
 export function BattleView({
@@ -26,6 +27,7 @@ export function BattleView({
   opponentFields,
   showOpponentField,
   turn,
+  onEnemyCellPress,
 }: BattleViewProps) {
   // 0 = player's turn, 1 = enemy's turn — transitions smoothly on change
   const turnSV = useSharedValue(0);
@@ -127,7 +129,12 @@ export function BattleView({
 
             {/* Enemy grid — glows gold on player's turn, dims on enemy's turn */}
             <Animated.View style={[styles.gridWrapper, enemyFieldStyle]}>
-              <GameField fields={opponentFields} tint="rgba(255, 80, 80, 0.35)" />
+              <GameField
+                fields={opponentFields}
+                tint="rgba(255, 80, 80, 0.35)"
+                hideShips
+                onCellPress={turn === "player" ? onEnemyCellPress : undefined}
+              />
               <Animated.View
                 style={[
                   StyleSheet.absoluteFill,

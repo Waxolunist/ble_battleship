@@ -130,9 +130,10 @@ export default function BattleScreen() {
   const [fields, setFields] = useState<Field[][]>(
     () => createGameField(PLAYER).fields,
   );
-  const [opponentFields] = useState<Field[][]>(
-    () => createGameField(AI_PLAYER).fields,
-  );
+  const [opponentFields, setOpponentFields] = useState<Field[][]>(() => {
+    const result = tryRandomPlacement(createGameField(AI_PLAYER).fields);
+    return result ? result.fields : createGameField(AI_PLAYER).fields;
+  });
   const [placedShips, setPlacedShips] = useState<Set<ShipType>>(new Set());
   const [orientations, setOrientations] = useState<
     Record<ShipType, Orientation>
@@ -353,6 +354,78 @@ export default function BattleScreen() {
   const [showOpponentField, setShowOpponentField] = useState(false);
   const [turn, setTurn] = useState<"player" | "enemy">("player");
 
+  // Ref so AI effect always reads latest player fields without stale closure
+  const fieldsRef = useRef(fields);
+  useEffect(() => { fieldsRef.current = fields; }, [fields]);
+
+  // Player fires at an enemy cell
+  const handlePlayerFire = useCallback((x: number, y: number) => {
+    const cell = opponentFields[y][x];
+    if (cell.status !== "empty") return;
+
+    setOpponentFields((prev) =>
+      prev.map((row) =>
+        row.map((f) => (f.x === x && f.y === y ? { ...f, status: "targeted" as const } : f)),
+      ),
+    );
+    setTimeout(() => {
+      const isHit = !!cell.shipPart;
+      setOpponentFields((prev) =>
+        prev.map((row) =>
+          row.map((f) =>
+            f.x === x && f.y === y
+              ? { ...f, status: isHit ? ("hit" as const) : ("miss" as const), shipPart: f.shipPart ? { ...f.shipPart, isHit: true } : null }
+              : f,
+          ),
+        ),
+      );
+      setTurn("enemy");
+    }, 500);
+  }, [opponentFields]);
+
+  // Enemy AI turn
+  useEffect(() => {
+    if (turn !== "enemy") return;
+
+    const snapshot = fieldsRef.current;
+    const empty: { x: number; y: number }[] = [];
+    for (const row of snapshot) {
+      for (const f of row) {
+        if (f.status === "empty") empty.push({ x: f.x, y: f.y });
+      }
+    }
+    if (empty.length === 0) return;
+
+    const t1 = setTimeout(() => {
+      const { x, y } = empty[Math.floor(Math.random() * empty.length)];
+      const cell = fieldsRef.current[y][x];
+
+      setFields((prev) =>
+        prev.map((row) =>
+          row.map((f) => (f.x === x && f.y === y ? { ...f, status: "targeted" as const } : f)),
+        ),
+      );
+
+      const t2 = setTimeout(() => {
+        const isHit = !!cell.shipPart;
+        setFields((prev) =>
+          prev.map((row) =>
+            row.map((f) =>
+              f.x === x && f.y === y
+                ? { ...f, status: isHit ? ("hit" as const) : ("miss" as const), shipPart: f.shipPart ? { ...f.shipPart, isHit: true } : null }
+                : f,
+            ),
+          ),
+        );
+        setTurn("player");
+      }, 500);
+
+      return () => clearTimeout(t2);
+    }, 800);
+
+    return () => clearTimeout(t1);
+  }, [turn]);
+
   // Commence firing flash
   const flashOpacity = useSharedValue(0);
   const flashScale = useSharedValue(0.2);
@@ -474,6 +547,7 @@ export default function BattleScreen() {
             opponentFields={opponentFields}
             showOpponentField={showOpponentField}
             turn={turn}
+            onEnemyCellPress={handlePlayerFire}
           />
         </Animated.View>
 

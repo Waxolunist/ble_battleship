@@ -94,6 +94,7 @@ function ShipCellSprite({ part, cellSize }: { part: ShipPart; cellSize: number }
 interface GameFieldProps {
   fields: Field[][];
   tint?: string;
+  hideShips?: boolean;
   onCellPress?: (x: number, y: number) => void;
   previewCells?: Set<string>;
   isPreviewValid?: boolean;
@@ -152,14 +153,15 @@ function DraggableShipCell({
   );
 }
 
-function cellColor(field: Field, previewCells: Set<string>, isPreviewValid: boolean): string {
+function cellColor(field: Field, previewCells: Set<string>, isPreviewValid: boolean, hideShips: boolean): string {
   const key = `${field.x}-${field.y}`;
   if (previewCells.has(key)) {
     return isPreviewValid ? "rgba(80, 210, 120, 0.8)" : "rgba(210, 60, 60, 0.8)";
   }
-  if (field.status === "hit") return "rgba(210, 45, 45, 0.9)";
-  if (field.status === "miss") return "rgba(160, 210, 255, 0.25)";
-  if (field.shipPart) return "rgba(60, 110, 210, 0.75)";
+  if (field.status === "targeted") return "rgba(220, 30, 30, 0.9)";
+  if (field.status === "hit") return "rgba(255, 120, 0, 0.9)";
+  if (field.status === "miss") return "rgba(10, 10, 15, 0.95)";
+  if (field.shipPart && !hideShips) return "rgba(60, 110, 210, 0.75)";
   return "rgba(8, 25, 70, 0.85)";
 }
 
@@ -168,6 +170,7 @@ export const GameField = forwardRef<View, GameFieldProps>(
     {
       fields,
       tint = "rgba(80, 160, 255, 0.35)",
+      hideShips = false,
       onCellPress,
       previewCells = new Set(),
       isPreviewValid = true,
@@ -207,7 +210,7 @@ export const GameField = forwardRef<View, GameFieldProps>(
                 <Text style={styles.labelText}>{ROW_LABELS[rowIndex]}</Text>
               </View>
               {row.map((field) => {
-                const bg = cellColor(field, previewCells, isPreviewValid);
+                const bg = cellColor(field, previewCells, isPreviewValid, hideShips);
                 if (field.shipPart && canDragFromGrid) {
                   return (
                     <DraggableShipCell
@@ -234,7 +237,7 @@ export const GameField = forwardRef<View, GameFieldProps>(
                     ]}
                     onPress={() => onCellPress?.(field.x, field.y)}
                   >
-                    {field.shipPart && (
+                    {field.shipPart && !hideShips && (
                       <ShipCellSprite part={field.shipPart} cellSize={cellSize} />
                     )}
                   </Pressable>
