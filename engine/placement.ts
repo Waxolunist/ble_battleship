@@ -1,6 +1,6 @@
-import type { Field, Orientation, ShipType } from "@/models/types";
-import { GRID_SIZE, SHIP_FLEET, SHIP_SIZES } from "@/models/types";
-import type { Ship, ShipPart } from "@/models/types";
+import type { Field, Orientation, ShipType } from '@/models/types';
+import { GRID_SIZE, SHIP_FLEET, SHIP_SIZES } from '@/models/types';
+import type { Ship, ShipPart } from '@/models/types';
 
 export function buildPreviewCells(
   shipType: ShipType,
@@ -10,8 +10,8 @@ export function buildPreviewCells(
 ): { x: number; y: number }[] {
   const size = SHIP_SIZES[shipType];
   return Array.from({ length: size }, (_, i) => ({
-    x: orientation === "horizontal" ? startX + i : startX,
-    y: orientation === "vertical" ? startY + i : startY,
+    x: orientation === 'horizontal' ? startX + i : startX,
+    y: orientation === 'vertical' ? startY + i : startY,
   }));
 }
 
@@ -41,7 +41,7 @@ export function placeShip(
     orientation,
   };
 
-  const next = fields.map((row) => row.map((f) => ({ ...f })));
+  const next = fields.map(row => row.map(f => ({ ...f })));
 
   const parts: ShipPart[] = cells.map(({ x, y }) => {
     const part: ShipPart = { ship, field: next[y][x], isHit: false };
@@ -62,7 +62,7 @@ export function tryRandomPlacement(emptyFields: Field[][]): {
   const orientations: Record<ShipType, Orientation> = {} as Record<ShipType, Orientation>;
 
   for (const shipType of SHIP_FLEET) {
-    const orientation: Orientation = Math.random() < 0.5 ? "horizontal" : "vertical";
+    const orientation: Orientation = Math.random() < 0.5 ? 'horizontal' : 'vertical';
     orientations[shipType] = orientation;
 
     const valid: { x: number; y: number }[] = [];

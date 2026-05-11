@@ -1,11 +1,11 @@
-import { computeCell } from "@/components/game-field";
-import { buildPreviewCells, isValidPlacement } from "@/engine/placement";
-import type { ShipType } from "@/models/types";
-import { useGameStore } from "@/store/useGameStore";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { View } from "react-native";
-import { useSharedValue } from "react-native-reanimated";
-import type { SharedValue } from "react-native-reanimated";
+import { computeCell } from '@/components/game-field';
+import { buildPreviewCells, isValidPlacement } from '@/engine/placement';
+import type { ShipType } from '@/models/types';
+import { useGameStore } from '@/store/useGameStore';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { View } from 'react-native';
+import { useSharedValue } from 'react-native-reanimated';
+import type { SharedValue } from 'react-native-reanimated';
 
 const DRAG_OFFSET_X = 24;
 const DRAG_OFFSET_Y = 3 * 48;
@@ -27,12 +27,12 @@ export interface PlacementGestureHandlers {
 }
 
 export function usePlacementGestures(cellSize: number): PlacementGestureHandlers {
-  const fields = useGameStore((s) => s.fields);
-  const orientations = useGameStore((s) => s.orientations);
-  const placeShipOnBoard = useGameStore((s) => s.placeShipOnBoard);
-  const removeShipFromBoard = useGameStore((s) => s.removeShipFromBoard);
-  const toggleOrientation = useGameStore((s) => s.toggleOrientation);
-  const randomizeFleet = useGameStore((s) => s.randomizeFleet);
+  const fields = useGameStore(s => s.fields);
+  const orientations = useGameStore(s => s.orientations);
+  const placeShipOnBoard = useGameStore(s => s.placeShipOnBoard);
+  const removeShipFromBoard = useGameStore(s => s.removeShipFromBoard);
+  const toggleOrientation = useGameStore(s => s.toggleOrientation);
+  const randomizeFleet = useGameStore(s => s.randomizeFleet);
 
   const [draggingShip, setDraggingShip] = useState<ShipType | null>(null);
   const [previewCells, setPreviewCells] = useState<Set<string>>(new Set());
@@ -43,7 +43,9 @@ export function usePlacementGestures(cellSize: number): PlacementGestureHandlers
   const gridBodyRef = useRef<View>(null);
   const gridOriginRef = useRef<{ x: number; y: number } | null>(null);
   const trayRef = useRef<View>(null);
-  const trayBoundsRef = useRef<{ x: number; y: number; width: number; height: number } | null>(null);
+  const trayBoundsRef = useRef<{ x: number; y: number; width: number; height: number } | null>(
+    null,
+  );
 
   const dragX = useSharedValue(0);
   const dragY = useSharedValue(0);
@@ -71,7 +73,7 @@ export function usePlacementGestures(cellSize: number): PlacementGestureHandlers
       );
       const cells = buildPreviewCells(ship, startX, startY, orientation);
       const valid = isValidPlacement(cells, fields, draggingFromGridRef.current ?? undefined);
-      setPreviewCells(new Set(cells.map((c) => `${c.x}-${c.y}`)));
+      setPreviewCells(new Set(cells.map(c => `${c.x}-${c.y}`)));
       setIsPreviewValid(valid);
     },
     [orientations, cellSize, fields],

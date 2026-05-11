@@ -1,5 +1,5 @@
-import { PropsWithChildren, useEffect } from "react";
-import { StyleProp, ViewStyle } from "react-native";
+import { PropsWithChildren, useEffect } from 'react';
+import { StyleProp, ViewStyle } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -7,7 +7,7 @@ import Animated, {
   withDelay,
   withSpring,
   Easing,
-} from "react-native-reanimated";
+} from 'react-native-reanimated';
 
 type Props = PropsWithChildren<{
   delay?: number;
@@ -34,10 +34,7 @@ export function FadeIn({ children, delay = 0, translateY, scale, style }: Props)
 
   const animStyle = useAnimatedStyle(() => ({
     opacity: opacity.value,
-    transform: [
-      { translateY: animTranslateY.value },
-      { scale: animScale.value },
-    ],
+    transform: [{ translateY: animTranslateY.value }, { scale: animScale.value }],
   }));
 
   return <Animated.View style={[animStyle, style]}>{children}</Animated.View>;

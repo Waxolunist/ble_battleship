@@ -1,4 +1,4 @@
-import type { Field, Ship } from "@/models/types";
+import type { Field, Ship } from '@/models/types';
 
 export function applyFire(
   fields: Field[][],
@@ -17,12 +17,12 @@ export function applyFire(
     if (allOtherPartsHit) sunkShip = ship;
   }
 
-  const withHit = fields.map((row) =>
-    row.map((f) =>
+  const withHit = fields.map(row =>
+    row.map(f =>
       f.x === x && f.y === y
         ? {
             ...f,
-            status: isHit ? ("hit" as const) : ("miss" as const),
+            status: isHit ? ('hit' as const) : ('miss' as const),
             shipPart: f.shipPart ? { ...f.shipPart, isHit: true } : null,
           }
         : f,
@@ -32,10 +32,8 @@ export function applyFire(
   if (!sunkShip) return { fields: withHit, sunkShip: null };
 
   return {
-    fields: withHit.map((row) =>
-      row.map((f) =>
-        f.shipPart?.ship.id === sunkShip!.id ? { ...f, status: "sunk" as const } : f,
-      ),
+    fields: withHit.map(row =>
+      row.map(f => (f.shipPart?.ship.id === sunkShip!.id ? { ...f, status: 'sunk' as const } : f)),
     ),
     sunkShip,
   };

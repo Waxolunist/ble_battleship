@@ -1,15 +1,15 @@
-import { useGameStore } from "@/store/useGameStore";
-import { useNavigation } from "@react-navigation/native";
-import { useRouter } from "expo-router";
+import { useGameStore } from '@/store/useGameStore';
+import { useNavigation } from '@react-navigation/native';
+import { useRouter } from 'expo-router';
 import {
   Easing,
   useAnimatedStyle,
   useSharedValue,
   withSequence,
   withTiming,
-} from "react-native-reanimated";
-import type { AnimatedStyle } from "react-native-reanimated";
-import type { ViewStyle } from "react-native";
+} from 'react-native-reanimated';
+import type { AnimatedStyle } from 'react-native-reanimated';
+import type { ViewStyle } from 'react-native';
 
 export interface BattleAnimations {
   screenStyle: AnimatedStyle<ViewStyle>;
@@ -26,7 +26,7 @@ export interface BattleAnimations {
 export function useBattleAnimations(): BattleAnimations {
   const router = useRouter();
   const navigation = useNavigation();
-  const startBattle = useGameStore((s) => s.startBattle);
+  const startBattle = useGameStore(s => s.startBattle);
 
   const screenTranslateY = useSharedValue(0);
   const fireOpacity = useSharedValue(1);
@@ -91,7 +91,7 @@ export function useBattleAnimations(): BattleAnimations {
   };
 
   const onRetreat = () => {
-    navigation.setOptions({ animation: "none" });
+    navigation.setOptions({ animation: 'none' });
     screenTranslateY.value = withTiming(-1000, {
       duration: 350,
       easing: Easing.in(Easing.cubic),

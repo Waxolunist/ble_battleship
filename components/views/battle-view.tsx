@@ -1,7 +1,7 @@
-import { GameField } from "@/components/game-field";
-import type { Field, ShipType } from "@/models/types";
-import { useEffect, useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { GameField } from '@/components/game-field';
+import type { Field, ShipType } from '@/models/types';
+import { useEffect, useState } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 import Animated, {
   Easing,
   FadeInDown,
@@ -12,15 +12,15 @@ import Animated, {
   withRepeat,
   withSequence,
   withTiming,
-} from "react-native-reanimated";
+} from 'react-native-reanimated';
 
-type SunkEvent = { shipType: ShipType; owner: "player" | "enemy" } | null;
+type SunkEvent = { shipType: ShipType; owner: 'player' | 'enemy' } | null;
 
 export type BattleViewProps = {
   fields: Field[][];
   opponentFields: Field[][];
   showOpponentField: boolean;
-  turn: "player" | "enemy";
+  turn: 'player' | 'enemy';
   sunkEvent?: SunkEvent;
   onEnemyCellPress?: (x: number, y: number) => void;
 };
@@ -59,7 +59,7 @@ export function BattleView({
   }, [dividerPulse, glowPulse]);
 
   useEffect(() => {
-    turnSV.value = withTiming(turn === "player" ? 0 : 1, { duration: 400 });
+    turnSV.value = withTiming(turn === 'player' ? 0 : 1, { duration: 400 });
   }, [turn, turnSV]);
 
   // Active grid is full opacity; inactive grid dims
@@ -89,10 +89,11 @@ export function BattleView({
 
   useEffect(() => {
     if (!sunkEvent) return;
-    const text = sunkEvent.owner === "enemy"
-      ? `${sunkEvent.shipType.toUpperCase()} SUNK`
-      : `${sunkEvent.shipType.toUpperCase()} LOST`;
-    const color = sunkEvent.owner === "enemy" ? "#FFC832" : "#FF5050";
+    const text =
+      sunkEvent.owner === 'enemy'
+        ? `${sunkEvent.shipType.toUpperCase()} SUNK`
+        : `${sunkEvent.shipType.toUpperCase()} LOST`;
+    const color = sunkEvent.owner === 'enemy' ? '#FFC832' : '#FF5050';
     setSunkLabel({ text, color });
     labelOpacity.value = 0;
     labelTranslateY.value = 10;
@@ -111,21 +112,18 @@ export function BattleView({
     transform: [{ translateY: labelTranslateY.value }],
   }));
 
-  const isPlayerTurn = turn === "player";
-  const dividerText = isPlayerTurn ? "SELECT TARGET" : "INCOMING FIRE";
-  const dividerColor = isPlayerTurn ? "#FFC832" : "#FF5050";
+  const isPlayerTurn = turn === 'player';
+  const dividerText = isPlayerTurn ? 'SELECT TARGET' : 'INCOMING FIRE';
+  const dividerColor = isPlayerTurn ? '#FFC832' : '#FF5050';
 
   return (
     <View style={styles.battleContent}>
       <Animated.View
         style={styles.fieldSection}
-        layout={LinearTransition.duration(500).easing(Easing.out(Easing.cubic))}
-      >
+        layout={LinearTransition.duration(500).easing(Easing.out(Easing.cubic))}>
         {sunkLabel && (
           <Animated.View style={[styles.sunkLabel, sunkLabelStyle]} pointerEvents="none">
-            <Text style={[styles.sunkLabelText, { color: sunkLabel.color }]}>
-              {sunkLabel.text}
-            </Text>
+            <Text style={[styles.sunkLabelText, { color: sunkLabel.color }]}>{sunkLabel.text}</Text>
           </Animated.View>
         )}
         {/* Player grid — dims on player's turn, glows red on enemy's turn */}
@@ -135,7 +133,7 @@ export function BattleView({
             style={[
               StyleSheet.absoluteFill,
               styles.glowBorder,
-              { borderColor: "#FF5050" },
+              { borderColor: '#FF5050' },
               playerGlowStyle,
             ]}
             pointerEvents="none"
@@ -143,27 +141,15 @@ export function BattleView({
         </Animated.View>
 
         {showOpponentField && (
-          <Animated.View
-            entering={FadeInDown.duration(500).easing(Easing.out(Easing.cubic))}
-          >
+          <Animated.View entering={FadeInDown.duration(500).easing(Easing.out(Easing.cubic))}>
             {/* Divider — swaps text and color with each turn */}
             <View style={styles.divider}>
               <Animated.View
-                style={[
-                  styles.dividerLine,
-                  dividerLineStyle,
-                  { backgroundColor: dividerColor },
-                ]}
+                style={[styles.dividerLine, dividerLineStyle, { backgroundColor: dividerColor }]}
               />
-              <Text style={[styles.dividerText, { color: dividerColor }]}>
-                {dividerText}
-              </Text>
+              <Text style={[styles.dividerText, { color: dividerColor }]}>{dividerText}</Text>
               <Animated.View
-                style={[
-                  styles.dividerLine,
-                  dividerLineStyle,
-                  { backgroundColor: dividerColor },
-                ]}
+                style={[styles.dividerLine, dividerLineStyle, { backgroundColor: dividerColor }]}
               />
             </View>
 
@@ -173,13 +159,13 @@ export function BattleView({
                 fields={opponentFields}
                 tint="rgba(255, 80, 80, 0.35)"
                 hideShips
-                onCellPress={turn === "player" ? onEnemyCellPress : undefined}
+                onCellPress={turn === 'player' ? onEnemyCellPress : undefined}
               />
               <Animated.View
                 style={[
                   StyleSheet.absoluteFill,
                   styles.glowBorder,
-                  { borderColor: "#FFC832" },
+                  { borderColor: '#FFC832' },
                   enemyGlowStyle,
                 ]}
                 pointerEvents="none"
@@ -195,25 +181,25 @@ export function BattleView({
 const styles = StyleSheet.create({
   battleContent: {
     flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
     paddingVertical: 48,
     paddingHorizontal: 32,
   },
   fieldSection: {
     gap: 16,
-    alignItems: "center",
+    alignItems: 'center',
   },
   gridWrapper: {
-    alignSelf: "center",
+    alignSelf: 'center',
   },
   glowBorder: {
     borderWidth: 2,
     borderRadius: 4,
   },
   divider: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 8,
     marginBottom: 12,
     paddingHorizontal: 4,
@@ -224,20 +210,20 @@ const styles = StyleSheet.create({
   },
   dividerText: {
     fontSize: 10,
-    fontWeight: "700",
+    fontWeight: '700',
     letterSpacing: 3,
   },
   sunkLabel: {
-    position: "absolute",
-    alignSelf: "center",
+    position: 'absolute',
+    alignSelf: 'center',
     zIndex: 10,
-    top: "40%",
+    top: '40%',
   },
   sunkLabelText: {
-    fontFamily: "BlackOpsOne",
+    fontFamily: 'BlackOpsOne',
     fontSize: 22,
     letterSpacing: 3,
-    textShadowColor: "rgba(0,0,0,0.8)",
+    textShadowColor: 'rgba(0,0,0,0.8)',
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 6,
   },

@@ -1,12 +1,12 @@
-import { applyFire } from "@/engine/combat";
-import { placeShip, tryRandomPlacement } from "@/engine/placement";
-import { createGameField } from "@/models/game-factory";
-import type { Field, Orientation, ShipType } from "@/models/types";
-import { SHIP_FLEET } from "@/models/types";
-import { create } from "zustand";
+import { applyFire } from '@/engine/combat';
+import { placeShip, tryRandomPlacement } from '@/engine/placement';
+import { createGameField } from '@/models/game-factory';
+import type { Field, Orientation, ShipType } from '@/models/types';
+import { SHIP_FLEET } from '@/models/types';
+import { create } from 'zustand';
 
-const PLAYER = { id: "1", name: "CAPTAIN", isAI: false };
-const AI_PLAYER = { id: "2", name: "ENEMY", isAI: true };
+const PLAYER = { id: '1', name: 'CAPTAIN', isAI: false };
+const AI_PLAYER = { id: '2', name: 'ENEMY', isAI: true };
 
 function makeInitialOpponentFields(): Field[][] {
   const result = tryRandomPlacement(createGameField(AI_PLAYER).fields);
@@ -14,7 +14,10 @@ function makeInitialOpponentFields(): Field[][] {
 }
 
 function makeInitialOrientations(): Record<ShipType, Orientation> {
-  return Object.fromEntries(SHIP_FLEET.map((t) => [t, "horizontal"])) as Record<ShipType, Orientation>;
+  return Object.fromEntries(SHIP_FLEET.map(t => [t, 'horizontal'])) as Record<
+    ShipType,
+    Orientation
+  >;
 }
 
 interface GameState {
@@ -22,9 +25,9 @@ interface GameState {
   opponentFields: Field[][];
   placedShips: Set<ShipType>;
   orientations: Record<ShipType, Orientation>;
-  turn: "player" | "enemy";
+  turn: 'player' | 'enemy';
   showOpponentField: boolean;
-  sunkEvent: { shipType: ShipType; owner: "player" | "enemy" } | null;
+  sunkEvent: { shipType: ShipType; owner: 'player' | 'enemy' } | null;
 }
 
 interface GameActions {
@@ -37,10 +40,10 @@ interface GameActions {
   removeShipFromBoard: (ship: ShipType, shipId: string) => void;
   toggleOrientation: (ship: ShipType) => void;
   randomizeFleet: () => void;
-  markTargeted: (grid: "player" | "opponent", x: number, y: number) => void;
-  resolveShot: (grid: "player" | "opponent", x: number, y: number) => void;
-  setTurn: (turn: "player" | "enemy") => void;
-  setSunkEvent: (event: { shipType: ShipType; owner: "player" | "enemy" } | null) => void;
+  markTargeted: (grid: 'player' | 'opponent', x: number, y: number) => void;
+  resolveShot: (grid: 'player' | 'opponent', x: number, y: number) => void;
+  setTurn: (turn: 'player' | 'enemy') => void;
+  setSunkEvent: (event: { shipType: ShipType; owner: 'player' | 'enemy' } | null) => void;
   startBattle: () => void;
 }
 
@@ -49,15 +52,15 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
   opponentFields: makeInitialOpponentFields(),
   placedShips: new Set(),
   orientations: makeInitialOrientations(),
-  turn: "player",
+  turn: 'player',
   showOpponentField: false,
   sunkEvent: null,
 
   placeShipOnBoard(ship, cells, orientation, fromGridShipId) {
-    set((s) => {
+    set(s => {
       const withoutOld = fromGridShipId
-        ? s.fields.map((row) =>
-            row.map((f) => (f.shipPart?.ship.id === fromGridShipId ? { ...f, shipPart: null } : f)),
+        ? s.fields.map(row =>
+            row.map(f => (f.shipPart?.ship.id === fromGridShipId ? { ...f, shipPart: null } : f)),
           )
         : s.fields;
       return {
@@ -68,12 +71,12 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
   },
 
   removeShipFromBoard(ship, shipId) {
-    set((s) => {
+    set(s => {
       const next = new Set(s.placedShips);
       next.delete(ship);
       return {
-        fields: s.fields.map((row) =>
-          row.map((f) => (f.shipPart?.ship.id === shipId ? { ...f, shipPart: null } : f)),
+        fields: s.fields.map(row =>
+          row.map(f => (f.shipPart?.ship.id === shipId ? { ...f, shipPart: null } : f)),
         ),
         placedShips: next,
       };
@@ -81,10 +84,10 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
   },
 
   toggleOrientation(ship) {
-    set((s) => ({
+    set(s => ({
       orientations: {
         ...s.orientations,
-        [ship]: s.orientations[ship] === "horizontal" ? "vertical" : "horizontal",
+        [ship]: s.orientations[ship] === 'horizontal' ? 'vertical' : 'horizontal',
       },
     }));
   },
@@ -92,21 +95,25 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
   randomizeFleet() {
     const result = tryRandomPlacement(createGameField(PLAYER).fields);
     if (!result) return;
-    set({ fields: result.fields, orientations: result.orientations, placedShips: new Set(SHIP_FLEET) });
+    set({
+      fields: result.fields,
+      orientations: result.orientations,
+      placedShips: new Set(SHIP_FLEET),
+    });
   },
 
   markTargeted(grid, x, y) {
-    const key = grid === "player" ? "fields" : "opponentFields";
-    set((s) => ({
-      [key]: s[key].map((row) =>
-        row.map((f) => (f.x === x && f.y === y ? { ...f, status: "targeted" as const } : f)),
+    const key = grid === 'player' ? 'fields' : 'opponentFields';
+    set(s => ({
+      [key]: s[key].map(row =>
+        row.map(f => (f.x === x && f.y === y ? { ...f, status: 'targeted' as const } : f)),
       ),
     }));
   },
 
   resolveShot(grid, x, y) {
-    const key = grid === "player" ? "fields" : "opponentFields";
-    const owner = grid === "player" ? "player" : "enemy";
+    const key = grid === 'player' ? 'fields' : 'opponentFields';
+    const owner = grid === 'player' ? 'player' : 'enemy';
     const currentFields = get()[key];
     const { fields: next, sunkShip } = applyFire(currentFields, x, y);
     set({

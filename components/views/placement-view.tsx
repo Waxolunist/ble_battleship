@@ -1,13 +1,13 @@
-import { FadeIn } from "@/components/fade-in";
-import { GameField } from "@/components/game-field";
-import { HapticPressable } from "@/components/haptic-pressable";
-import { ShipTray } from "@/components/ship-tray";
-import type { Field, Orientation, ShipType } from "@/models/types";
-import React from "react";
-import { StyleSheet, Text, View } from "react-native";
-import type { ViewStyle } from "react-native";
-import Animated from "react-native-reanimated";
-import type { AnimatedStyle, SharedValue } from "react-native-reanimated";
+import { FadeIn } from '@/components/fade-in';
+import { GameField } from '@/components/game-field';
+import { HapticPressable } from '@/components/haptic-pressable';
+import { ShipTray } from '@/components/ship-tray';
+import type { Field, Orientation, ShipType } from '@/models/types';
+import React from 'react';
+import { StyleSheet, Text, View } from 'react-native';
+import type { ViewStyle } from 'react-native';
+import Animated from 'react-native-reanimated';
+import type { AnimatedStyle, SharedValue } from 'react-native-reanimated';
 
 export type PlacementViewProps = {
   fireTopStyle: AnimatedStyle<ViewStyle>;
@@ -105,18 +105,14 @@ export function PlacementView({
       </FadeIn>
 
       {/* Bottom: Retreat + Fire at Will buttons */}
-      <Animated.View style={[{ alignSelf: "stretch" }, fireBottomStyle]}>
-        <FadeIn delay={500} translateY={30} style={{ alignSelf: "stretch" }}>
+      <Animated.View style={[{ alignSelf: 'stretch' }, fireBottomStyle]}>
+        <FadeIn delay={500} translateY={30} style={{ alignSelf: 'stretch' }}>
           <View style={styles.bottomButtons}>
             <HapticPressable
               onPress={onRetreat}
-              style={({ pressed }) => [
-                styles.cancelButton,
-                pressed && styles.cancelButtonPressed,
-              ]}
-            >
+              style={({ pressed }) => [styles.cancelButton, pressed && styles.cancelButtonPressed]}>
               <Text style={styles.cancelButtonText} numberOfLines={2}>
-                ↩{"\n"}RETREAT
+                ↩{'\n'}RETREAT
               </Text>
             </HapticPressable>
             <HapticPressable
@@ -126,16 +122,11 @@ export function PlacementView({
                 styles.fireButton,
                 !allShipsPlaced && styles.fireButtonDisabled,
                 pressed && allShipsPlaced && styles.fireButtonPressed,
-              ]}
-            >
+              ]}>
               <Text
-                style={[
-                  styles.fireButtonText,
-                  !allShipsPlaced && styles.fireButtonTextDisabled,
-                ]}
-                numberOfLines={2}
-              >
-                 ⚡{"\n"}FIRE AT WILL
+                style={[styles.fireButtonText, !allShipsPlaced && styles.fireButtonTextDisabled]}
+                numberOfLines={2}>
+                ⚡{'\n'}FIRE AT WILL
               </Text>
             </HapticPressable>
           </View>
@@ -148,40 +139,40 @@ export function PlacementView({
 const styles = StyleSheet.create({
   content: {
     flex: 1,
-    alignItems: "center",
-    justifyContent: "space-between",
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingTop: 64,
     paddingBottom: 48,
     paddingHorizontal: 32,
   },
   topSection: {
-    alignItems: "center",
+    alignItems: 'center',
     gap: 8,
   },
   title: {
-    color: "#fff",
+    color: '#fff',
     fontSize: 26,
-    fontWeight: "900",
+    fontWeight: '900',
     letterSpacing: 4,
-    textAlign: "center",
-    textShadowColor: "rgba(0,0,0,0.9)",
+    textAlign: 'center',
+    textShadowColor: 'rgba(0,0,0,0.9)',
     textShadowOffset: { width: 1, height: 2 },
     textShadowRadius: 8,
   },
   subtitle: {
-    color: "rgba(255,255,255,0.65)",
+    color: 'rgba(255,255,255,0.65)',
     fontSize: 13,
-    fontWeight: "600",
+    fontWeight: '600',
     letterSpacing: 3,
-    textAlign: "center",
+    textAlign: 'center',
   },
   fieldSection: {
     gap: 16,
-    alignItems: "center",
+    alignItems: 'center',
   },
   bottomButtons: {
-    flexDirection: "row",
-    alignSelf: "stretch",
+    flexDirection: 'row',
+    alignSelf: 'stretch',
     gap: 12,
   },
   cancelButton: {
@@ -189,46 +180,46 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
     paddingVertical: 8,
     borderWidth: 2,
-    borderColor: "rgba(255,255,255,0.6)",
+    borderColor: 'rgba(255,255,255,0.6)',
     borderRadius: 4,
-    backgroundColor: "rgba(0,0,0,0.5)",
+    backgroundColor: 'rgba(0,0,0,0.5)',
   },
   cancelButtonPressed: {
-    backgroundColor: "rgba(255,255,255,0.15)",
+    backgroundColor: 'rgba(255,255,255,0.15)',
   },
   cancelButtonText: {
-    color: "#fff",
+    color: '#fff',
     fontSize: 16,
-    fontWeight: "800",
+    fontWeight: '800',
     letterSpacing: 3,
     lineHeight: 26,
-    textAlign: "center",
+    textAlign: 'center',
   },
   fireButton: {
     flex: 1,
     paddingHorizontal: 8,
     paddingVertical: 8,
     borderWidth: 2,
-    borderColor: "#e8c84a",
+    borderColor: '#e8c84a',
     borderRadius: 4,
-    backgroundColor: "rgba(232,200,74,0.15)",
+    backgroundColor: 'rgba(232,200,74,0.15)',
   },
   fireButtonDisabled: {
-    borderColor: "rgba(255,255,255,0.2)",
-    backgroundColor: "rgba(0,0,0,0.3)",
+    borderColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: 'rgba(0,0,0,0.3)',
   },
   fireButtonPressed: {
-    backgroundColor: "rgba(232,200,74,0.35)",
+    backgroundColor: 'rgba(232,200,74,0.35)',
   },
   fireButtonText: {
-    color: "#e8c84a",
+    color: '#e8c84a',
     fontSize: 16,
-    fontWeight: "800",
+    fontWeight: '800',
     letterSpacing: 3,
     lineHeight: 26,
-    textAlign: "center",
+    textAlign: 'center',
   },
   fireButtonTextDisabled: {
-    color: "rgba(255,255,255,0.25)",
+    color: 'rgba(255,255,255,0.25)',
   },
 });

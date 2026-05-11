@@ -27,17 +27,23 @@ export default function RootLayout() {
 
   if (!fontsLoaded) return null;
 
-  const theme = colorScheme === 'dark' ? DarkTheme : { ...DefaultTheme, colors: { ...DefaultTheme.colors, background: '#1a1a1a' } };
+  const theme =
+    colorScheme === 'dark'
+      ? DarkTheme
+      : { ...DefaultTheme, colors: { ...DefaultTheme.colors, background: '#1a1a1a' } };
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ThemeProvider value={theme}>
-        <Stack screenOptions={{ contentStyle: { backgroundColor: "#1a1a1a" } }}>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false, contentStyle: { backgroundColor: "#1a1a1a" } }} />
+        <Stack screenOptions={{ contentStyle: { backgroundColor: '#1a1a1a' } }}>
+          <Stack.Screen
+            name="(tabs)"
+            options={{ headerShown: false, contentStyle: { backgroundColor: '#1a1a1a' } }}
+          />
           <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
           <Stack.Screen
             name="battle"
-            options={{ headerShown: false, animation: "fade_from_bottom" }}
+            options={{ headerShown: false, animation: 'fade_from_bottom' }}
           />
         </Stack>
         <StatusBar style="auto" />
@@ -45,4 +51,3 @@ export default function RootLayout() {
     </GestureHandlerRootView>
   );
 }
-

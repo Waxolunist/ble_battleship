@@ -1,6 +1,6 @@
-export type ShipType = "Carrier" | "Battleship" | "Cruiser" | "Submarine" | "Destroyer";
+export type ShipType = 'Carrier' | 'Battleship' | 'Cruiser' | 'Submarine' | 'Destroyer';
 
-export type Orientation = "horizontal" | "vertical";
+export type Orientation = 'horizontal' | 'vertical';
 
 export const GRID_SIZE = 10;
 
@@ -13,11 +13,11 @@ export const SHIP_SIZES: Record<ShipType, number> = {
 };
 
 export const SHIP_FLEET: ShipType[] = [
-  "Carrier",
-  "Battleship",
-  "Cruiser",
-  "Submarine",
-  "Destroyer",
+  'Carrier',
+  'Battleship',
+  'Cruiser',
+  'Submarine',
+  'Destroyer',
 ];
 
 export interface Player {
@@ -29,7 +29,7 @@ export interface Player {
 export interface Field {
   x: number;
   y: number;
-  status: "empty" | "targeted" | "hit" | "miss" | "sunk";
+  status: 'empty' | 'targeted' | 'hit' | 'miss' | 'sunk';
   shipPart: ShipPart | null;
 }
 
@@ -43,7 +43,7 @@ export interface Ship {
   id: string;
   type: ShipType;
   parts: ShipPart[];
-  orientation: "horizontal" | "vertical";
+  orientation: 'horizontal' | 'vertical';
 }
 
 export interface GameField {
@@ -54,7 +54,7 @@ export interface GameField {
 
 export interface Game {
   id: string;
-  status: "placement" | "playing" | "finished";
+  status: 'placement' | 'playing' | 'finished';
   currentTurn: Player;
   winner: Player | null;
   players: [Player, Player];

@@ -1,21 +1,15 @@
-import { DragPreview } from "@/components/drag-preview";
-import { LABEL_SIZE } from "@/components/game-field";
-import { BattleView } from "@/components/views/battle-view";
-import { PlacementView } from "@/components/views/placement-view";
-import { IMAGES } from "@/constants/assets";
-import { useBattleAnimations } from "@/hooks/useBattleAnimations";
-import { useCombat } from "@/hooks/useCombat";
-import { usePlacementGestures } from "@/hooks/usePlacementGestures";
-import { SHIP_FLEET } from "@/models/types";
-import { useGameStore }  from "@/store/useGameStore";
-import {
-  Image,
-  ImageBackground,
-  StyleSheet,
-  useWindowDimensions,
-  View,
-} from "react-native";
-import Animated from "react-native-reanimated";
+import { DragPreview } from '@/components/drag-preview';
+import { LABEL_SIZE } from '@/components/game-field';
+import { BattleView } from '@/components/views/battle-view';
+import { PlacementView } from '@/components/views/placement-view';
+import { IMAGES } from '@/constants/assets';
+import { useBattleAnimations } from '@/hooks/useBattleAnimations';
+import { useCombat } from '@/hooks/useCombat';
+import { usePlacementGestures } from '@/hooks/usePlacementGestures';
+import { SHIP_FLEET } from '@/models/types';
+import { useGameStore } from '@/store/useGameStore';
+import { Image, ImageBackground, StyleSheet, useWindowDimensions, View } from 'react-native';
+import Animated from 'react-native-reanimated';
 
 const GRID_PADDING = 32;
 
@@ -24,13 +18,13 @@ export default function BattleScreen() {
   const cellSize = Math.floor((width - GRID_PADDING * 2 - LABEL_SIZE) / 10);
 
   // Store state
-  const fields = useGameStore((s) => s.fields);
-  const opponentFields = useGameStore((s) => s.opponentFields);
-  const placedShips = useGameStore((s) => s.placedShips);
-  const orientations = useGameStore((s) => s.orientations);
-  const turn = useGameStore((s) => s.turn);
-  const showOpponentField = useGameStore((s) => s.showOpponentField);
-  const sunkEvent = useGameStore((s) => s.sunkEvent);
+  const fields = useGameStore(s => s.fields);
+  const opponentFields = useGameStore(s => s.opponentFields);
+  const placedShips = useGameStore(s => s.placedShips);
+  const orientations = useGameStore(s => s.orientations);
+  const turn = useGameStore(s => s.turn);
+  const showOpponentField = useGameStore(s => s.showOpponentField);
+  const sunkEvent = useGameStore(s => s.sunkEvent);
 
   // Hooks
   const gestures = usePlacementGestures(cellSize);
@@ -39,18 +33,13 @@ export default function BattleScreen() {
 
   return (
     <Animated.View style={[styles.background, animations.screenStyle]}>
-      <ImageBackground
-        source={IMAGES.bg}
-        style={styles.background}
-        resizeMode="cover"
-      >
+      <ImageBackground source={IMAGES.bg} style={styles.background} resizeMode="cover">
         <View style={[StyleSheet.absoluteFill, styles.overlay]} />
 
         {/* Placement phase — fades out on Fire at Will */}
         <Animated.View
           style={[StyleSheet.absoluteFill, animations.placementPhaseStyle]}
-          pointerEvents={showOpponentField ? "none" : "auto"}
-        >
+          pointerEvents={showOpponentField ? 'none' : 'auto'}>
           <PlacementView
             fireTopStyle={animations.fireTopStyle}
             fireBottomStyle={animations.fireBottomStyle}
@@ -80,8 +69,7 @@ export default function BattleScreen() {
         {/* Battle phase — fades in on Fire at Will */}
         <Animated.View
           style={[StyleSheet.absoluteFill, animations.battlePhaseStyle]}
-          pointerEvents={showOpponentField ? "auto" : "none"}
-        >
+          pointerEvents={showOpponentField ? 'auto' : 'none'}>
           <BattleView
             fields={fields}
             opponentFields={opponentFields}
@@ -93,15 +81,8 @@ export default function BattleScreen() {
         </Animated.View>
 
         {/* Commence firing flash — centered overlay, z-axis punch animation */}
-        <Animated.View
-          style={[styles.flashOverlay, animations.flashStyle]}
-          pointerEvents="none"
-        >
-          <Image
-            source={IMAGES.commenceFiring}
-            style={styles.flashImage}
-            resizeMode="contain"
-          />
+        <Animated.View style={[styles.flashOverlay, animations.flashStyle]} pointerEvents="none">
+          <Image source={IMAGES.commenceFiring} style={styles.flashImage} resizeMode="contain" />
         </Animated.View>
 
         {/* Floating drag preview — rendered last so it draws on top */}
@@ -123,19 +104,19 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   overlay: {
-    backgroundColor: "rgba(0, 0, 0, 0.55)",
+    backgroundColor: 'rgba(0, 0, 0, 0.55)',
   },
   flashOverlay: {
-    position: "absolute",
+    position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   flashImage: {
-    width: "80%",
+    width: '80%',
     height: undefined,
     aspectRatio: 1,
   },

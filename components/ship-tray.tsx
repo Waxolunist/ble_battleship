@@ -1,18 +1,11 @@
-import { IMAGES } from "@/constants/assets";
-import type { ShipType } from "@/models/types";
-import { SHIP_FLEET, SHIP_SIZES } from "@/models/types";
-import { forwardRef } from "react";
-import {
-  Image,
-  ImageSourcePropType,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
-import { Gesture, GestureDetector } from "react-native-gesture-handler";
-import type { SharedValue } from "react-native-reanimated";
-import Animated, { runOnJS } from "react-native-reanimated";
+import { IMAGES } from '@/constants/assets';
+import type { ShipType } from '@/models/types';
+import { SHIP_FLEET, SHIP_SIZES } from '@/models/types';
+import { forwardRef } from 'react';
+import { Image, ImageSourcePropType, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import type { SharedValue } from 'react-native-reanimated';
+import Animated, { runOnJS } from 'react-native-reanimated';
 
 const CELL_SIZE = 28;
 const CELL_GAP = 2;
@@ -49,7 +42,7 @@ function SpriteCell({
 interface ShipRowProps {
   type: ShipType;
   isPlaced: boolean;
-  orientation: "horizontal" | "vertical";
+  orientation: 'horizontal' | 'vertical';
   onOrientationToggle: () => void;
   onDragStart: (x: number, y: number) => void;
   onDragging: (x: number, y: number) => void;
@@ -75,17 +68,17 @@ function ShipRow({
   const pan = Gesture.Pan()
     .enabled(!isPlaced)
     .minDistance(4)
-    .onStart((e) => {
+    .onStart(e => {
       dragX.value = e.absoluteX;
       dragY.value = e.absoluteY;
       runOnJS(onDragStart)(e.absoluteX, e.absoluteY);
     })
-    .onUpdate((e) => {
+    .onUpdate(e => {
       dragX.value = e.absoluteX;
       dragY.value = e.absoluteY;
       runOnJS(onDragging)(e.absoluteX, e.absoluteY);
     })
-    .onEnd((e) => {
+    .onEnd(e => {
       runOnJS(onDragEnd)(e.absoluteX, e.absoluteY);
     });
 
@@ -96,17 +89,11 @@ function ShipRow({
         <Pressable
           onPress={isPlaced ? undefined : onOrientationToggle}
           style={[styles.rotateButton, isPlaced && styles.rotateButtonPlaced]}
-          hitSlop={6}
-        >
-          <Text style={styles.rotateIcon}>
-            {orientation === "horizontal" ? "↔" : "↕"}
-          </Text>
+          hitSlop={6}>
+          <Text style={styles.rotateIcon}>{orientation === 'horizontal' ? '↔' : '↕'}</Text>
         </Pressable>
 
-        <Text
-          numberOfLines={1}
-          style={[styles.shipLabel, isPlaced && styles.shipLabelPlaced]}
-        >
+        <Text numberOfLines={1} style={[styles.shipLabel, isPlaced && styles.shipLabelPlaced]}>
           {type.toUpperCase()}
         </Text>
 
@@ -117,21 +104,13 @@ function ShipRow({
             ) : (
               <View
                 key={i}
-                style={[
-                  styles.cell,
-                  styles.cellSolid,
-                  isPlaced && styles.cellPlaced,
-                ]}
+                style={[styles.cell, styles.cellSolid, isPlaced && styles.cellPlaced]}
               />
             ),
           )}
         </View>
 
-        <Text
-          style={[styles.placedBadge, !isPlaced && styles.placedBadgeHidden]}
-        >
-          ✓
-        </Text>
+        <Text style={[styles.placedBadge, !isPlaced && styles.placedBadgeHidden]}>✓</Text>
       </Animated.View>
     </GestureDetector>
   );
@@ -139,7 +118,7 @@ function ShipRow({
 
 export interface ShipTrayProps {
   placedShips: Set<ShipType>;
-  orientations: Record<ShipType, "horizontal" | "vertical">;
+  orientations: Record<ShipType, 'horizontal' | 'vertical'>;
   onOrientationToggle: (ship: ShipType) => void;
   onDragStart: (ship: ShipType, x: number, y: number) => void;
   onDragging: (x: number, y: number) => void;
@@ -167,7 +146,7 @@ export const ShipTray = forwardRef<View, ShipTrayProps>(function ShipTray(
     <View ref={ref} style={styles.tray}>
       <Text style={styles.trayTitle}>FLEET</Text>
       <View style={styles.shipList}>
-        {SHIP_FLEET.map((type) => (
+        {SHIP_FLEET.map(type => (
           <ShipRow
             key={type}
             type={type}
@@ -192,26 +171,26 @@ export const ShipTray = forwardRef<View, ShipTrayProps>(function ShipTray(
 const styles = StyleSheet.create({
   tray: {
     borderWidth: 1,
-    borderColor: "rgba(80, 160, 255, 0.35)",
+    borderColor: 'rgba(80, 160, 255, 0.35)',
     borderRadius: 4,
-    backgroundColor: "rgba(8, 25, 70, 0.75)",
+    backgroundColor: 'rgba(8, 25, 70, 0.75)',
     paddingHorizontal: 12,
     paddingVertical: 16,
     gap: 10,
   },
   trayTitle: {
-    color: "rgba(180, 210, 255, 0.8)",
+    color: 'rgba(180, 210, 255, 0.8)',
     fontSize: 11,
-    fontWeight: "700",
+    fontWeight: '700',
     letterSpacing: 3,
-    textAlign: "center",
+    textAlign: 'center',
   },
   shipList: {
     gap: 8,
   },
   shipRow: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 6,
   },
   shipRowPlaced: {
@@ -220,33 +199,33 @@ const styles = StyleSheet.create({
   rotateButton: {
     width: 22,
     height: 22,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
     borderRadius: 3,
     borderWidth: 1,
-    borderColor: "rgba(80, 160, 255, 0.5)",
-    backgroundColor: "rgba(30, 60, 140, 0.6)",
+    borderColor: 'rgba(80, 160, 255, 0.5)',
+    backgroundColor: 'rgba(30, 60, 140, 0.6)',
   },
   rotateButtonPlaced: {
-    borderColor: "rgba(80, 160, 255, 0.2)",
+    borderColor: 'rgba(80, 160, 255, 0.2)',
   },
   rotateIcon: {
-    color: "rgba(180, 210, 255, 0.9)",
+    color: 'rgba(180, 210, 255, 0.9)',
     fontSize: 11,
     lineHeight: 14,
   },
   shipLabel: {
-    color: "rgba(180, 210, 255, 0.65)",
+    color: 'rgba(180, 210, 255, 0.65)',
     fontSize: 10,
-    fontWeight: "700",
+    fontWeight: '700',
     letterSpacing: 1,
     width: 100,
   },
   shipLabelPlaced: {
-    color: "rgba(180, 210, 255, 0.35)",
+    color: 'rgba(180, 210, 255, 0.35)',
   },
   cells: {
-    flexDirection: "row",
+    flexDirection: 'row',
     gap: CELL_GAP,
   },
   cell: {
@@ -254,48 +233,48 @@ const styles = StyleSheet.create({
     height: CELL_SIZE,
     borderRadius: 2,
     borderWidth: 1,
-    borderColor: "rgba(80, 160, 255, 0.5)",
-    overflow: "hidden",
+    borderColor: 'rgba(80, 160, 255, 0.5)',
+    overflow: 'hidden',
   },
   cellSolid: {
-    backgroundColor: "rgba(80, 140, 240, 0.75)",
+    backgroundColor: 'rgba(80, 140, 240, 0.75)',
   },
   cellPlaced: {
-    backgroundColor: "rgba(60, 110, 180, 0.4)",
+    backgroundColor: 'rgba(60, 110, 180, 0.4)',
   },
   spriteImage: {
-    position: "absolute",
+    position: 'absolute',
     top: 0,
     height: CELL_SIZE,
   },
   cellTileOverlay: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: "rgba(30, 60, 130, 0.25)",
+    backgroundColor: 'rgba(30, 60, 130, 0.25)',
   },
   shuffleButton: {
-    position: "absolute",
+    position: 'absolute',
     bottom: 12,
     right: 12,
     width: 32,
     height: 32,
-    backgroundColor: "#000",
+    backgroundColor: '#000',
     borderRadius: 4,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   shuffleIcon: {
-    color: "#fff",
+    color: '#fff',
     fontSize: 22,
     lineHeight: 26,
-    textAlign: "center",
+    textAlign: 'center',
     includeFontPadding: false,
-    width: "100%",
-    height: "100%",
+    width: '100%',
+    height: '100%',
   },
   placedBadge: {
-    color: "rgba(80, 210, 120, 0.9)",
+    color: 'rgba(80, 210, 120, 0.9)',
     fontSize: 14,
-    fontWeight: "800",
+    fontWeight: '800',
     marginLeft: 4,
     width: 18,
   },
