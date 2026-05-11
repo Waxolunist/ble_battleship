@@ -1,10 +1,7 @@
-import { forwardRef } from "react";
-import { Gesture, GestureDetector } from "react-native-gesture-handler";
-import Animated, { runOnJS } from "react-native-reanimated";
-import type { SharedValue } from "react-native-reanimated";
+import { IMAGES } from "@/constants/assets";
 import type { ShipType } from "@/models/types";
 import { SHIP_FLEET, SHIP_SIZES } from "@/models/types";
-import { IMAGES } from "@/constants/assets";
+import { forwardRef } from "react";
 import {
   Image,
   ImageSourcePropType,
@@ -13,6 +10,9 @@ import {
   Text,
   View,
 } from "react-native";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import type { SharedValue } from "react-native-reanimated";
+import Animated, { runOnJS } from "react-native-reanimated";
 
 const CELL_SIZE = 28;
 const CELL_GAP = 2;
@@ -98,10 +98,15 @@ function ShipRow({
           style={[styles.rotateButton, isPlaced && styles.rotateButtonPlaced]}
           hitSlop={6}
         >
-          <Text style={styles.rotateIcon}>{orientation === "horizontal" ? "↔" : "↕"}</Text>
+          <Text style={styles.rotateIcon}>
+            {orientation === "horizontal" ? "↔" : "↕"}
+          </Text>
         </Pressable>
 
-        <Text numberOfLines={1} style={[styles.shipLabel, isPlaced && styles.shipLabelPlaced]}>
+        <Text
+          numberOfLines={1}
+          style={[styles.shipLabel, isPlaced && styles.shipLabelPlaced]}
+        >
           {type.toUpperCase()}
         </Text>
 
@@ -110,12 +115,23 @@ function ShipRow({
             image ? (
               <SpriteCell key={i} image={image} index={i} totalCells={size} />
             ) : (
-              <View key={i} style={[styles.cell, styles.cellSolid, isPlaced && styles.cellPlaced]} />
-            )
+              <View
+                key={i}
+                style={[
+                  styles.cell,
+                  styles.cellSolid,
+                  isPlaced && styles.cellPlaced,
+                ]}
+              />
+            ),
           )}
         </View>
 
-        <Text style={[styles.placedBadge, !isPlaced && styles.placedBadgeHidden]}>✓</Text>
+        <Text
+          style={[styles.placedBadge, !isPlaced && styles.placedBadgeHidden]}
+        >
+          ✓
+        </Text>
       </Animated.View>
     </GestureDetector>
   );
@@ -130,18 +146,23 @@ export interface ShipTrayProps {
   onDragEnd: (x: number, y: number) => void;
   dragX: SharedValue<number>;
   dragY: SharedValue<number>;
+  onRandomize: () => void;
 }
 
-export const ShipTray = forwardRef<View, ShipTrayProps>(function ShipTray({
-  placedShips,
-  orientations,
-  onOrientationToggle,
-  onDragStart,
-  onDragging,
-  onDragEnd,
-  dragX,
-  dragY,
-}: ShipTrayProps, ref) {
+export const ShipTray = forwardRef<View, ShipTrayProps>(function ShipTray(
+  {
+    placedShips,
+    orientations,
+    onOrientationToggle,
+    onDragStart,
+    onDragging,
+    onDragEnd,
+    dragX,
+    dragY,
+    onRandomize,
+  }: ShipTrayProps,
+  ref,
+) {
   return (
     <View ref={ref} style={styles.tray}>
       <Text style={styles.trayTitle}>FLEET</Text>
@@ -161,6 +182,9 @@ export const ShipTray = forwardRef<View, ShipTrayProps>(function ShipTray({
           />
         ))}
       </View>
+      <Pressable onPress={onRandomize} style={styles.shuffleButton}>
+        <Text style={styles.shuffleIcon}>⇄</Text>
+      </Pressable>
     </View>
   );
 });
@@ -247,6 +271,26 @@ const styles = StyleSheet.create({
   cellTileOverlay: {
     ...StyleSheet.absoluteFill,
     backgroundColor: "rgba(30, 60, 130, 0.25)",
+  },
+  shuffleButton: {
+    position: "absolute",
+    bottom: 12,
+    right: 12,
+    width: 32,
+    height: 32,
+    backgroundColor: "#000",
+    borderRadius: 4,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  shuffleIcon: {
+    color: "#fff",
+    fontSize: 22,
+    lineHeight: 26,
+    textAlign: "center",
+    includeFontPadding: false,
+    width: "100%",
+    height: "100%",
   },
   placedBadge: {
     color: "rgba(80, 210, 120, 0.9)",

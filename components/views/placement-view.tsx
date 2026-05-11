@@ -33,6 +33,7 @@ export type PlacementViewProps = {
   onDragStart: (shipType: ShipType, pageX: number, pageY: number) => void;
   onFireAtWill: () => void;
   onRetreat: () => void;
+  onRandomize: () => void;
 };
 
 export function PlacementView({
@@ -57,6 +58,7 @@ export function PlacementView({
   onDragStart,
   onFireAtWill,
   onRetreat,
+  onRandomize,
 }: PlacementViewProps) {
   return (
     <View style={styles.content}>
@@ -98,6 +100,7 @@ export function PlacementView({
               onDragEnd={onDragEnd}
               dragX={dragX}
               dragY={dragY}
+              onRandomize={onRandomize}
             />
           </Animated.View>
         </View>

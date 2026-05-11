@@ -5,4 +5,5 @@ export const IMAGES = {
   carrier: require("@/assets/images/carrier.png"),
   submarine: require("@/assets/images/submarine.png"),
   destroyer: require("@/assets/images/destroyer.png"),
+  commenceFiring: require("@/assets/images/commence_firing.png"),
 };

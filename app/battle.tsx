@@ -1,5 +1,8 @@
 import { DragPreview } from "@/components/drag-preview";
 import { computeCell, LABEL_SIZE } from "@/components/game-field";
+import { BattleView } from "@/components/views/battle-view";
+import type { Orientation } from "@/components/views/placement-view";
+import { PlacementView } from "@/components/views/placement-view";
 import { IMAGES } from "@/constants/assets";
 import { createGameField } from "@/models/game-factory";
 import type { Field, Ship, ShipPart, ShipType } from "@/models/types";
@@ -7,16 +10,20 @@ import { SHIP_FLEET, SHIP_SIZES } from "@/models/types";
 import { useNavigation } from "@react-navigation/native";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ImageBackground, StyleSheet, useWindowDimensions, View } from "react-native";
+import {
+  Image,
+  ImageBackground,
+  StyleSheet,
+  useWindowDimensions,
+  View,
+} from "react-native";
 import Animated, {
   Easing,
   useAnimatedStyle,
   useSharedValue,
+  withSequence,
   withTiming,
 } from "react-native-reanimated";
-import { BattleView } from "@/components/views/battle-view";
-import { PlacementView } from "@/components/views/placement-view";
-import type { Orientation } from "@/components/views/placement-view";
 
 const PLAYER = { id: "1", name: "CAPTAIN", isAI: false };
 const AI_PLAYER = { id: "2", name: "ENEMY", isAI: true };
@@ -36,6 +43,39 @@ function buildPreviewCells(
     x: orientation === "horizontal" ? startX + i : startX,
     y: orientation === "vertical" ? startY + i : startY,
   }));
+}
+
+function tryRandomPlacement(emptyFields: Field[][]): {
+  fields: Field[][];
+  orientations: Record<ShipType, Orientation>;
+} | null {
+  let current = emptyFields;
+  const orientations: Record<ShipType, Orientation> = {} as Record<
+    ShipType,
+    Orientation
+  >;
+
+  for (const shipType of SHIP_FLEET) {
+    const orientation: Orientation =
+      Math.random() < 0.5 ? "horizontal" : "vertical";
+    orientations[shipType] = orientation;
+
+    const valid: { x: number; y: number }[] = [];
+    for (let y = 0; y < GRID_SIZE; y++) {
+      for (let x = 0; x < GRID_SIZE; x++) {
+        const cells = buildPreviewCells(shipType, x, y, orientation);
+        if (isValidPlacement(cells, current)) valid.push({ x, y });
+      }
+    }
+
+    if (valid.length === 0) return null;
+
+    const { x, y } = valid[Math.floor(Math.random() * valid.length)];
+    const cells = buildPreviewCells(shipType, x, y, orientation);
+    current = placeship(current, shipType, cells, orientation);
+  }
+
+  return { fields: current, orientations };
 }
 
 function isValidPlacement(
@@ -94,7 +134,9 @@ export default function BattleScreen() {
     () => createGameField(AI_PLAYER).fields,
   );
   const [placedShips, setPlacedShips] = useState<Set<ShipType>>(new Set());
-  const [orientations, setOrientations] = useState<Record<ShipType, Orientation>>(
+  const [orientations, setOrientations] = useState<
+    Record<ShipType, Orientation>
+  >(
     () =>
       Object.fromEntries(SHIP_FLEET.map((t) => [t, "horizontal"])) as Record<
         ShipType,
@@ -230,7 +272,11 @@ export default function BattleScreen() {
         cellSize,
       );
       const cells = buildPreviewCells(ship, startX, startY, orientation);
-      const valid = isValidPlacement(cells, fields, fromGridShipId ?? undefined);
+      const valid = isValidPlacement(
+        cells,
+        fields,
+        fromGridShipId ?? undefined,
+      );
 
       if (!valid && fromGridShipId) {
         const tray = trayBoundsRef.current;
@@ -285,6 +331,14 @@ export default function BattleScreen() {
     }));
   }, []);
 
+  const handleRandomize = useCallback(() => {
+    const result = tryRandomPlacement(createGameField(PLAYER).fields);
+    if (!result) return;
+    setFields(result.fields);
+    setOrientations(result.orientations);
+    setPlacedShips(new Set(SHIP_FLEET));
+  }, []);
+
   // Screen exit animation
   const screenTranslateY = useSharedValue(0);
 
@@ -297,6 +351,10 @@ export default function BattleScreen() {
   // Battle phase fade-in
   const battlePhaseOpacity = useSharedValue(0);
   const [showOpponentField, setShowOpponentField] = useState(false);
+
+  // Commence firing flash
+  const flashOpacity = useSharedValue(0);
+  const flashScale = useSharedValue(0.2);
 
   const screenStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: screenTranslateY.value }],
@@ -322,6 +380,11 @@ export default function BattleScreen() {
     opacity: battlePhaseOpacity.value,
   }));
 
+  const flashStyle = useAnimatedStyle(() => ({
+    opacity: flashOpacity.value,
+    transform: [{ scale: flashScale.value }],
+  }));
+
   const allShipsPlaced = placedShips.size === SHIP_FLEET.length;
 
   const handleFireAtWill = () => {
@@ -331,8 +394,24 @@ export default function BattleScreen() {
     fireBottomTranslateY.value = withTiming(60, fadeConfig);
     playerFieldTranslateY.value = withTiming(-10, fadeConfig);
 
-    battlePhaseOpacity.value = withTiming(1, { duration: 350, easing: Easing.out(Easing.cubic) });
-    setTimeout(() => setShowOpponentField(true), 350);
+    battlePhaseOpacity.value = withTiming(1, {
+      duration: 350,
+      easing: Easing.out(Easing.cubic),
+    });
+    setTimeout(() => {
+      setShowOpponentField(true);
+      flashScale.value = 0.2;
+      flashOpacity.value = withSequence(
+        withTiming(1, { duration: 600, easing: Easing.out(Easing.cubic) }),
+        withTiming(1, { duration: 1500 }),
+        withTiming(0, { duration: 450, easing: Easing.in(Easing.cubic) }),
+      );
+      flashScale.value = withSequence(
+        withTiming(1, { duration: 600, easing: Easing.out(Easing.cubic) }),
+        withTiming(1, { duration: 1500 }),
+        withTiming(1.7, { duration: 450, easing: Easing.in(Easing.cubic) }),
+      );
+    }, 350);
   };
 
   const handleRetreat = () => {
@@ -380,6 +459,7 @@ export default function BattleScreen() {
             onDragStart={handleDragStart}
             onFireAtWill={handleFireAtWill}
             onRetreat={handleRetreat}
+            onRandomize={handleRandomize}
           />
         </Animated.View>
 
@@ -392,6 +472,18 @@ export default function BattleScreen() {
             fields={fields}
             opponentFields={opponentFields}
             showOpponentField={showOpponentField}
+          />
+        </Animated.View>
+
+        {/* Commence firing flash — centered overlay, z-axis punch animation */}
+        <Animated.View
+          style={[styles.flashOverlay, flashStyle]}
+          pointerEvents="none"
+        >
+          <Image
+            source={IMAGES.commenceFiring}
+            style={styles.flashImage}
+            resizeMode="contain"
           />
         </Animated.View>
 
@@ -415,5 +507,19 @@ const styles = StyleSheet.create({
   },
   overlay: {
     backgroundColor: "rgba(0, 0, 0, 0.55)",
+  },
+  flashOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  flashImage: {
+    width: "80%",
+    height: undefined,
+    aspectRatio: 1,
   },
 });
