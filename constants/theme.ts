@@ -99,6 +99,14 @@ export const GameColors = {
   /** Subtle blue highlight on pressed secondary buttons */
   bluePressedBg: 'rgba(80, 160, 255, 0.1)',
 
+  // ── Retreat / confirm dialog ─────────────────────────────────────────
+  /** Retreat confirm overlay scrim */
+  confirmOverlayBg: 'rgba(4, 8, 20, 0.72)',
+  /** Retreat confirm dialog card background */
+  confirmDialogBg: 'rgba(0, 0, 0, 0.97)',
+  /** Retreat confirm button pressed background */
+  retreatPressedBg: 'rgba(255, 80, 80, 0.15)',
+
   // ── Stats screen ─────────────────────────────────────────────────────
   /** Stats section card background */
   statSectionBg: 'rgba(8, 20, 60, 0.65)',
