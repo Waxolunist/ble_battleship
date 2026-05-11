@@ -2,7 +2,7 @@ import { GameField } from '@/components/game-field';
 import type { Field, ShotPhase, ShipType } from '@/models/types';
 import { GameColors } from '@/constants/theme';
 import { useEffect, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   Easing,
   FadeInDown,
@@ -49,6 +49,7 @@ export type BattleViewProps = {
   sunkEvent?: SunkEvent;
   shotPhase?: ShotPhase;
   onEnemyCellPress?: (x: number, y: number) => void;
+  onRetreat?: () => void;
 };
 
 export function BattleView({
@@ -59,6 +60,7 @@ export function BattleView({
   sunkEvent,
   shotPhase,
   onEnemyCellPress,
+  onRetreat,
 }: BattleViewProps) {
   // 0 = player's turn, 1 = enemy's turn — transitions smoothly on change
   const turnSV = useSharedValue(0);
@@ -255,12 +257,82 @@ export function BattleView({
   const dividerText = isPlayerTurn ? 'SELECT TARGET' : 'INCOMING FIRE';
   const dividerColor = isPlayerTurn ? GameColors.gold : GameColors.red;
 
+  // --- Retreat button ---
+  const [confirmingRetreat, setConfirmingRetreat] = useState(false);
+
+  // Dims to 50% during enemy turn
+  const retreatButtonStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(turnSV.value, [0, 1], [1, 0.5]),
+  }));
+
+  const handleRetreatPress = async () => {
+    if (Platform.OS !== 'web') {
+      const { impactAsync, ImpactFeedbackStyle } = await import('expo-haptics');
+      impactAsync(ImpactFeedbackStyle.Medium);
+    }
+    setConfirmingRetreat(true);
+  };
+
+  const handleRetreatLongPress = async () => {
+    if (Platform.OS !== 'web') {
+      const { impactAsync, ImpactFeedbackStyle } = await import('expo-haptics');
+      impactAsync(ImpactFeedbackStyle.Heavy);
+    }
+    onRetreat?.();
+  };
+
+  const handleRetreatConfirm = async () => {
+    if (Platform.OS !== 'web') {
+      const { impactAsync, ImpactFeedbackStyle } = await import('expo-haptics');
+      impactAsync(ImpactFeedbackStyle.Heavy);
+    }
+    setConfirmingRetreat(false);
+    onRetreat?.();
+  };
+
   // Route shot animation to the correct grid
   const playerGridShot = shotPhase?.grid === 'player' ? shotPhase : undefined;
   const enemyGridShot = shotPhase?.grid === 'opponent' ? shotPhase : undefined;
 
   return (
     <Animated.View style={[styles.battleContent, shakeStyle]}>
+      {/* Retreat button — bottom-left, dims during enemy turn */}
+      <Animated.View style={[styles.retreatButton, retreatButtonStyle]}>
+        <Pressable
+          onPress={handleRetreatPress}
+          onLongPress={handleRetreatLongPress}
+          delayLongPress={600}
+          style={({ pressed }) => [styles.retreatButtonInner, pressed && styles.retreatButtonPressed]}>
+          <Text style={styles.retreatIcon}>⚓</Text>
+          <Text style={styles.retreatText}>RETREAT</Text>
+        </Pressable>
+      </Animated.View>
+
+      {/* Confirmation overlay */}
+      {confirmingRetreat && (
+        <View style={styles.confirmOverlay}>
+          <View style={styles.confirmDialog}>
+            <Text style={styles.confirmMessage}>
+              {'Abandon battle?\nYour fleet will be lost to the sea.'}
+            </Text>
+            <View style={styles.confirmButtons}>
+              <Pressable
+                onPress={() => setConfirmingRetreat(false)}
+                style={({ pressed }) => [styles.holdButton, pressed && styles.holdButtonPressed]}>
+                <Text style={styles.holdButtonText}>HOLD THE LINE</Text>
+              </Pressable>
+              <Pressable
+                onPress={handleRetreatConfirm}
+                style={({ pressed }) => [
+                  styles.confirmRetreatButton,
+                  pressed && styles.confirmRetreatButtonPressed,
+                ]}>
+                <Text style={styles.confirmRetreatText}>RETREAT</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      )}
       <Animated.View
         style={styles.fieldSection}
         layout={LinearTransition.duration(500).easing(Easing.out(Easing.cubic))}>
@@ -474,5 +546,99 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(0,0,0,0.8)',
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 6,
+  },
+  retreatButton: {
+    position: 'absolute',
+    bottom: 24,
+    left: 24,
+  },
+  retreatButtonInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: GameColors.blueBorder,
+    borderRadius: 4,
+  },
+  retreatButtonPressed: {
+    backgroundColor: 'rgba(80, 160, 255, 0.1)',
+  },
+  retreatIcon: {
+    fontSize: 10,
+    color: GameColors.labelFaded,
+  },
+  retreatText: {
+    fontFamily: 'BlackOpsOne',
+    fontSize: 11,
+    letterSpacing: 3,
+    color: GameColors.label,
+  },
+  confirmOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 100,
+    backgroundColor: 'rgba(4, 8, 20, 0.72)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  confirmDialog: {
+    backgroundColor: 'rgba(0, 0, 0, 0.97)',
+    borderWidth: 1,
+    borderColor: GameColors.blueBorder,
+    borderRadius: 6,
+    paddingVertical: 28,
+    paddingHorizontal: 32,
+    alignItems: 'center',
+    gap: 24,
+    marginHorizontal: 32,
+  },
+  confirmMessage: {
+    fontFamily: 'BlackOpsOne',
+    fontSize: 14,
+    letterSpacing: 1,
+    color: GameColors.label,
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  confirmButtons: {
+    flexDirection: 'row',
+    gap: 16,
+  },
+  holdButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderWidth: 1,
+    borderColor: GameColors.blueBorder,
+    borderRadius: 4,
+  },
+  holdButtonPressed: {
+    backgroundColor: 'rgba(80, 160, 255, 0.1)',
+  },
+  holdButtonText: {
+    fontFamily: 'BlackOpsOne',
+    fontSize: 11,
+    letterSpacing: 2,
+    color: GameColors.label,
+  },
+  confirmRetreatButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderWidth: 1,
+    borderColor: GameColors.red,
+    borderRadius: 4,
+  },
+  confirmRetreatButtonPressed: {
+    backgroundColor: 'rgba(255, 80, 80, 0.15)',
+  },
+  confirmRetreatText: {
+    fontFamily: 'BlackOpsOne',
+    fontSize: 11,
+    letterSpacing: 2,
+    color: GameColors.red,
   },
 });
