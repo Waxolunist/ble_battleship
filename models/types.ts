@@ -1,5 +1,9 @@
 export type ShipType = "Carrier" | "Battleship" | "Cruiser" | "Submarine" | "Destroyer";
 
+export type Orientation = "horizontal" | "vertical";
+
+export const GRID_SIZE = 10;
+
 export const SHIP_SIZES: Record<ShipType, number> = {
   Carrier: 5,
   Battleship: 4,

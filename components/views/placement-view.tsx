@@ -2,14 +2,12 @@ import { FadeIn } from "@/components/fade-in";
 import { GameField } from "@/components/game-field";
 import { HapticPressable } from "@/components/haptic-pressable";
 import { ShipTray } from "@/components/ship-tray";
-import type { Field, ShipType } from "@/models/types";
+import type { Field, Orientation, ShipType } from "@/models/types";
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import type { ViewStyle } from "react-native";
 import Animated from "react-native-reanimated";
 import type { AnimatedStyle, SharedValue } from "react-native-reanimated";
-
-export type Orientation = "horizontal" | "vertical";
 
 export type PlacementViewProps = {
   fireTopStyle: AnimatedStyle<ViewStyle>;

@@ -1,12 +1,14 @@
 import { DragPreview } from "@/components/drag-preview";
 import { computeCell, LABEL_SIZE } from "@/components/game-field";
 import { BattleView } from "@/components/views/battle-view";
-import type { Orientation } from "@/components/views/placement-view";
 import { PlacementView } from "@/components/views/placement-view";
 import { IMAGES } from "@/constants/assets";
+import { pickAiTarget } from "@/engine/ai";
+import { applyFire } from "@/engine/combat";
+import { buildPreviewCells, isValidPlacement, placeShip, tryRandomPlacement } from "@/engine/placement";
 import { createGameField } from "@/models/game-factory";
-import type { Field, Ship, ShipPart, ShipType } from "@/models/types";
-import { SHIP_FLEET, SHIP_SIZES } from "@/models/types";
+import type { Field, Orientation, ShipType } from "@/models/types";
+import { SHIP_FLEET } from "@/models/types";
 import { useNavigation } from "@react-navigation/native";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -27,95 +29,9 @@ import Animated, {
 
 const PLAYER = { id: "1", name: "CAPTAIN", isAI: false };
 const AI_PLAYER = { id: "2", name: "ENEMY", isAI: true };
-const GRID_SIZE = 10;
 const GRID_PADDING = 32;
 const DRAG_OFFSET_X = 24;
 const DRAG_OFFSET_Y = 3 * 48;
-
-function buildPreviewCells(
-  shipType: ShipType,
-  startX: number,
-  startY: number,
-  orientation: Orientation,
-): { x: number; y: number }[] {
-  const size = SHIP_SIZES[shipType];
-  return Array.from({ length: size }, (_, i) => ({
-    x: orientation === "horizontal" ? startX + i : startX,
-    y: orientation === "vertical" ? startY + i : startY,
-  }));
-}
-
-function tryRandomPlacement(emptyFields: Field[][]): {
-  fields: Field[][];
-  orientations: Record<ShipType, Orientation>;
-} | null {
-  let current = emptyFields;
-  const orientations: Record<ShipType, Orientation> = {} as Record<
-    ShipType,
-    Orientation
-  >;
-
-  for (const shipType of SHIP_FLEET) {
-    const orientation: Orientation =
-      Math.random() < 0.5 ? "horizontal" : "vertical";
-    orientations[shipType] = orientation;
-
-    const valid: { x: number; y: number }[] = [];
-    for (let y = 0; y < GRID_SIZE; y++) {
-      for (let x = 0; x < GRID_SIZE; x++) {
-        const cells = buildPreviewCells(shipType, x, y, orientation);
-        if (isValidPlacement(cells, current)) valid.push({ x, y });
-      }
-    }
-
-    if (valid.length === 0) return null;
-
-    const { x, y } = valid[Math.floor(Math.random() * valid.length)];
-    const cells = buildPreviewCells(shipType, x, y, orientation);
-    current = placeship(current, shipType, cells, orientation);
-  }
-
-  return { fields: current, orientations };
-}
-
-function isValidPlacement(
-  cells: { x: number; y: number }[],
-  fields: Field[][],
-  excludeShipId?: string,
-): boolean {
-  return cells.every(({ x, y }) => {
-    if (x < 0 || x >= GRID_SIZE || y < 0 || y >= GRID_SIZE) return false;
-    const part = fields[y][x].shipPart;
-    if (!part) return true;
-    return !!excludeShipId && part.ship.id === excludeShipId;
-  });
-}
-
-function placeship(
-  fields: Field[][],
-  shipType: ShipType,
-  cells: { x: number; y: number }[],
-  orientation: Orientation,
-): Field[][] {
-  const ship: Ship = {
-    id: `${shipType}-${Date.now()}`,
-    type: shipType,
-    parts: [],
-    orientation,
-  };
-
-  const next = fields.map((row) => row.map((f) => ({ ...f })));
-
-  const parts: ShipPart[] = cells.map(({ x, y }) => {
-    const part: ShipPart = { ship, field: next[y][x], isHit: false };
-    next[y][x] = { ...next[y][x], shipPart: part };
-    return part;
-  });
-
-  ship.parts = parts;
-
-  return next;
-}
 
 export default function BattleScreen() {
   const router = useRouter();
@@ -123,7 +39,7 @@ export default function BattleScreen() {
   const { width } = useWindowDimensions();
 
   const cellSize = Math.floor(
-    (width - GRID_PADDING * 2 - LABEL_SIZE) / GRID_SIZE,
+    (width - GRID_PADDING * 2 - LABEL_SIZE) / 10,
   );
 
   // Game state
@@ -318,7 +234,7 @@ export default function BattleScreen() {
               ),
             )
           : prev;
-        return placeship(withoutOld, ship, cells, orientation);
+        return placeShip(withoutOld, ship, cells, orientation);
       });
       setPlacedShips((prev) => new Set([...prev, ship]));
     },
@@ -363,8 +279,7 @@ export default function BattleScreen() {
 
   // Player fires at an enemy cell
   const handlePlayerFire = useCallback((x: number, y: number) => {
-    const cell = opponentFields[y][x];
-    if (cell.status !== "empty") return;
+    if (opponentFields[y][x].status !== "empty") return;
 
     setOpponentFields((prev) =>
       prev.map((row) =>
@@ -372,32 +287,8 @@ export default function BattleScreen() {
       ),
     );
     setTimeout(() => {
-      const isHit = !!cell.shipPart;
-
-      // Determine sunk before updating state, using captured opponentFields snapshot
-      let sunkShip: Ship | null = null;
-      if (isHit && cell.shipPart) {
-        const ship = cell.shipPart.ship;
-        const allOtherPartsHit = ship.parts
-          .filter(({ field: pf }) => !(pf.x === x && pf.y === y))
-          .every(({ field: pf }) => opponentFields[pf.y][pf.x].shipPart?.isHit === true);
-        if (allOtherPartsHit) sunkShip = ship;
-      }
-
-      setOpponentFields((prev) => {
-        const withHit = prev.map((row) =>
-          row.map((f) =>
-            f.x === x && f.y === y
-              ? { ...f, status: isHit ? ("hit" as const) : ("miss" as const), shipPart: f.shipPart ? { ...f.shipPart, isHit: true } : null }
-              : f,
-          ),
-        );
-        if (!sunkShip) return withHit;
-        return withHit.map((row) =>
-          row.map((f) => (f.shipPart?.ship.id === sunkShip!.id ? { ...f, status: "sunk" as const } : f)),
-        );
-      });
-
+      const { fields: next, sunkShip } = applyFire(opponentFields, x, y);
+      setOpponentFields(next);
       if (sunkShip) setSunkEvent({ shipType: sunkShip.type, owner: "enemy" });
       setTurn("enemy");
     }, 500);
@@ -407,19 +298,12 @@ export default function BattleScreen() {
   useEffect(() => {
     if (turn !== "enemy") return;
 
-    const snapshot = fieldsRef.current;
-    const empty: { x: number; y: number }[] = [];
-    for (const row of snapshot) {
-      for (const f of row) {
-        if (f.status === "empty") empty.push({ x: f.x, y: f.y });
-      }
-    }
-    if (empty.length === 0) return;
+    const target = pickAiTarget(fieldsRef.current);
+    if (!target) return;
+
+    const { x, y } = target;
 
     const t1 = setTimeout(() => {
-      const { x, y } = empty[Math.floor(Math.random() * empty.length)];
-      const cell = fieldsRef.current[y][x];
-
       setFields((prev) =>
         prev.map((row) =>
           row.map((f) => (f.x === x && f.y === y ? { ...f, status: "targeted" as const } : f)),
@@ -427,33 +311,8 @@ export default function BattleScreen() {
       );
 
       const t2 = setTimeout(() => {
-        const isHit = !!cell.shipPart;
-
-        // Determine sunk using fieldsRef (always latest player fields)
-        let sunkShip: Ship | null = null;
-        if (isHit && cell.shipPart) {
-          const ship = cell.shipPart.ship;
-          const currentFields = fieldsRef.current;
-          const allOtherPartsHit = ship.parts
-            .filter(({ field: pf }) => !(pf.x === x && pf.y === y))
-            .every(({ field: pf }) => currentFields[pf.y][pf.x].shipPart?.isHit === true);
-          if (allOtherPartsHit) sunkShip = ship;
-        }
-
-        setFields((prev) => {
-          const withHit = prev.map((row) =>
-            row.map((f) =>
-              f.x === x && f.y === y
-                ? { ...f, status: isHit ? ("hit" as const) : ("miss" as const), shipPart: f.shipPart ? { ...f.shipPart, isHit: true } : null }
-                : f,
-            ),
-          );
-          if (!sunkShip) return withHit;
-          return withHit.map((row) =>
-            row.map((f) => (f.shipPart?.ship.id === sunkShip!.id ? { ...f, status: "sunk" as const } : f)),
-          );
-        });
-
+        const { fields: next, sunkShip } = applyFire(fieldsRef.current, x, y);
+        setFields(next);
         if (sunkShip) setSunkEvent({ shipType: sunkShip.type, owner: "player" });
         setTurn("player");
       }, 500);
