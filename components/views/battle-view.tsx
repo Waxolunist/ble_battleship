@@ -51,7 +51,6 @@ export type BattleViewProps = {
   sunkEvent?: SunkEvent;
   shotPhase?: ShotPhase;
   onEnemyCellPress?: (x: number, y: number) => void;
-  onRetreat?: () => void;
   onVictory?: () => void;
   onPlayAgain?: () => void;
   onMakePort?: () => void;
@@ -65,7 +64,6 @@ export function BattleView({
   sunkEvent,
   shotPhase,
   onEnemyCellPress,
-  onRetreat,
   onVictory,
   onPlayAgain,
   onMakePort,
@@ -538,7 +536,7 @@ export function BattleView({
       )}
 
       {/* Retreat button — bottom-left, dims during enemy turn, hidden once animation begins */}
-      {!isRetreating && (
+      {!isRetreating && !isVictory && (
         <Animated.View style={[styles.retreatButton, retreatButtonStyle]}>
           <Pressable
             onPress={handleRetreatPress}
@@ -735,11 +733,11 @@ export function BattleView({
             style={[StyleSheet.absoluteFill, styles.victoryCalloutWrapper]}
             pointerEvents={showVictoryButtons ? 'box-none' : 'none'}>
             <Animated.Text style={[styles.victoryText, victoryWordStyle]}>VICTORY</Animated.Text>
-            <Animated.Text style={[styles.victorySubtitle, victorySubtitleStyle]}>
+            <Animated.Text style={[styles.endgameSubtitle, victorySubtitleStyle]}>
               Enemy fleet destroyed.
             </Animated.Text>
             {showVictoryButtons && (
-              <Animated.View style={[styles.victoryButtons, victoryButtonsStyle]}>
+              <Animated.View style={[styles.endgameButtons, victoryButtonsStyle]}>
                 <HapticPressable
                   onPress={onPlayAgain}
                   style={({ pressed }) => [
@@ -777,11 +775,11 @@ export function BattleView({
             <Animated.Text style={[styles.retreatWordText, retreatWordStyle]}>
               LOST AT SEA
             </Animated.Text>
-            <Animated.Text style={[styles.victorySubtitle, defeatSubtitleStyle]}>
+            <Animated.Text style={[styles.endgameSubtitle, defeatSubtitleStyle]}>
               Your fleet was lost.
             </Animated.Text>
             {showDefeatButtons && (
-              <Animated.View style={[styles.victoryButtons, defeatButtonsStyle]}>
+              <Animated.View style={[styles.endgameButtons, defeatButtonsStyle]}>
                 <HapticPressable
                   onPress={onPlayAgain}
                   style={({ pressed }) => [
@@ -1056,13 +1054,13 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 20,
   },
-  victorySubtitle: {
+  endgameSubtitle: {
     fontFamily: 'BlackOpsOne',
     fontSize: 14,
     letterSpacing: 2,
     color: GameColors.label,
   },
-  victoryButtons: {
+  endgameButtons: {
     flexDirection: 'row',
     gap: 16,
     marginTop: 32,

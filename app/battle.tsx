@@ -38,11 +38,6 @@ export default function BattleScreen() {
   const animations = useBattleAnimations();
   const { onPlayerFire, shotPhase } = useCombat();
 
-  const handleRetreat = () => {
-    resetGame();
-    router.replace('/(tabs)/');
-  };
-
   const handleVictory = () => {
     sinkAllOpponentShips();
   };
@@ -105,7 +100,6 @@ export default function BattleScreen() {
             sunkEvent={sunkEvent}
             shotPhase={shotPhase}
             onEnemyCellPress={onPlayerFire}
-            onRetreat={handleRetreat}
             onVictory={handleVictory}
             onPlayAgain={handlePlayAgain}
             onMakePort={handleMakePort}
