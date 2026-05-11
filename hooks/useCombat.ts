@@ -1,5 +1,6 @@
 import { pickAiTarget } from '@/engine/ai';
 import type { ShotPhase } from '@/models/types';
+import { GameColors } from '@/constants/theme';
 import { useGameStore } from '@/store/useGameStore';
 import * as Haptics from 'expo-haptics';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -27,12 +28,12 @@ export function useCombat(): {
 
       // Beat 1 — Locked (0 ms): targeting reticle + low haptic
       markTargeted('opponent', x, y);
-      setShotPhase({ x, y, grid: 'opponent', beat: 'locked', reticleColor: '#FFC832' });
+      setShotPhase({ x, y, grid: 'opponent', beat: 'locked', reticleColor: GameColors.gold });
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
 
       // Beat 2 — Impact (400 ms): screen shake + heavy haptic
       const t1 = setTimeout(() => {
-        setShotPhase({ x, y, grid: 'opponent', beat: 'impact', reticleColor: '#FFC832' });
+        setShotPhase({ x, y, grid: 'opponent', beat: 'impact', reticleColor: GameColors.gold });
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => {});
       }, 400);
 
@@ -42,7 +43,7 @@ export function useCombat(): {
         const field = useGameStore.getState().opponentFields[y][x];
         const result: 'hit' | 'miss' | 'sunk' =
           field.status === 'sunk' ? 'sunk' : field.status === 'hit' ? 'hit' : 'miss';
-        setShotPhase({ x, y, grid: 'opponent', beat: 'verdict', result, reticleColor: '#FFC832' });
+        setShotPhase({ x, y, grid: 'opponent', beat: 'verdict', result, reticleColor: GameColors.gold });
         const hapticStyle =
           result === 'sunk'
             ? Haptics.ImpactFeedbackStyle.Heavy
@@ -75,13 +76,13 @@ export function useCombat(): {
     // Beat 1 — Locked (800 ms delay, then reticle + light haptic)
     const t1 = setTimeout(() => {
       markTargeted('player', x, y);
-      setShotPhase({ x, y, grid: 'player', beat: 'locked', reticleColor: '#FF5050' });
+      setShotPhase({ x, y, grid: 'player', beat: 'locked', reticleColor: GameColors.red });
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     }, 800);
 
     // Beat 2 — Impact (800 + 300 = 1100 ms)
     const t2 = setTimeout(() => {
-      setShotPhase({ x, y, grid: 'player', beat: 'impact', reticleColor: '#FF5050' });
+      setShotPhase({ x, y, grid: 'player', beat: 'impact', reticleColor: GameColors.red });
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => {});
     }, 1100);
 
@@ -91,7 +92,7 @@ export function useCombat(): {
       const field = useGameStore.getState().fields[y][x];
       const result: 'hit' | 'miss' | 'sunk' =
         field.status === 'sunk' ? 'sunk' : field.status === 'hit' ? 'hit' : 'miss';
-      setShotPhase({ x, y, grid: 'player', beat: 'verdict', result, reticleColor: '#FF5050' });
+      setShotPhase({ x, y, grid: 'player', beat: 'verdict', result, reticleColor: GameColors.red });
       const hapticStyle =
         result === 'sunk'
           ? Haptics.ImpactFeedbackStyle.Heavy

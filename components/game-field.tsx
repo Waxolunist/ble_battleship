@@ -19,6 +19,7 @@ import {
 } from 'react-native';
 import type { Field, ShipPart, ShotPhase, ShipType } from '@/models/types';
 import { IMAGES } from '@/constants/assets';
+import { GameColors } from '@/constants/theme';
 
 const ROW_LABELS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
 const COL_LABELS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
@@ -250,7 +251,7 @@ function ShotAnimationOverlay({
             width: glowSize,
             height: glowSize,
             borderRadius: glowSize / 2,
-            backgroundColor: 'rgba(255, 100, 20, 0.55)',
+            backgroundColor: GameColors.fireGlow,
           },
           glowStyle,
         ]}
@@ -266,7 +267,7 @@ function ShotAnimationOverlay({
             width: cellSize,
             height: cellSize,
             borderWidth: 1.5,
-            borderColor: 'rgba(100, 180, 255, 0.5)',
+            borderColor: GameColors.missRipple,
             borderRadius: cellSize / 2,
           },
           rippleStyle,
@@ -340,20 +341,20 @@ function cellColor(
 ): string {
   const key = `${field.x}-${field.y}`;
   if (previewCells.has(key)) {
-    return isPreviewValid ? 'rgba(80, 210, 120, 0.8)' : 'rgba(210, 60, 60, 0.8)';
+    return isPreviewValid ? GameColors.previewValid : GameColors.previewInvalid;
   }
-  if (field.status === 'targeted') return 'rgba(220, 30, 30, 0.9)';
-  if (field.status === 'sunk') return 'rgba(90, 30, 30, 0.95)';
-  if (field.status === 'hit') return 'rgba(255, 120, 0, 0.9)';
-  if (field.status === 'miss') return 'rgba(10, 10, 15, 0.95)';
-  if (field.shipPart && !hideShips) return 'rgba(60, 110, 210, 0.75)';
-  return 'rgba(8, 25, 70, 0.85)';
+  if (field.status === 'targeted') return GameColors.cellTargeted;
+  if (field.status === 'sunk') return GameColors.cellSunk;
+  if (field.status === 'hit') return GameColors.cellHit;
+  if (field.status === 'miss') return GameColors.cellMiss;
+  if (field.shipPart && !hideShips) return GameColors.cellShip;
+  return GameColors.cellEmpty;
 }
 
 export const GameField = forwardRef<View, GameFieldProps>(function GameField(
   {
     fields,
-    tint = 'rgba(80, 160, 255, 0.35)',
+    tint = GameColors.blueTint,
     hideShips = false,
     onCellPress,
     previewCells = new Set(),
@@ -472,10 +473,10 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   cellPressed: {
-    backgroundColor: 'rgba(100, 180, 255, 0.6)',
+    backgroundColor: GameColors.cellPressed,
   },
   labelText: {
-    color: 'rgba(180, 210, 255, 0.8)',
+    color: GameColors.label,
     textAlign: 'center',
     width: '100%',
     fontSize: 10,

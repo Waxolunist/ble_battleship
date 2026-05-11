@@ -1,5 +1,6 @@
 import { HapticPressable } from '@/components/haptic-pressable';
 import { IMAGES } from '@/constants/assets';
+import { GameColors } from '@/constants/theme';
 import type { ShipType } from '@/models/types';
 import { SHIP_FLEET, SHIP_SIZES } from '@/models/types';
 import { forwardRef } from 'react';
@@ -174,15 +175,15 @@ export const ShipTray = forwardRef<View, ShipTrayProps>(function ShipTray(
 const styles = StyleSheet.create({
   tray: {
     borderWidth: 1,
-    borderColor: 'rgba(80, 160, 255, 0.35)',
+    borderColor: GameColors.blueTint,
     borderRadius: 4,
-    backgroundColor: 'rgba(8, 25, 70, 0.75)',
+    backgroundColor: GameColors.trayBg,
     paddingHorizontal: 12,
     paddingVertical: 16,
     gap: 10,
   },
   trayTitle: {
-    color: 'rgba(180, 210, 255, 0.8)',
+    color: GameColors.label,
     fontSize: 11,
     fontWeight: '700',
     letterSpacing: 3,
@@ -206,26 +207,26 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: 3,
     borderWidth: 1,
-    borderColor: 'rgba(80, 160, 255, 0.5)',
-    backgroundColor: 'rgba(30, 60, 140, 0.6)',
+    borderColor: GameColors.blueBorder,
+    backgroundColor: GameColors.blueButton,
   },
   rotateButtonPlaced: {
-    borderColor: 'rgba(80, 160, 255, 0.2)',
+    borderColor: GameColors.blueBorderDim,
   },
   rotateIcon: {
-    color: 'rgba(180, 210, 255, 0.9)',
+    color: GameColors.labelBright,
     fontSize: 11,
     lineHeight: 14,
   },
   shipLabel: {
-    color: 'rgba(180, 210, 255, 0.65)',
+    color: GameColors.labelDim,
     fontSize: 10,
     fontWeight: '700',
     letterSpacing: 1,
     width: 100,
   },
   shipLabelPlaced: {
-    color: 'rgba(180, 210, 255, 0.35)',
+    color: GameColors.labelFaded,
   },
   cells: {
     flexDirection: 'row',
@@ -236,14 +237,14 @@ const styles = StyleSheet.create({
     height: CELL_SIZE,
     borderRadius: 2,
     borderWidth: 1,
-    borderColor: 'rgba(80, 160, 255, 0.5)',
+    borderColor: GameColors.blueBorder,
     overflow: 'hidden',
   },
   cellSolid: {
-    backgroundColor: 'rgba(80, 140, 240, 0.75)',
+    backgroundColor: GameColors.shipCellBg,
   },
   cellPlaced: {
-    backgroundColor: 'rgba(60, 110, 180, 0.4)',
+    backgroundColor: GameColors.shipCellPlaced,
   },
   spriteImage: {
     position: 'absolute',
@@ -252,7 +253,7 @@ const styles = StyleSheet.create({
   },
   cellTileOverlay: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: 'rgba(30, 60, 130, 0.25)',
+    backgroundColor: GameColors.shipCellOverlay,
   },
   shuffleButton: {
     position: 'absolute',
@@ -278,7 +279,7 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   placedBadge: {
-    color: 'rgba(80, 210, 120, 0.9)',
+    color: GameColors.placedBadge,
     fontSize: 14,
     fontWeight: '800',
     marginLeft: 4,

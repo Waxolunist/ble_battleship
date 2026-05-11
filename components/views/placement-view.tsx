@@ -1,5 +1,6 @@
 import { FadeIn } from '@/components/fade-in';
 import { GameField } from '@/components/game-field';
+import { GameColors } from '@/constants/theme';
 import { HapticPressable } from '@/components/haptic-pressable';
 import { ShipTray } from '@/components/ship-tray';
 import type { Field, Orientation, ShipType } from '@/models/types';
@@ -200,19 +201,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 8,
     borderWidth: 2,
-    borderColor: '#e8c84a',
+    borderColor: GameColors.fireGold,
     borderRadius: 4,
-    backgroundColor: 'rgba(232,200,74,0.15)',
+    backgroundColor: GameColors.fireGoldBg,
   },
   fireButtonDisabled: {
     borderColor: 'rgba(255,255,255,0.2)',
     backgroundColor: 'rgba(0,0,0,0.3)',
   },
   fireButtonPressed: {
-    backgroundColor: 'rgba(232,200,74,0.35)',
+    backgroundColor: GameColors.fireGoldBgPressed,
   },
   fireButtonText: {
-    color: '#e8c84a',
+    color: GameColors.fireGold,
     fontSize: 16,
     fontWeight: '800',
     letterSpacing: 3,

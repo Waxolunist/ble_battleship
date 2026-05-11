@@ -1,5 +1,6 @@
 import { GameField } from '@/components/game-field';
 import type { Field, ShotPhase, ShipType } from '@/models/types';
+import { GameColors } from '@/constants/theme';
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, {
@@ -16,8 +17,8 @@ import Animated, {
 
 type SunkEvent = { shipType: ShipType; owner: 'player' | 'enemy' } | null;
 
-const PLAYER_COUNTER_COLOR = 'rgba(100, 160, 255, 0.9)';
-const ENEMY_COUNTER_COLOR = '#FF5050';
+const PLAYER_COUNTER_COLOR = GameColors.playerBlue;
+const ENEMY_COUNTER_COLOR = GameColors.red;
 
 function countShipsRemaining(fields: Field[][]): number {
   const shipSunkMap = new Map<string, boolean>();
@@ -121,7 +122,7 @@ export function BattleView({
 
     const scaleSV = sunkEvent.owner === 'player' ? playerCountScale : enemyCountScale;
     const flashOpacitySV = sunkEvent.owner === 'player' ? playerFlashOpacity : enemyFlashOpacity;
-    const flashColor = sunkEvent.owner === 'player' ? '#FF5050' : '#FFC832';
+    const flashColor = sunkEvent.owner === 'player' ? GameColors.red : GameColors.gold;
     const setFlash = sunkEvent.owner === 'player' ? setPlayerFlashColor : setEnemyFlashColor;
 
     setFlash(flashColor);
@@ -196,8 +197,7 @@ export function BattleView({
 
     const { result } = shotPhase;
     const text = result === 'sunk' ? 'SUNK!' : result === 'hit' ? 'HIT!' : 'MISS';
-    const color =
-      result === 'miss' ? 'rgba(180, 180, 180, 0.7)' : '#FFC832';
+    const color = result === 'miss' ? GameColors.verdictMiss : GameColors.gold;
 
     setVerdictFlash({ text, color });
     verdictOpacity.value = 0;
@@ -232,7 +232,7 @@ export function BattleView({
       sunkEvent.owner === 'enemy'
         ? `${sunkEvent.shipType.toUpperCase()} SUNK`
         : `${sunkEvent.shipType.toUpperCase()} LOST`;
-    const color = sunkEvent.owner === 'enemy' ? '#FFC832' : '#FF5050';
+    const color = sunkEvent.owner === 'enemy' ? GameColors.gold : GameColors.red;
     setSunkLabel({ text, color });
     labelOpacity.value = 0;
     labelTranslateY.value = 10;
@@ -253,7 +253,7 @@ export function BattleView({
 
   const isPlayerTurn = turn === 'player';
   const dividerText = isPlayerTurn ? 'SELECT TARGET' : 'INCOMING FIRE';
-  const dividerColor = isPlayerTurn ? '#FFC832' : '#FF5050';
+  const dividerColor = isPlayerTurn ? GameColors.gold : GameColors.red;
 
   // Route shot animation to the correct grid
   const playerGridShot = shotPhase?.grid === 'player' ? shotPhase : undefined;
@@ -276,7 +276,7 @@ export function BattleView({
             style={[
               StyleSheet.absoluteFill,
               styles.glowBorder,
-              { borderColor: '#FF5050' },
+              { borderColor: GameColors.red },
               playerGlowStyle,
             ]}
             pointerEvents="none"
@@ -296,7 +296,12 @@ export function BattleView({
                   </Text>
                   {playerFlashColor && (
                     <Animated.Text
-                      style={[styles.counterText, styles.counterFlashText, { color: playerFlashColor }, playerFlashOpacityStyle]}>
+                      style={[
+                        styles.counterText,
+                        styles.counterFlashText,
+                        { color: playerFlashColor },
+                        playerFlashOpacityStyle,
+                      ]}>
                       {playerShipsRemaining}
                     </Animated.Text>
                   )}
@@ -307,7 +312,8 @@ export function BattleView({
                 style={[styles.dividerLine, dividerLineStyle, { backgroundColor: dividerColor }]}
               />
               <View style={styles.dividerTextContainer}>
-                <Animated.Text style={[styles.dividerText, { color: dividerColor }, regularTextStyle]}>
+                <Animated.Text
+                  style={[styles.dividerText, { color: dividerColor }, regularTextStyle]}>
                   {dividerText}
                 </Animated.Text>
                 {verdictFlash && (
@@ -334,7 +340,12 @@ export function BattleView({
                   </Text>
                   {enemyFlashColor && (
                     <Animated.Text
-                      style={[styles.counterText, styles.counterFlashText, { color: enemyFlashColor }, enemyFlashOpacityStyle]}>
+                      style={[
+                        styles.counterText,
+                        styles.counterFlashText,
+                        { color: enemyFlashColor },
+                        enemyFlashOpacityStyle,
+                      ]}>
                       {enemyShipsRemaining}
                     </Animated.Text>
                   )}
@@ -347,7 +358,7 @@ export function BattleView({
             <Animated.View style={[styles.gridWrapper, enemyFieldStyle]}>
               <GameField
                 fields={opponentFields}
-                tint="rgba(255, 80, 80, 0.35)"
+                tint={GameColors.enemyGridTint}
                 hideShips
                 onCellPress={turn === 'player' ? onEnemyCellPress : undefined}
                 shotAnim={enemyGridShot}
@@ -356,7 +367,7 @@ export function BattleView({
                 style={[
                   StyleSheet.absoluteFill,
                   styles.glowBorder,
-                  { borderColor: '#FFC832' },
+                  { borderColor: GameColors.gold },
                   enemyGlowStyle,
                 ]}
                 pointerEvents="none"

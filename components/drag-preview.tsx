@@ -4,6 +4,7 @@ import type { SharedValue } from 'react-native-reanimated';
 import type { ShipType } from '@/models/types';
 import { SHIP_SIZES } from '@/models/types';
 import { IMAGES } from '@/constants/assets';
+import { GameColors } from '@/constants/theme';
 
 const CELL_SIZE = 28;
 const CELL_GAP = 2;
@@ -92,8 +93,8 @@ const styles = StyleSheet.create({
     height: CELL_SIZE,
     borderRadius: 2,
     borderWidth: 1,
-    borderColor: 'rgba(120, 200, 255, 0.9)',
-    backgroundColor: 'rgba(60, 130, 220, 0.85)',
+    borderColor: GameColors.dragCellBorder,
+    backgroundColor: GameColors.dragCellBg,
     overflow: 'hidden',
   },
   gapH: {
@@ -101,6 +102,6 @@ const styles = StyleSheet.create({
   },
   cellTileOverlay: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: 'rgba(30, 60, 130, 0.2)',
+    backgroundColor: GameColors.dragCellOverlay,
   },
 });
