@@ -7,7 +7,7 @@ import { useBattleAnimations } from "@/hooks/useBattleAnimations";
 import { useCombat } from "@/hooks/useCombat";
 import { usePlacementGestures } from "@/hooks/usePlacementGestures";
 import { SHIP_FLEET } from "@/models/types";
-import { useGameStore } from "@/store/useGameStore";
+import { useGameStore }  from "@/store/useGameStore";
 import {
   Image,
   ImageBackground,

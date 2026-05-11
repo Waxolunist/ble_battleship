@@ -30,7 +30,7 @@ export function FadeIn({ children, delay = 0, translateY, scale, style }: Props)
     if (scale !== undefined) {
       animScale.value = withDelay(delay, withSpring(1, { damping: 12, stiffness: 100 }));
     }
-  }, []);
+  }, [animScale, animTranslateY, delay, opacity, scale, translateY]);
 
   const animStyle = useAnimatedStyle(() => ({
     opacity: opacity.value,

@@ -56,11 +56,11 @@ export function BattleView({
       -1,
       false,
     );
-  }, []);
+  }, [dividerPulse, glowPulse]);
 
   useEffect(() => {
     turnSV.value = withTiming(turn === "player" ? 0 : 1, { duration: 400 });
-  }, [turn]);
+  }, [turn, turnSV]);
 
   // Active grid is full opacity; inactive grid dims
   const playerFieldStyle = useAnimatedStyle(() => ({
@@ -104,7 +104,7 @@ export function BattleView({
     labelTranslateY.value = withTiming(-50, { duration: 1500, easing: Easing.out(Easing.cubic) });
     const t = setTimeout(() => setSunkLabel(null), 1600);
     return () => clearTimeout(t);
-  }, [sunkEvent]);
+  }, [labelOpacity, labelTranslateY, sunkEvent]);
 
   const sunkLabelStyle = useAnimatedStyle(() => ({
     opacity: labelOpacity.value,
