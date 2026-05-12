@@ -34,6 +34,7 @@ export type PlacementViewProps = {
   onRetreat: () => void;
   onRandomize: () => void;
   captainName: string;
+  address: string;
 };
 
 export function PlacementView({
@@ -60,6 +61,7 @@ export function PlacementView({
   onRetreat,
   onRandomize,
   captainName,
+  address,
 }: PlacementViewProps) {
   return (
     <View style={styles.content}>
@@ -68,7 +70,7 @@ export function PlacementView({
         <FadeIn translateY={-30}>
           <View style={styles.topSection}>
             <Text style={styles.title}>⚔ BATTLE STATION ⚔</Text>
-            <Text style={styles.subtitle}>{'PLACE YOUR FLEET,\nCAPTAIN ' + captainName}</Text>
+            <Text style={styles.subtitle}>{'PLACE YOUR FLEET,\n' + address + ' ' + captainName}</Text>
           </View>
         </FadeIn>
       </Animated.View>

@@ -6,7 +6,7 @@ import { IMAGES } from '@/constants/assets';
 import { useBattleAnimations } from '@/hooks/useBattleAnimations';
 import { useCombat } from '@/hooks/useCombat';
 import { usePlacementGestures } from '@/hooks/usePlacementGestures';
-import { SHIP_FLEET } from '@/models/types';
+import { getRankTitle, SHIP_FLEET } from '@/models/types';
 import { useGameStore } from '@/store/useGameStore';
 import { useCaptainStore } from '@/store/useCaptainStore';
 import { useStatsStore, computeFieldShotStats, computeSunkShipTypes } from '@/store/useStatsStore';
@@ -35,6 +35,11 @@ export default function BattleScreen() {
   const sinkAllPlayerShips = useGameStore(s => s.sinkAllPlayerShips);
   const captainName = useCaptainStore(s => s.captainName);
   const recordGame = useStatsStore(s => s.recordGame);
+  const gamesPlayed = useStatsStore(s => s.gamesPlayed);
+  const wins = useStatsStore(s => s.wins);
+  const winRate = gamesPlayed > 0 ? Math.round((wins / gamesPlayed) * 100) : 0;
+  const rankStr = getRankTitle(gamesPlayed, winRate);
+  const address = rankStr === 'UNPROVEN' || rankStr === 'RECRUIT' ? 'SIR' : rankStr;
 
   // Hooks
   const gestures = usePlacementGestures(cellSize);
@@ -100,6 +105,7 @@ export default function BattleScreen() {
             onRetreat={animations.onRetreat}
             onRandomize={gestures.onRandomize}
             captainName={captainName}
+            address={address}
           />
         </Animated.View>
 
