@@ -26,6 +26,9 @@ jobs:
         with:
           xcode-version: latest
 
+      - name: Prebuild iOS
+        run: npx expo prebuild --platform ios --no-install
+
       - name: Install CocoaPods
         run: gem install cocoapods
 

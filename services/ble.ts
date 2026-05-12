@@ -1,8 +1,8 @@
 import {
+  BLE_ADVERTISEMENT_MAGIC,
+  BLE_RX_CHARACTERISTIC_UUID,
   BLE_SERVICE_UUID,
   BLE_TX_CHARACTERISTIC_UUID,
-  BLE_RX_CHARACTERISTIC_UUID,
-  BLE_ADVERTISEMENT_MAGIC,
 } from '@/constants/ble';
 
 // Lazy-load munim-bluetooth (native module, only available on iOS/Android after build)
@@ -15,11 +15,13 @@ const getBLE = () => {
 
   try {
     // @ts-ignore - munim-bluetooth is a native module not in tsconfig
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const module = require('munim-bluetooth');
     BLE = module.BLE || module.default;
     if (BLE) {
       console.log('[BLE] munim-bluetooth loaded');
     }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (e) {
     console.log('[BLE] munim-bluetooth not available (expected on web/development)');
     BLE = null;
