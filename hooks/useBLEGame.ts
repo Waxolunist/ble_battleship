@@ -1,7 +1,13 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useBLEStore, type FleetPlacement } from '@/store/useBLEStore';
 import { useGameStore } from '@/store/useGameStore';
+import { applyFire } from '@/engine/combat';
 import type { ShipType } from '@/models/types';
+
+interface PendingShot {
+  x: number;
+  y: number;
+}
 
 /**
  * Hook that bridges BLE events to game store actions.
@@ -19,7 +25,10 @@ export function useBLEGame() {
     setState,
     setOpponentFleet,
   } = useBLEStore();
-  const { fields, setTurn, startBattle } = useGameStore();
+  const { fields, turn, setTurn, startBattle, markTargeted, resolveShot, setSunkEvent } =
+    useGameStore();
+  const pendingShotRef = useRef<PendingShot | null>(null);
+  const [awaitingShotResult, setAwaitingShotResult] = useState(false);
 
   // Serialize placed fleet into FleetPlacement[]
   const serializeFleet = useCallback((): FleetPlacement[] => {
@@ -74,19 +83,87 @@ export function useBLEGame() {
     }
   }, [localFleetReady, remoteFleetReady, bleState, connectedPeer, setTurn, startBattle, setState]);
 
+  // Intercept player fire to send FIRE message at verdict beat
+  const handlePlayerFire = useCallback(
+    (x: number, y: number) => {
+      if (turn !== 'player' || awaitingShotResult) return;
+
+      // Store the shot to send when animation reaches verdict beat
+      pendingShotRef.current = { x, y };
+      setAwaitingShotResult(true);
+
+      // TODO: At verdict beat (900ms), send FIRE message:
+      // { type: 'FIRE', x, y }
+      // Then wait for SHOT_RESULT response
+    },
+    [turn, awaitingShotResult],
+  );
+
+  // Handle incoming FIRE message from opponent
+  const handleRemoteFire = useCallback(
+    (x: number, y: number) => {
+      // Ignore if not opponent's turn
+      if (turn !== 'enemy') return;
+
+      // Apply fire to local board
+      const { fields: nextFields, sunkShip } = applyFire(fields, x, y);
+      const field = nextFields[y][x];
+      const result: 'hit' | 'miss' | 'sunk' =
+        field.status === 'sunk' ? 'sunk' : field.status === 'hit' ? 'hit' : 'miss';
+
+      // Update sunk event if applicable
+      if (sunkShip) {
+        setSunkEvent({ shipType: sunkShip.type, owner: 'enemy' });
+      }
+
+      // TODO: Send SHOT_RESULT message with result:
+      // { type: 'SHOT_RESULT', x, y, result, shipType?: sunkShip?.type }
+
+      // Trigger animation sequence (same as AI shot)
+      markTargeted('player', x, y);
+      // After animation completes, advance turn
+      setTurn('player');
+    },
+    [turn, fields, markTargeted, setTurn, setSunkEvent],
+  );
+
+  // Handle incoming SHOT_RESULT message
+  const handleShotResult = useCallback(
+    (x: number, y: number, result: 'hit' | 'miss' | 'sunk', sunkShipType?: ShipType) => {
+      if (turn !== 'player' || !awaitingShotResult) return;
+
+      // Resolve the shot on opponent field
+      resolveShot('opponent', x, y);
+
+      // Update sunk event if applicable
+      if (result === 'sunk' && sunkShipType) {
+        setSunkEvent({ shipType: sunkShipType, owner: 'enemy' });
+      }
+
+      // Advance turn to opponent
+      setAwaitingShotResult(false);
+      setTurn('enemy');
+    },
+    [turn, awaitingShotResult, resolveShot, setSunkEvent, setTurn],
+  );
+
   // Handle opponent grid state
   const isOpponentGridActive = useCallback(() => {
-    // Opponent grid is active and targetable only in BATTLE state
-    return bleState === 'BATTLE' && remoteFleetReady;
-  }, [bleState, remoteFleetReady]);
+    // Opponent grid is active and targetable only in BATTLE state on player's turn
+    return bleState === 'BATTLE' && remoteFleetReady && turn === 'player' && !awaitingShotResult;
+  }, [bleState, remoteFleetReady, turn, awaitingShotResult]);
 
   return {
     handleFireAtWill,
     handleRemoteFleetReady,
+    handlePlayerFire,
+    handleRemoteFire,
+    handleShotResult,
     isOpponentGridActive,
     isMultiplayerMode: mode === 'ble',
     localFleetReady,
     remoteFleetReady,
+    awaitingShotResult,
     serializeFleet,
   };
 }
