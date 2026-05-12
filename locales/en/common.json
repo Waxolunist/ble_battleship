@@ -36,5 +36,9 @@
       "UNPROVEN": "UNPROVEN",
       "RECRUIT": "RECRUIT"
     }
+  },
+  "ble": {
+    "host": "HOST",
+    "join": "JOIN"
   }
 }

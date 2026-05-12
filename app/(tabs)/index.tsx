@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FadeIn } from '@/components/fade-in';
+import { BLEMultiplayerPanel } from '@/components/ble/BLEMultiplayerPanel';
 import { useGameStore } from '@/store/useGameStore';
 import { useCaptainStore } from '@/store/useCaptainStore';
 import { useStatsStore } from '@/store/useStatsStore';
@@ -55,6 +56,7 @@ export default function HomeScreen() {
         <FadeIn translateY={-40}>
           <Image source={IMAGES.title} style={styles.title} contentFit="contain" />
         </FadeIn>
+        <BLEMultiplayerPanel />
         <View style={styles.nameContainer}>
           {confirmed ? (
             <>
