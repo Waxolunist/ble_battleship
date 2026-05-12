@@ -53,10 +53,10 @@ export default function HomeScreen() {
         style={styles.content}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}>
+        <BLEMultiplayerPanel />
         <FadeIn translateY={-40}>
           <Image source={IMAGES.title} style={styles.title} contentFit="contain" />
         </FadeIn>
-        <BLEMultiplayerPanel />
         <View style={styles.nameContainer}>
           {confirmed ? (
             <>

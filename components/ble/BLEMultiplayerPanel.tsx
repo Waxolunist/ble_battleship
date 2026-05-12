@@ -1,7 +1,7 @@
+import { HapticPressable } from '@/components/haptic-pressable';
+import { Fonts, GameColors } from '@/constants/theme';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, Text, View } from 'react-native';
-import { GameColors, Fonts } from '@/constants/theme';
-import { HapticPressable } from '@/components/haptic-pressable';
 
 interface BLEMultiplayerPanelProps {
   onHostPress?: () => void;
@@ -36,7 +36,7 @@ const styles = StyleSheet.create({
   panel: {
     width: '100%',
     paddingHorizontal: 20,
-    marginBottom: 16,
+    marginBottom: 8,
   },
   idleRow: {
     flexDirection: 'row',
