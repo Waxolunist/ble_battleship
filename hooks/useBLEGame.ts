@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useBLEStore, type FleetPlacement } from '@/store/useBLEStore';
 import { useGameStore } from '@/store/useGameStore';
+import { useStatsStore, computeFieldShotStats, computeSunkShipTypes } from '@/store/useStatsStore';
 import { applyFire } from '@/engine/combat';
 import type { ShipType } from '@/models/types';
 
@@ -25,8 +26,16 @@ export function useBLEGame() {
     setState,
     setOpponentFleet,
   } = useBLEStore();
-  const { fields, turn, setTurn, startBattle, markTargeted, resolveShot, setSunkEvent } =
-    useGameStore();
+  const {
+    fields,
+    opponentFields,
+    turn,
+    setTurn,
+    startBattle,
+    markTargeted,
+    resolveShot,
+    setSunkEvent,
+  } = useGameStore();
   const pendingShotRef = useRef<PendingShot | null>(null);
   const [awaitingShotResult, setAwaitingShotResult] = useState(false);
 
@@ -147,11 +156,71 @@ export function useBLEGame() {
     [turn, awaitingShotResult, resolveShot, setSunkEvent, setTurn],
   );
 
+  // Check if a fleet is completely sunk
+  const isFleetSunk = useCallback((gridFields: typeof fields) => {
+    return gridFields.every(row => row.every(cell => !cell.shipPart || cell.shipPart.isHit));
+  }, []);
+
+  // Handle game over: detect if opponent fleet is sunk
+  const handleCheckGameOver = useCallback(() => {
+    if (bleState !== 'BATTLE') return;
+
+    const opponentFleetSunk = isFleetSunk(opponentFields);
+    if (opponentFleetSunk) {
+      // Player won - send GAME_OVER to opponent
+      setState('GAME_OVER');
+      // TODO: Send GAME_OVER message to opponent
+      recordGame({
+        outcome: 'victory',
+        hits: 0,
+        misses: 0,
+        enemyShipsSunk: [],
+        playerShipsLost: [],
+      });
+    }
+  }, [bleState, opponentFields, isFleetSunk, setState]);
+
+  // Handle incoming GAME_OVER message
+  const handleRemoteGameOver = useCallback(() => {
+    setState('GAME_OVER');
+    // Player lost - record loss
+    recordGame({ outcome: 'defeat', hits: 0, misses: 0, enemyShipsSunk: [], playerShipsLost: [] });
+  }, [setState]);
+
+  // Handle rematch request
+  const [rematchSent, setRematchSent] = useState(false);
+
+  const handleRematchRequest = useCallback(() => {
+    setRematchSent(true);
+    // TODO: Send REMATCH message to opponent
+  }, []);
+
+  // Handle incoming REMATCH message
+  const handleRemoteRematch = useCallback(() => {
+    if (rematchSent) {
+      // Both players requested rematch - transition to PLACEMENT
+      setRematchSent(false);
+      setLocalFleetReady(false);
+      setRemoteFleetReady(false);
+      setState('PLACEMENT');
+    }
+  }, [rematchSent, setState, setLocalFleetReady, setRemoteFleetReady]);
+
+  // Handle disconnect/BYE message
+  const handleDisconnect = useCallback(() => {
+    setState('IDLE');
+    setRematchSent(false);
+    setLocalFleetReady(false);
+    setRemoteFleetReady(false);
+  }, [setState, setLocalFleetReady, setRemoteFleetReady]);
+
   // Handle opponent grid state
   const isOpponentGridActive = useCallback(() => {
     // Opponent grid is active and targetable only in BATTLE state on player's turn
     return bleState === 'BATTLE' && remoteFleetReady && turn === 'player' && !awaitingShotResult;
   }, [bleState, remoteFleetReady, turn, awaitingShotResult]);
+
+  const recordGame = useStatsStore(s => s.recordGame);
 
   return {
     handleFireAtWill,
@@ -159,11 +228,17 @@ export function useBLEGame() {
     handlePlayerFire,
     handleRemoteFire,
     handleShotResult,
+    handleCheckGameOver,
+    handleRemoteGameOver,
+    handleRematchRequest,
+    handleRemoteRematch,
+    handleDisconnect,
     isOpponentGridActive,
     isMultiplayerMode: mode === 'ble',
     localFleetReady,
     remoteFleetReady,
     awaitingShotResult,
+    rematchSent,
     serializeFleet,
   };
 }
