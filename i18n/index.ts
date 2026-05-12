@@ -34,6 +34,7 @@ export function resolveDeviceLocale(): SupportedLocale {
   return code === 'de' ? 'de' : 'en';
 }
 
+// eslint-disable-next-line import/no-named-as-default-member
 i18next.use(initReactI18next).init({
   lng: resolveDeviceLocale(),
   fallbackLng: 'en',

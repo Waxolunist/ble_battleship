@@ -43,6 +43,10 @@
     "bluetoothOff": "Bluetooth aus",
     "bluetoothOffMessage": "Bluetooth ist ausgeschaltet — schalten Sie es in den Einstellungen ein, um Mehrspielerkämpfe zu spielen.",
     "openSettings": "Einstellungen öffnen",
-    "cancel": "Abbrechen"
+    "cancel": "ABBRECHEN",
+    "awaitingChallenger": "WARTE AUF GEGNER...",
+    "yourCallsign": "Ihr Ruf:",
+    "scanning": "SCANNE...",
+    "noDevicesFound": "Keine Geräte gefunden"
   }
 }

@@ -25,6 +25,7 @@
 | Very Low | **Ship skins / fleet customization** | Let players choose alternate visual themes or color palettes for their fleet as a cosmetic reward for rank progression. |
 | Medium | **Animated water / ocean background** | Subtle looping wave or ripple animation on the grids to add atmosphere beyond the static navy cells. |
 | Medium | **Rate / share prompt** | A non-intrusive prompt after a victory to rate the app or share a battle result, helping with organic discovery. |
+| Medium | **Visual inconsistencies** | Shots can be fired though a dialogue is visible. The retreat dialogue needs some work. Not fancy enough. |
 
 ## Missing Work
 

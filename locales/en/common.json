@@ -43,6 +43,10 @@
     "bluetoothOff": "Bluetooth Off",
     "bluetoothOffMessage": "Bluetooth is off — enable it in Settings to play multiplayer.",
     "openSettings": "Open Settings",
-    "cancel": "Cancel"
+    "cancel": "CANCEL",
+    "awaitingChallenger": "AWAITING CHALLENGER...",
+    "yourCallsign": "Your callsign:",
+    "scanning": "SCANNING...",
+    "noDevicesFound": "No devices found"
   }
 }
