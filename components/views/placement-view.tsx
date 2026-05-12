@@ -70,7 +70,9 @@ export function PlacementView({
         <FadeIn translateY={-30}>
           <View style={styles.topSection}>
             <Text style={styles.title}>⚔ BATTLE STATION ⚔</Text>
-            <Text style={styles.subtitle}>{'PLACE YOUR FLEET,\n' + address + ' ' + captainName}</Text>
+            <Text style={styles.subtitle}>
+              {'PLACE YOUR FLEET,\n' + address + ' ' + captainName}
+            </Text>
           </View>
         </FadeIn>
       </Animated.View>

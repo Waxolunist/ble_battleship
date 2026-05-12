@@ -69,7 +69,7 @@ export default function BattleScreen() {
 
   const handleMakePort = () => {
     resetGame();
-    router.replace('/(tabs)/');
+    router.replace('/');
   };
 
   return (

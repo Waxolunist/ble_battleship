@@ -185,7 +185,9 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
     textAlign: 'center',
     lineHeight: 32,
-    textShadow: '1px 2px 6px rgba(0,0,0,0.8)' as never,
+    textShadowColor: 'rgba(0,0,0,0.8)',
+    textShadowOffset: { width: 1, height: 2 },
+    textShadowRadius: 6,
   },
   readyButton: {
     marginTop: 24,
