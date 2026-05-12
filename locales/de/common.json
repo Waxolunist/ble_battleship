@@ -1,0 +1,40 @@
+{
+  "tab": {
+    "play": "SPIELEN",
+    "stats": "STATISTIK"
+  },
+  "home": {
+    "allHandsOnDeck": "⚓ ALLE MANN AN DECK!",
+    "hasTakenTheHelm": " HAT DAS STEUER ÜBERNOMMEN.\nDAS MEER FORDERT BLUT.",
+    "toBattleStation": "⚔ AUF GEFECHTSSTATION",
+    "enterYourName": "NAMEN EINGEBEN",
+    "changeName": "Namen ändern"
+  },
+  "placement": {
+    "title": "⚔ GEFECHTSSTATION ⚔",
+    "subtitle": "POSITIONIEREN SIE IHRE FLOTTE,",
+    "retreat": "RÜCKZUG",
+    "fireAtWill": "FEUER FREI"
+  },
+  "fleet": {
+    "title": "FLOTTE",
+    "ships": {
+      "Carrier": "FLUGZEUGTRÄGER",
+      "Battleship": "SCHLACHTSCHIFF",
+      "Cruiser": "KREUZER",
+      "Submarine": "U-BOOT",
+      "Destroyer": "ZERSTÖRER"
+    }
+  },
+  "rank": {
+    "tiers": {
+      "CADET": "KADETT",
+      "ENSIGN": "FÄHNRICH",
+      "CAPTAIN": "KAPITÄN",
+      "COMMODORE": "KOMMODORE",
+      "ADMIRAL": "ADMIRAL",
+      "UNPROVEN": "UNGETESTET",
+      "RECRUIT": "REKRUT"
+    }
+  }
+}

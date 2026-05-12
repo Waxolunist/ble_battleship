@@ -1,0 +1,40 @@
+{
+  "tab": {
+    "play": "Play",
+    "stats": "Stats"
+  },
+  "home": {
+    "allHandsOnDeck": "⚓ ALL HANDS ON DECK!",
+    "hasTakenTheHelm": " HAS TAKEN THE HELM.\nTHE SEA DEMANDS BLOOD.",
+    "toBattleStation": "⚔ TO THE BATTLE STATION",
+    "enterYourName": "ENTER YOUR NAME",
+    "changeName": "change name"
+  },
+  "placement": {
+    "title": "⚔ BATTLE STATION ⚔",
+    "subtitle": "PLACE YOUR FLEET,",
+    "retreat": "RETREAT",
+    "fireAtWill": "FIRE AT WILL"
+  },
+  "fleet": {
+    "title": "FLEET",
+    "ships": {
+      "Carrier": "CARRIER",
+      "Battleship": "BATTLESHIP",
+      "Cruiser": "CRUISER",
+      "Submarine": "SUBMARINE",
+      "Destroyer": "DESTROYER"
+    }
+  },
+  "rank": {
+    "tiers": {
+      "CADET": "CADET",
+      "ENSIGN": "ENSIGN",
+      "CAPTAIN": "CAPTAIN",
+      "COMMODORE": "COMMODORE",
+      "ADMIRAL": "ADMIRAL",
+      "UNPROVEN": "UNPROVEN",
+      "RECRUIT": "RECRUIT"
+    }
+  }
+}

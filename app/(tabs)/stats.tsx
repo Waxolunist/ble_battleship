@@ -1,6 +1,14 @@
+import { useTranslation } from 'react-i18next';
 import { IMAGES } from '@/constants/assets';
 import { Fonts, GameColors } from '@/constants/theme';
-import { getRankTitle, RANK_TIERS, SHIP_FLEET, SHIP_SIZES } from '@/models/types';
+import {
+  getRankTitle,
+  translateRankTitle,
+  translateShipType,
+  RANK_TIERS,
+  SHIP_FLEET,
+  SHIP_SIZES,
+} from '@/models/types';
 import type { ShipType } from '@/models/types';
 import { useCaptainStore } from '@/store/useCaptainStore';
 import type { ShipCounts } from '@/store/useStatsStore';
@@ -41,18 +49,20 @@ function ShipRow({
   count,
   max,
   color,
+  t,
 }: {
   shipType: ShipType;
   count: number;
   max: number;
   color: string;
+  t: any;
 }) {
   const size = SHIP_SIZES[shipType];
   const pips = Array.from({ length: size });
   return (
     <View style={styles.shipRow}>
       <View style={styles.shipRowLeft}>
-        <Text style={styles.shipName}>{shipType.toUpperCase()}</Text>
+        <Text style={styles.shipName}>{translateShipType(shipType, t)}</Text>
         <View style={styles.shipPips}>
           {pips.map((_, i) => (
             <View key={i} style={[styles.pip, { backgroundColor: color, opacity: 0.7 }]} />
@@ -94,16 +104,18 @@ function SmallDataPoint({ value, label }: { value: string | number; label: strin
 }
 
 function NoDataState() {
+  const { t } = useTranslation('stats');
   return (
     <View style={styles.noDataContainer}>
       <Text style={styles.noDataIcon}>⚓</Text>
-      <Text style={styles.noDataTitle}>NO COMBAT DATA</Text>
-      <Text style={styles.noDataSub}>Complete a battle to see your record.</Text>
+      <Text style={styles.noDataTitle}>{t('noData.title')}</Text>
+      <Text style={styles.noDataSub}>{t('noData.subtitle')}</Text>
     </View>
   );
 }
 
 function RankProgressBar({ gamesPlayed, winRate }: { gamesPlayed: number; winRate: number }) {
+  const { t } = useTranslation('stats');
   let rankIndex = -1;
   let fillFraction = 0;
   let hint = '';
@@ -117,22 +129,20 @@ function RankProgressBar({ gamesPlayed, winRate }: { gamesPlayed: number; winRat
     }
     if (rankIndex === RANK_TIERS.length - 1) {
       fillFraction = 1;
-      hint = 'MAXIMUM RANK ACHIEVED';
+      hint = t('rank.maximumAchieved');
     } else {
       const cur = RANK_TIERS[rankIndex];
       const next = RANK_TIERS[rankIndex + 1];
       const withinTier = (winRate - cur.threshold) / (next.threshold - cur.threshold);
       fillFraction = (rankIndex + withinTier) / (RANK_TIERS.length - 1);
-      hint = `NEXT: ${next.title} AT ${next.threshold}% WIN RATE`;
+      const translatedTitle = translateRankTitle(next.title, t);
+      hint = t('rank.next', { title: translatedTitle, threshold: next.threshold });
     }
   } else {
     const games = Math.max(gamesPlayed, 0);
     fillFraction = 0;
     const remaining = 3 - games;
-    hint =
-      games === 0
-        ? 'PLAY 3 BATTLES TO ESTABLISH RANK'
-        : `${remaining} MORE BATTLE${remaining === 1 ? '' : 'S'} TO ESTABLISH RANK`;
+    hint = games === 0 ? t('rank.play3Battles') : t('rank.moreBattles', { count: remaining });
   }
 
   const isMaxRank = rankIndex === RANK_TIERS.length - 1;
@@ -149,7 +159,7 @@ function RankProgressBar({ gamesPlayed, winRate }: { gamesPlayed: number; winRat
               i < rankIndex && styles.rankLabelAchieved,
               i === rankIndex && styles.rankLabelCurrent,
             ]}>
-            {tier.title}
+            {translateRankTitle(tier.title, t)}
           </Text>
         ))}
       </View>
@@ -188,6 +198,7 @@ function RankProgressBar({ gamesPlayed, winRate }: { gamesPlayed: number; winRat
 // ── Screen ───────────────────────────────────────────────────────────────────
 
 export default function StatsScreen() {
+  const { t } = useTranslation('stats');
   const captainName = useCaptainStore(s => s.captainName);
   const gamesPlayed = useStatsStore(s => s.gamesPlayed);
   const wins = useStatsStore(s => s.wins);
@@ -220,11 +231,11 @@ export default function StatsScreen() {
         {/* ── Captain Banner ──────────────────────────────────────────── */}
         <View style={styles.captainBanner}>
           <Text style={styles.rankBadge}>{rank}</Text>
-          <Text style={styles.captainName}>{captainName || 'UNKNOWN'}</Text>
+          <Text style={styles.captainName}>{captainName || t('captain.unknown')}</Text>
           <Text style={styles.battlesLine}>
             {noData
-              ? 'AWAITING FIRST ENGAGEMENT'
-              : `${gamesPlayed} ENGAGEMENT${gamesPlayed === 1 ? '' : 'S'}`}
+              ? t('captain.awaitingFirstEngagement')
+              : t('captain.engagement_other', { count: gamesPlayed })}
           </Text>
           <RankProgressBar gamesPlayed={gamesPlayed} winRate={winRate} />
         </View>
@@ -235,13 +246,17 @@ export default function StatsScreen() {
           <>
             {/* ── Combat Record ─────────────────────────────────────────── */}
             <View style={styles.section}>
-              <SectionHeader label="COMBAT RECORD" />
+              <SectionHeader label={t('combatRecord.title')} />
               <View style={styles.recordRow}>
-                <BigStat value={wins} label="VICTORIES" color={GameColors.gold} />
+                <BigStat value={wins} label={t('combatRecord.victories')} color={GameColors.gold} />
                 <View style={styles.recordDivider} />
-                <BigStat value={losses} label="DEFEATS" color={GameColors.red} />
+                <BigStat value={losses} label={t('combatRecord.defeats')} color={GameColors.red} />
                 <View style={styles.recordDivider} />
-                <BigStat value={`${winRate}%`} label="WIN RATE" color={GameColors.label} />
+                <BigStat
+                  value={`${winRate}%`}
+                  label={t('combatRecord.winRate')}
+                  color={GameColors.label}
+                />
               </View>
 
               {/* Win-rate bar */}
@@ -275,25 +290,25 @@ export default function StatsScreen() {
                   <Text style={styles.streakValue}>
                     {currentStreak > 0 ? `▲ ${currentStreak}` : '—'}
                   </Text>
-                  <Text style={styles.streakLabel}>CURRENT STREAK</Text>
+                  <Text style={styles.streakLabel}>{t('combatRecord.currentStreak')}</Text>
                 </View>
                 <View style={styles.streakSep} />
                 <View style={styles.streakItem}>
                   <Text style={[styles.streakValue, { color: GameColors.gold }]}>
                     ▲ {bestWinStreak}
                   </Text>
-                  <Text style={styles.streakLabel}>BEST STREAK</Text>
+                  <Text style={styles.streakLabel}>{t('combatRecord.bestStreak')}</Text>
                 </View>
               </View>
             </View>
 
             {/* ── Combat Accuracy ───────────────────────────────────────── */}
             <View style={styles.section}>
-              <SectionHeader label="COMBAT ACCURACY" />
+              <SectionHeader label={t('accuracy.title')} />
 
               <View style={styles.accuracyMain}>
                 <Text style={styles.accuracyPct}>{accuracy}%</Text>
-                <Text style={styles.accuracySubLabel}>ACCURACY</Text>
+                <Text style={styles.accuracySubLabel}>{t('accuracy.label')}</Text>
               </View>
 
               <View style={styles.accuracyBarWrapper}>
@@ -301,21 +316,21 @@ export default function StatsScreen() {
               </View>
 
               <View style={styles.shotDataRow}>
-                <SmallDataPoint value={totalHits} label="HITS" />
+                <SmallDataPoint value={totalHits} label={t('accuracy.hits')} />
                 <View style={styles.dotSep}>
                   <Text style={styles.dot}>·</Text>
                 </View>
-                <SmallDataPoint value={totalMisses} label="MISSES" />
+                <SmallDataPoint value={totalMisses} label={t('accuracy.misses')} />
                 <View style={styles.dotSep}>
                   <Text style={styles.dot}>·</Text>
                 </View>
-                <SmallDataPoint value={totalShots} label="SHOTS FIRED" />
+                <SmallDataPoint value={totalShots} label={t('accuracy.shotsFired')} />
               </View>
             </View>
 
             {/* ── Fleet Kills ───────────────────────────────────────────── */}
             <View style={styles.section}>
-              <SectionHeader label="FLEET KILLS" />
+              <SectionHeader label={t('fleetKills.title')} />
               <View style={styles.shipList}>
                 {SHIP_FLEET.map(shipType => (
                   <ShipRow
@@ -324,11 +339,12 @@ export default function StatsScreen() {
                     count={(enemyShipsSunkByType as ShipCounts)[shipType]}
                     max={maxKills}
                     color={GameColors.statBarKill}
+                    t={t}
                   />
                 ))}
               </View>
               <View style={styles.totalKillsRow}>
-                <Text style={styles.totalKillsLabel}>TOTAL ENEMY SHIPS SUNK</Text>
+                <Text style={styles.totalKillsLabel}>{t('fleetKills.total')}</Text>
                 <Text style={[styles.totalKillsValue, { color: GameColors.statBarKill }]}>
                   {SHIP_FLEET.reduce((acc, t) => acc + (enemyShipsSunkByType as ShipCounts)[t], 0)}
                 </Text>
@@ -337,7 +353,7 @@ export default function StatsScreen() {
 
             {/* ── Ships Lost ────────────────────────────────────────────── */}
             <View style={[styles.section, styles.sectionLast]}>
-              <SectionHeader label="SHIPS LOST" />
+              <SectionHeader label={t('shipsLost.title')} />
               <View style={styles.shipList}>
                 {SHIP_FLEET.map(shipType => (
                   <ShipRow
@@ -346,11 +362,12 @@ export default function StatsScreen() {
                     count={(playerShipsLostByType as ShipCounts)[shipType]}
                     max={maxLost}
                     color={GameColors.statBarLoss}
+                    t={t}
                   />
                 ))}
               </View>
               <View style={styles.totalKillsRow}>
-                <Text style={styles.totalKillsLabel}>TOTAL SHIPS LOST</Text>
+                <Text style={styles.totalKillsLabel}>{t('shipsLost.total')}</Text>
                 <Text style={[styles.totalKillsValue, { color: GameColors.statBarLoss }]}>
                   {SHIP_FLEET.reduce((acc, t) => acc + (playerShipsLostByType as ShipCounts)[t], 0)}
                 </Text>
@@ -364,7 +381,7 @@ export default function StatsScreen() {
             resetTutorials();
           }}
           style={({ pressed }) => [styles.resetButton, pressed && styles.resetButtonPressed]}>
-          <Text style={styles.resetButtonText}>reset stats</Text>
+          <Text style={styles.resetButtonText}>{t('resetStats')}</Text>
         </HapticPressable>
       </ScrollView>
     </ImageBackground>

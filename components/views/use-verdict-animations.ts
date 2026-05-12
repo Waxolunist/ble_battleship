@@ -1,5 +1,6 @@
 import { GameColors } from '@/constants/theme';
 import type { ShipType, ShotPhase } from '@/models/types';
+import { translateShipType } from '@/models/types';
 import { useEffect, useState } from 'react';
 import {
   Easing,
@@ -14,6 +15,7 @@ type SunkEvent = { shipType: ShipType; owner: 'player' | 'enemy' } | null;
 export function useVerdictAnimations(
   shotPhase: ShotPhase | undefined,
   sunkEvent: SunkEvent | undefined,
+  t: (key: string, options?: Record<string, string>) => string,
 ) {
   // Divider verdict flash (HIT / MISS / SUNK)
   const [verdictFlash, setVerdictFlash] = useState<{ text: string; color: string } | null>(null);
@@ -23,7 +25,12 @@ export function useVerdictAnimations(
     if (shotPhase?.beat !== 'verdict' || !shotPhase.result) return;
 
     const { result } = shotPhase;
-    const text = result === 'sunk' ? 'SUNK!' : result === 'hit' ? 'HIT!' : 'MISS';
+    const text =
+      result === 'sunk'
+        ? t('verdict.sunk')
+        : result === 'hit'
+          ? t('verdict.hit')
+          : t('verdict.miss');
     const color = result === 'miss' ? GameColors.verdictMiss : GameColors.gold;
 
     setVerdictFlash({ text, color });
@@ -37,9 +44,9 @@ export function useVerdictAnimations(
       withTiming(0, { duration: 200, easing: Easing.in(Easing.cubic) }),
     );
 
-    const t = setTimeout(() => setVerdictFlash(null), 120 + hold + 200);
-    return () => clearTimeout(t);
-  }, [shotPhase, verdictOpacity]);
+    const timeoutId = setTimeout(() => setVerdictFlash(null), 120 + hold + 200);
+    return () => clearTimeout(timeoutId);
+  }, [shotPhase, verdictOpacity, t]);
 
   const regularTextStyle = useAnimatedStyle(() => ({
     opacity: 1 - verdictOpacity.value,
@@ -55,10 +62,11 @@ export function useVerdictAnimations(
 
   useEffect(() => {
     if (!sunkEvent) return;
+    const shipName = translateShipType(sunkEvent.shipType, t);
     const text =
       sunkEvent.owner === 'enemy'
-        ? `${sunkEvent.shipType.toUpperCase()} SUNK`
-        : `${sunkEvent.shipType.toUpperCase()} LOST`;
+        ? t('sunkLabel.enemy', { ship: shipName })
+        : t('sunkLabel.player', { ship: shipName });
     const color = sunkEvent.owner === 'enemy' ? GameColors.gold : GameColors.red;
     setSunkLabel({ text, color });
     labelOpacity.value = 0;
@@ -69,9 +77,9 @@ export function useVerdictAnimations(
       withTiming(0, { duration: 900, easing: Easing.in(Easing.cubic) }),
     );
     labelTranslateY.value = withTiming(-50, { duration: 1500, easing: Easing.out(Easing.cubic) });
-    const t = setTimeout(() => setSunkLabel(null), 1600);
-    return () => clearTimeout(t);
-  }, [labelOpacity, labelTranslateY, sunkEvent]);
+    const timeoutId = setTimeout(() => setSunkLabel(null), 1600);
+    return () => clearTimeout(timeoutId);
+  }, [labelOpacity, labelTranslateY, sunkEvent, t]);
 
   const sunkLabelStyle = useAnimatedStyle(() => ({
     opacity: labelOpacity.value,

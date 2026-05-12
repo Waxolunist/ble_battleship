@@ -98,6 +98,81 @@ fontFamily: Fonts.mono
 
 **Text hierarchy:** Battle verdicts and callouts are always larger and bolder than ambient UI labels. Don't use BlackOpsOne for helper text or error messages — keep it reserved for the game's drama moments.
 
+## Internationalisation (i18n)
+
+The app uses `i18next` + `react-i18next` for translations and `expo-localization` for locale detection. Two locales are supported: `en` (default) and `de`.
+
+### Never hard-code user-visible strings
+
+All strings that appear in the UI must come from the translation files via `t()`. No hard-coded English text in JSX.
+
+```tsx
+// ✗ bad
+<Text>RETREAT</Text>
+
+// ✓ good
+import { useTranslation } from 'react-i18next';
+const { t } = useTranslation('battle');
+<Text>{t('retreat.button')}</Text>
+```
+
+### Choose the right namespace
+
+| Namespace | Content |
+|-----------|---------|
+| `common` | Shared labels, button text, home screen, placement screen, fleet tray |
+| `battle` | Verdicts (HIT/MISS/SUNK), endgame overlays, retreat dialog, turn divider |
+| `tutorial` | All tour step titles, descriptions, and button labels |
+| `stats` | Stats screen labels, rank hints, empty state |
+
+### Add strings to both locales simultaneously
+
+Whenever you add a new translation key, add it to **both** `locales/en/` and `locales/de/` at the same time. TypeScript will catch missing keys in code (via `CustomTypeOptions`), but it cannot catch missing keys in the `de` files — you must do this manually.
+
+### Locale-specific images
+
+Images that contain localizable text must live under `assets/images/locales/<locale>/` and be referenced through `LOCALE_IMAGES` in [constants/assets.ts](constants/assets.ts) — never via `IMAGES` or an inline `require()`.
+
+```tsx
+// ✗ bad
+source={require('@/assets/images/commence_firing.png')}
+
+// ✓ good
+import { LOCALE_IMAGES } from '@/constants/assets';
+const { i18n } = useTranslation();
+const locale = (i18n.language === 'de' ? 'de' : 'en') as keyof typeof LOCALE_IMAGES;
+source={LOCALE_IMAGES[locale].commenceFiring}
+```
+
+Adding a new locale-specific image: place the file under `assets/images/locales/<locale>/`, add a `require()` entry to every locale key in `LOCALE_IMAGES`. TypeScript's `satisfies` constraint will error if any locale is missing a key.
+
+### Changing the active locale
+
+Use `i18next.changeLanguage(locale)` or the `setLanguage` action from `useLanguageStore`. Do not re-render the app or navigate — i18next notifies all `useTranslation` subscribers automatically.
+
+```ts
+// ✓ correct — triggers re-render of all translated components
+import { useLanguageStore } from '@/store/useLanguageStore';
+const { setLanguage } = useLanguageStore();
+setLanguage('de');
+```
+
+### Plurals
+
+Use i18next's `count`-based plural keys. German plurals are handled automatically — do not manually branch on count in component code.
+
+```json
+// locales/en/stats.json
+{
+  "engagement_one": "{{count}} ENGAGEMENT",
+  "engagement_other": "{{count}} ENGAGEMENTS"
+}
+```
+
+```tsx
+t('engagement', { count: gamesPlayed })
+```
+
 ## Code style
 
 - TypeScript strict mode is on — no implicit `any`.

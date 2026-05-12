@@ -1,0 +1,40 @@
+{
+  "divider": {
+    "selectTarget": "SELECT TARGET",
+    "incomingFire": "INCOMING FIRE"
+  },
+  "verdict": {
+    "hit": "HIT!",
+    "miss": "MISS",
+    "sunk": "SUNK!"
+  },
+  "sunkLabel": {
+    "enemy": "{{ship}} SUNK",
+    "player": "{{ship}} LOST"
+  },
+  "retreat": {
+    "button": "RETREAT",
+    "confirmMessage": "Abandon battle?\nYour fleet will be lost to the sea.",
+    "holdTheLine": "HOLD THE LINE",
+    "confirm": "RETREAT"
+  },
+  "victory": {
+    "title": "VICTORY",
+    "subtitle": "Enemy fleet destroyed.",
+    "playAgain": "PLAY AGAIN",
+    "makePort": "MAKE PORT"
+  },
+  "defeat": {
+    "title": "LOST AT SEA",
+    "subtitle": "Your fleet was lost.",
+    "revenge": "REVENGE",
+    "makePort": "MAKE PORT"
+  },
+  "ships": {
+    "Carrier": "CARRIER",
+    "Battleship": "BATTLESHIP",
+    "Cruiser": "CRUISER",
+    "Submarine": "SUBMARINE",
+    "Destroyer": "DESTROYER"
+  }
+}

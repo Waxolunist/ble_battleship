@@ -7,6 +7,8 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
+import '@/i18n';
+import { useLanguageStore } from '@/store/useLanguageStore';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
@@ -18,6 +20,7 @@ export const unstable_settings = {
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
+  useLanguageStore();
   const [fontsLoaded] = useFonts({
     BlackOpsOne: require('../assets/fonts/BlackOpsOne-Regular.ttf'),
   });

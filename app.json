@@ -9,7 +9,11 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.hulls-and-hellfire"
+      "bundleIdentifier": "com.anonymous.hulls-and-hellfire",
+      "infoPlist": {
+        "CFBundleLocalizations": ["en", "de"],
+        "CFBundleDevelopmentRegion": "en"
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -19,7 +23,10 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.hulls_and_hellfire"
+      "package": "com.anonymous.hulls_and_hellfire",
+      "localeConfig": {
+        "path": "./android/app/src/main/res/xml/locales_config.xml"
+      }
     },
     "web": {
       "output": "static",
@@ -42,7 +49,8 @@
       "expo-web-browser",
       "expo-asset",
       "expo-image",
-      "expo-font"
+      "expo-font",
+      "expo-localization"
     ],
     "experiments": {
       "typedRoutes": true,

@@ -1,0 +1,52 @@
+{
+  "placement": {
+    "next": "VERSTANDEN",
+    "skip": "ÜBERSPRINGEN",
+    "done": "ZUR GEFECHTSSTATION",
+    "welcome": {
+      "title": "FLOTTE AUFSTELLEN",
+      "description": "Ordnen Sie Ihre Schiffe an, bevor das Gefecht beginnt. Tippen Sie irgendwo, um fortzufahren."
+    },
+    "tray": {
+      "title": "SCHIFF AUSWÄHLEN",
+      "description": "Tippen Sie auf ein Schiff, um es aufzunehmen, dann auf ein Feld schieben, um es zu platzieren. Längere Schiffe sind schwerer zu verbergen."
+    },
+    "rotate": {
+      "title": "DREHEN",
+      "description": "Tippen Sie, um die Ausrichtung zu ändern — horizontal oder vertikal. Drehen Sie das Schiff vor dem Platzieren."
+    },
+    "shuffle": {
+      "title": "ZUFÄLLIG ANORDNEN",
+      "description": "Tippen Sie, um Ihre gesamte Flotte zufällig zu platzieren."
+    }
+  },
+  "battle": {
+    "next": "VERSTANDEN",
+    "skip": "ÜBERSPRINGEN",
+    "done": "FEUER ERÖFFNEN",
+    "playerGrid": {
+      "title": "IHRE FLOTTE",
+      "description": "Ihre Schiffe befinden sich hier. Achten Sie auf eingehenden Beschuss — rote Felder bedeuten Treffer."
+    },
+    "enemyGrid": {
+      "title": "FEUER ERÖFFNEN",
+      "description": "Tippen Sie auf ein Feld im feindlichen Raster, um eine Granate abzufeuern. Blau = daneben. Orange = Treffer. Rot = versenkt."
+    },
+    "divider": {
+      "title": "AUF BEFEHLE WARTEN",
+      "description": "Die Mittellinie zeigt, wer am Zug ist. Halten Sie das Feuer, bis Sie an der Reihe sind."
+    },
+    "playerCounter": {
+      "title": "IHRE SCHIFFE",
+      "description": "Ihre noch schwimmfähigen Einheiten. Schützen Sie sie."
+    },
+    "enemyCounter": {
+      "title": "FEINDLICHE SCHIFFE",
+      "description": "Verbleibende feindliche Einheiten. Versenken Sie alle, um zu siegen."
+    },
+    "retreat": {
+      "title": "LETZTER AUSWEG",
+      "description": "Gedrückt halten, um den Rückzug anzutreten. Das Gefecht gilt als verloren."
+    }
+  }
+}

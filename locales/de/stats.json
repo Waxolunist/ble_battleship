@@ -1,0 +1,59 @@
+{
+  "noData": {
+    "title": "KEINE GEFECHTSDATEN",
+    "subtitle": "Schließen Sie ein Gefecht ab, um Ihre Bilanz einzusehen."
+  },
+  "captain": {
+    "unknown": "UNBEKANNT",
+    "awaitingFirstEngagement": "ERSTES GEFECHT AUSSTEHEND",
+    "engagement_one": "{{count}} GEFECHT",
+    "engagement_other": "{{count}} GEFECHTE"
+  },
+  "rank": {
+    "maximumAchieved": "HÖCHSTRANG ERREICHT",
+    "next": "NÄCHSTER: {{title}} BEI {{threshold}}% SIEGESQUOTE",
+    "play3Battles": "3 GEFECHTE BESTREITEN, UM DEN RANG FESTZULEGEN",
+    "moreBattles_one": "{{count}} WEITERES GEFECHT ZUR RANGFESTLEGUNG",
+    "moreBattles_other": "{{count}} WEITERE GEFECHTE ZUR RANGFESTLEGUNG",
+    "tiers": {
+      "CADET": "KADETT",
+      "ENSIGN": "FÄHNRICH",
+      "CAPTAIN": "KAPITÄN",
+      "COMMODORE": "KOMMODORE",
+      "ADMIRAL": "ADMIRAL",
+      "UNPROVEN": "UNGETESTET",
+      "RECRUIT": "REKRUT"
+    }
+  },
+  "combatRecord": {
+    "title": "GEFECHTSBILANZ",
+    "victories": "SIEGE",
+    "defeats": "NIEDERLAGEN",
+    "winRate": "SIEGESQUOTE",
+    "currentStreak": "AKTUELLE SERIE",
+    "bestStreak": "BESTE SERIE"
+  },
+  "accuracy": {
+    "title": "GEFECHTSGENAUIGKEIT",
+    "label": "GENAUIGKEIT",
+    "hits": "TREFFER",
+    "misses": "FEHLSCHÜSSE",
+    "shotsFired": "ABGEFEUERTE SCHÜSSE"
+  },
+  "fleetKills": {
+    "title": "FLOTTENABSCHÜSSE",
+    "total": "GESAMTZAHL VERSENKTER FEINDSCHIFFE"
+  },
+  "shipsLost": {
+    "title": "SCHIFFSVERLUSTE",
+    "total": "GESAMTZAHL VERLORENER SCHIFFE"
+  },
+  "resetStats": "Statistik zurücksetzen",
+  "ships": {
+    "Carrier": "FLUGZEUGTRÄGER",
+    "Battleship": "SCHLACHTSCHIFF",
+    "Cruiser": "KREUZER",
+    "Submarine": "U-BOOT",
+    "Destroyer": "ZERSTÖRER"
+  }
+}

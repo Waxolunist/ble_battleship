@@ -222,6 +222,7 @@ export const styles = StyleSheet.create({
     textShadowColor: 'rgba(0,0,0,0.9)',
     textShadowOffset: { width: 0, height: 3 },
     textShadowRadius: 12,
+    textAlign: 'center',
   },
   playerPulseOverlay: {
     backgroundColor: GameColors.playerPulse,
@@ -257,6 +258,7 @@ export const styles = StyleSheet.create({
     textShadowColor: GameColors.goldShadow,
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 20,
+    textAlign: 'center',
   },
   endgameSubtitle: {
     fontFamily: 'BlackOpsOne',
@@ -270,11 +272,12 @@ export const styles = StyleSheet.create({
     marginTop: 32,
   },
   playAgainButton: {
-    paddingVertical: 12,
+    paddingVertical: 10,
     paddingHorizontal: 24,
     borderWidth: 2,
     borderColor: GameColors.fireGold,
     borderRadius: 4,
+    textAlign: 'center',
   },
   playAgainButtonPressed: {
     backgroundColor: GameColors.fireGoldBgPressed,
@@ -291,6 +294,7 @@ export const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: GameColors.blueBorder,
     borderRadius: 4,
+    textAlign: 'center',
   },
   makePortButtonPressed: {
     backgroundColor: GameColors.bluePressedBg,

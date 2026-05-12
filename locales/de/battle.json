@@ -1,0 +1,40 @@
+{
+  "divider": {
+    "selectTarget": "ZIEL ERFASSEN",
+    "incomingFire": "EINGEHENDER BESCHUSS"
+  },
+  "verdict": {
+    "hit": "TREFFER!",
+    "miss": "DANEBEN",
+    "sunk": "VERSENKT!"
+  },
+  "sunkLabel": {
+    "enemy": "{{ship}} VERSENKT",
+    "player": "{{ship}} VERLOREN"
+  },
+  "retreat": {
+    "button": "RÜCKZUG",
+    "confirmMessage": "Gefecht abbrechen?\nIhre Flotte wird den Fluten überlassen.",
+    "holdTheLine": "POSITION HALTEN",
+    "confirm": "RÜCKZUG"
+  },
+  "victory": {
+    "title": "SIEG",
+    "subtitle": "Feindliche Flotte vernichtet.",
+    "playAgain": "NOCH EIN\nGEFECHT",
+    "makePort": "HAFEN\nANLAUFEN"
+  },
+  "defeat": {
+    "title": "AUF SEE VERLOREN",
+    "subtitle": "Ihre Flotte ging verloren.",
+    "revenge": "REVANCHE",
+    "makePort": "HAFEN ANLAUFEN"
+  },
+  "ships": {
+    "Carrier": "FLUGZEUGTRÄGER",
+    "Battleship": "SCHLACHTSCHIFF",
+    "Cruiser": "KREUZER",
+    "Submarine": "U-BOOT",
+    "Destroyer": "ZERSTÖRER"
+  }
+}

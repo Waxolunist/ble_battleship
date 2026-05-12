@@ -1,12 +1,13 @@
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FadeIn } from '@/components/fade-in';
 import { useGameStore } from '@/store/useGameStore';
 import { useCaptainStore } from '@/store/useCaptainStore';
 import { useStatsStore } from '@/store/useStatsStore';
 import { GameColors } from '@/constants/theme';
-import { getRankTitle } from '@/models/types';
+import { getRankTitle, translateRankTitle } from '@/models/types';
 import {
   ImageBackground,
   Keyboard,
@@ -21,6 +22,7 @@ import { HapticPressable } from '@/components/haptic-pressable';
 import { IMAGES } from '@/constants/assets';
 
 export default function HomeScreen() {
+  const { t } = useTranslation('common');
   const router = useRouter();
   const resetGame = useGameStore(s => s.resetGame);
   const { captainName, setCaptainName, clearCaptainName } = useCaptainStore();
@@ -33,7 +35,8 @@ export default function HomeScreen() {
   const wins = useStatsStore(s => s.wins);
   const winRate = gamesPlayed > 0 ? Math.round((wins / gamesPlayed) * 100) : 0;
   const rankStr = getRankTitle(gamesPlayed, winRate);
-  const address = rankStr === 'UNPROVEN' || rankStr === 'RECRUIT' ? 'SIR' : rankStr;
+  const address =
+    rankStr === 'UNPROVEN' || rankStr === 'RECRUIT' ? 'SIR' : translateRankTitle(rankStr, t);
 
   const handleConfirm = () => {
     if (!inputName.trim()) return;
@@ -56,10 +59,11 @@ export default function HomeScreen() {
           {confirmed ? (
             <>
               <Text style={styles.welcomeText}>
-                {'⚓ ALL HANDS ON DECK!\n'}
+                {t('home.allHandsOnDeck')}
+                {'\n'}
                 <Text style={styles.rankText}>{address}</Text>{' '}
                 <Text style={styles.nameText}>{captainName}</Text>
-                {' HAS TAKEN THE HELM.\nTHE SEA DEMANDS BLOOD.'}
+                {t('home.hasTakenTheHelm')}
               </Text>
               <HapticPressable
                 onPress={() => {
@@ -67,7 +71,7 @@ export default function HomeScreen() {
                   router.push('/battle');
                 }}
                 style={({ pressed }) => [styles.readyButton, pressed && styles.readyButtonPressed]}>
-                <Text style={styles.readyButtonText}>⚔ TO THE BATTLE STATION</Text>
+                <Text style={styles.readyButtonText}>{t('home.toBattleStation')}</Text>
               </HapticPressable>
             </>
           ) : (
@@ -78,7 +82,7 @@ export default function HomeScreen() {
                 value={inputName}
                 onChangeText={text => setInputName(text.toUpperCase())}
                 autoCapitalize="characters"
-                placeholder="ENTER YOUR NAME"
+                placeholder={t('home.enterYourName')}
                 placeholderTextColor="rgba(255, 255, 255, 0.4)"
               />
               <HapticPressable
@@ -103,7 +107,7 @@ export default function HomeScreen() {
             styles.changeNameButton,
             pressed && styles.changeNameButtonPressed,
           ]}>
-          <Text style={styles.changeNameText}>change name</Text>
+          <Text style={styles.changeNameText}>{t('home.changeName')}</Text>
         </HapticPressable>
       )}
     </ImageBackground>

@@ -1,0 +1,52 @@
+{
+  "placement": {
+    "next": "UNDERSTOOD",
+    "skip": "SKIP",
+    "done": "BATTLE STATIONS",
+    "welcome": {
+      "title": "DEPLOY YOUR FLEET",
+      "description": "Arrange your ships before the battle begins. Tap anywhere to continue."
+    },
+    "tray": {
+      "title": "SELECT A VESSEL",
+      "description": "Tap a ship to pick it up, then tap a grid square to place it. Longer ships are harder to hide."
+    },
+    "rotate": {
+      "title": "ROTATE",
+      "description": "Tap to change orientation — horizontal or vertical. Rotate before placing a vessel."
+    },
+    "shuffle": {
+      "title": "RANDOMIZE",
+      "description": "Tap to place your entire fleet at random."
+    }
+  },
+  "battle": {
+    "next": "UNDERSTOOD",
+    "skip": "SKIP",
+    "done": "OPEN FIRE",
+    "playerGrid": {
+      "title": "YOUR FLEET",
+      "description": "Your ships are here. Watch for incoming fire — red cells mean a hit."
+    },
+    "enemyGrid": {
+      "title": "OPEN FIRE",
+      "description": "Tap any square on the enemy grid to launch a shell. Blue = miss. Orange = hit. Red = sunk."
+    },
+    "divider": {
+      "title": "AWAIT ORDERS",
+      "description": "The center line shows whose turn it is. Hold fire until it's yours."
+    },
+    "playerCounter": {
+      "title": "YOUR SHIPS",
+      "description": "Your vessels still afloat. Protect them."
+    },
+    "enemyCounter": {
+      "title": "ENEMY VESSELS",
+      "description": "Enemy ships remaining. Sink them all to win."
+    },
+    "retreat": {
+      "title": "LAST RESORT",
+      "description": "Hold to retreat. The battle will be lost."
+    }
+  }
+}

@@ -80,6 +80,14 @@ export function getRankTitle(gamesPlayed: number, winRate: number): string {
   return 'CADET';
 }
 
+export function translateRankTitle(rankTitle: string, t: any): string {
+  return t(`rank.tiers.${rankTitle}`);
+}
+
+export function translateShipType(shipType: ShipType, t: any): string {
+  return t(`ships.${shipType}`);
+}
+
 export type ShotPhase = {
   x: number;
   y: number;

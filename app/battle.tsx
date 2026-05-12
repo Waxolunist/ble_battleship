@@ -2,11 +2,12 @@ import { DragPreview } from '@/components/drag-preview';
 import { LABEL_SIZE } from '@/components/game-field';
 import { BattleView } from '@/components/views/battle-view';
 import { PlacementView } from '@/components/views/placement-view';
-import { IMAGES } from '@/constants/assets';
+import { IMAGES, LOCALE_IMAGES } from '@/constants/assets';
+import { useTranslation } from 'react-i18next';
 import { useBattleAnimations } from '@/hooks/useBattleAnimations';
 import { useCombat } from '@/hooks/useCombat';
 import { usePlacementGestures } from '@/hooks/usePlacementGestures';
-import { getRankTitle, SHIP_FLEET } from '@/models/types';
+import { getRankTitle, translateRankTitle, SHIP_FLEET } from '@/models/types';
 import { useGameStore } from '@/store/useGameStore';
 import { useCaptainStore } from '@/store/useCaptainStore';
 import { useStatsStore, computeFieldShotStats, computeSunkShipTypes } from '@/store/useStatsStore';
@@ -20,6 +21,8 @@ import Animated from 'react-native-reanimated';
 const GRID_PADDING = 32;
 
 export default function BattleScreen() {
+  const { i18n, t } = useTranslation();
+  const locale = (i18n.language === 'de' ? 'de' : 'en') as keyof typeof LOCALE_IMAGES;
   const { width } = useWindowDimensions();
   const cellSize = Math.floor((width - GRID_PADDING * 2 - LABEL_SIZE) / 10);
 
@@ -42,7 +45,8 @@ export default function BattleScreen() {
   const wins = useStatsStore(s => s.wins);
   const winRate = gamesPlayed > 0 ? Math.round((wins / gamesPlayed) * 100) : 0;
   const rankStr = getRankTitle(gamesPlayed, winRate);
-  const address = rankStr === 'UNPROVEN' || rankStr === 'RECRUIT' ? 'SIR' : rankStr;
+  const address =
+    rankStr === 'UNPROVEN' || rankStr === 'RECRUIT' ? 'SIR' : translateRankTitle(rankStr, t);
 
   // Hooks
   const titleRef = useRef<View>(null);
@@ -169,7 +173,11 @@ export default function BattleScreen() {
 
         {/* Commence firing flash — centered overlay, z-axis punch animation */}
         <Animated.View style={[styles.flashOverlay, animations.flashStyle]} pointerEvents="none">
-          <Image source={IMAGES.commenceFiring} style={styles.flashImage} resizeMode="contain" />
+          <Image
+            source={LOCALE_IMAGES[locale].commenceFiring}
+            style={styles.flashImage}
+            resizeMode="contain"
+          />
         </Animated.View>
 
         {/* Floating drag preview — rendered last so it draws on top */}

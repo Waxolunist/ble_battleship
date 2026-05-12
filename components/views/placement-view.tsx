@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { FadeIn } from '@/components/fade-in';
 import { GameField } from '@/components/game-field';
 import { GameColors } from '@/constants/theme';
@@ -72,15 +73,16 @@ export function PlacementView({
   captainName,
   address,
 }: PlacementViewProps) {
+  const { t } = useTranslation('common');
   return (
     <View style={styles.content}>
       {/* Top: Title & subtitle */}
       <Animated.View style={fireTopStyle}>
         <FadeIn translateY={-30}>
           <View ref={titleRef} style={styles.topSection}>
-            <Text style={styles.title}>⚔ BATTLE STATION ⚔</Text>
+            <Text style={styles.title}>{t('placement.title')}</Text>
             <Text style={styles.subtitle}>
-              {'PLACE YOUR FLEET,\n' + address + ' ' + captainName}
+              {t('placement.subtitle') + '\n' + address + ' ' + captainName}
             </Text>
           </View>
         </FadeIn>
@@ -130,7 +132,8 @@ export function PlacementView({
               onPress={onRetreat}
               style={({ pressed }) => [styles.cancelButton, pressed && styles.cancelButtonPressed]}>
               <Text style={styles.cancelButtonText} numberOfLines={2}>
-                ↩{'\n'}RETREAT
+                ↩{'\n'}
+                {t('placement.retreat')}
               </Text>
             </HapticPressable>
             <HapticPressable
@@ -144,7 +147,8 @@ export function PlacementView({
               <Text
                 style={[styles.fireButtonText, !allShipsPlaced && styles.fireButtonTextDisabled]}
                 numberOfLines={2}>
-                ⚡{'\n'}FIRE AT WILL
+                ⚡{'\n'}
+                {t('placement.fireAtWill')}
               </Text>
             </HapticPressable>
           </View>
@@ -152,7 +156,7 @@ export function PlacementView({
       </Animated.View>
 
       {/* Tutorial replay button — rendered last so it sits above all other children */}
-      <TutorialHelpButton onPress={onReplayTutorial} top={112} right={36} />
+      <TutorialHelpButton onPress={onReplayTutorial} top={112} right={18} />
     </View>
   );
 }
@@ -172,7 +176,7 @@ const styles = StyleSheet.create({
   },
   title: {
     color: '#fff',
-    fontSize: 26,
+    fontSize: 24,
     fontWeight: '900',
     letterSpacing: 4,
     textAlign: 'center',

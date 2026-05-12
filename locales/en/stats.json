@@ -1,0 +1,59 @@
+{
+  "noData": {
+    "title": "NO COMBAT DATA",
+    "subtitle": "Complete a battle to see your record."
+  },
+  "captain": {
+    "unknown": "UNKNOWN",
+    "awaitingFirstEngagement": "AWAITING FIRST ENGAGEMENT",
+    "engagement_one": "{{count}} ENGAGEMENT",
+    "engagement_other": "{{count}} ENGAGEMENTS"
+  },
+  "rank": {
+    "maximumAchieved": "MAXIMUM RANK ACHIEVED",
+    "next": "NEXT: {{title}} AT {{threshold}}% WIN RATE",
+    "play3Battles": "PLAY 3 BATTLES TO ESTABLISH RANK",
+    "moreBattles_one": "{{count}} MORE BATTLE TO ESTABLISH RANK",
+    "moreBattles_other": "{{count}} MORE BATTLES TO ESTABLISH RANK",
+    "tiers": {
+      "CADET": "CADET",
+      "ENSIGN": "ENSIGN",
+      "CAPTAIN": "CAPTAIN",
+      "COMMODORE": "COMMODORE",
+      "ADMIRAL": "ADMIRAL",
+      "UNPROVEN": "UNPROVEN",
+      "RECRUIT": "RECRUIT"
+    }
+  },
+  "combatRecord": {
+    "title": "COMBAT RECORD",
+    "victories": "VICTORIES",
+    "defeats": "DEFEATS",
+    "winRate": "WIN RATE",
+    "currentStreak": "CURRENT STREAK",
+    "bestStreak": "BEST STREAK"
+  },
+  "accuracy": {
+    "title": "COMBAT ACCURACY",
+    "label": "ACCURACY",
+    "hits": "HITS",
+    "misses": "MISSES",
+    "shotsFired": "SHOTS FIRED"
+  },
+  "fleetKills": {
+    "title": "FLEET KILLS",
+    "total": "TOTAL ENEMY SHIPS SUNK"
+  },
+  "shipsLost": {
+    "title": "SHIPS LOST",
+    "total": "TOTAL SHIPS LOST"
+  },
+  "resetStats": "reset stats",
+  "ships": {
+    "Carrier": "CARRIER",
+    "Battleship": "BATTLESHIP",
+    "Cruiser": "CRUISER",
+    "Submarine": "SUBMARINE",
+    "Destroyer": "DESTROYER"
+  }
+}

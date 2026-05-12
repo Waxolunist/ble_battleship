@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { GameField } from '@/components/game-field';
 import { HapticPressable } from '@/components/haptic-pressable';
 import { TutorialHelpButton } from '@/components/tutorial-help-button';
@@ -75,6 +76,7 @@ export function BattleView({
   retreatRef,
   onReplayTutorial,
 }: BattleViewProps) {
+  const { t } = useTranslation('battle');
   const playerShipsRemaining = countShipsRemaining(fields);
   const enemyShipsRemaining = countShipsRemaining(opponentFields);
 
@@ -96,7 +98,7 @@ export function BattleView({
   } = useTurnAnimations(turn, sunkEvent);
 
   const { verdictFlash, regularTextStyle, verdictTextStyle, sunkLabel, sunkLabelStyle } =
-    useVerdictAnimations(shotPhase, sunkEvent);
+    useVerdictAnimations(shotPhase, sunkEvent, t);
 
   const {
     isVictory,
@@ -137,7 +139,7 @@ export function BattleView({
   });
 
   const isPlayerTurn = turn === 'player';
-  const dividerText = isPlayerTurn ? 'SELECT TARGET' : 'INCOMING FIRE';
+  const dividerText = isPlayerTurn ? t('divider.selectTarget') : t('divider.incomingFire');
   const dividerColor = isPlayerTurn ? GameColors.gold : GameColors.red;
 
   const playerGridShot = shotPhase?.grid === 'player' ? shotPhase : undefined;
@@ -174,7 +176,7 @@ export function BattleView({
               pressed && styles.retreatButtonPressed,
             ]}>
             <Text style={styles.retreatIcon}>⚓</Text>
-            <Text style={styles.retreatText}>RETREAT</Text>
+            <Text style={styles.retreatText}>{t('retreat.button')}</Text>
           </Pressable>
         </Animated.View>
       )}
@@ -183,14 +185,12 @@ export function BattleView({
       {confirmingRetreat && (
         <View style={styles.confirmOverlay}>
           <View style={styles.confirmDialog}>
-            <Text style={styles.confirmMessage}>
-              {'Abandon battle?\nYour fleet will be lost to the sea.'}
-            </Text>
+            <Text style={styles.confirmMessage}>{t('retreat.confirmMessage')}</Text>
             <View style={styles.confirmButtons}>
               <Pressable
                 onPress={() => setConfirmingRetreat(false)}
                 style={({ pressed }) => [styles.holdButton, pressed && styles.holdButtonPressed]}>
-                <Text style={styles.holdButtonText}>HOLD THE LINE</Text>
+                <Text style={styles.holdButtonText}>{t('retreat.holdTheLine')}</Text>
               </Pressable>
               <Pressable
                 onPress={handleRetreatConfirm}
@@ -198,7 +198,7 @@ export function BattleView({
                   styles.confirmRetreatButton,
                   pressed && styles.confirmRetreatButtonPressed,
                 ]}>
-                <Text style={styles.confirmRetreatText}>RETREAT</Text>
+                <Text style={styles.confirmRetreatText}>{t('retreat.confirm')}</Text>
               </Pressable>
             </View>
           </View>
@@ -365,9 +365,11 @@ export function BattleView({
           <Animated.View
             style={[StyleSheet.absoluteFill, styles.victoryCalloutWrapper]}
             pointerEvents={showVictoryButtons ? 'box-none' : 'none'}>
-            <Animated.Text style={[styles.victoryText, victoryWordStyle]}>VICTORY</Animated.Text>
+            <Animated.Text style={[styles.victoryText, victoryWordStyle]}>
+              {t('victory.title')}
+            </Animated.Text>
             <Animated.Text style={[styles.endgameSubtitle, victorySubtitleStyle]}>
-              Enemy fleet destroyed.
+              {t('victory.subtitle')}
             </Animated.Text>
             {showVictoryButtons && (
               <Animated.View style={[styles.endgameButtons, victoryButtonsStyle]}>
@@ -377,7 +379,7 @@ export function BattleView({
                     styles.playAgainButton,
                     pressed && styles.playAgainButtonPressed,
                   ]}>
-                  <Text style={styles.playAgainText}>PLAY AGAIN</Text>
+                  <Text style={styles.playAgainText}>{t('victory.playAgain')}</Text>
                 </HapticPressable>
                 <HapticPressable
                   onPress={onMakePort}
@@ -385,7 +387,7 @@ export function BattleView({
                     styles.makePortButton,
                     pressed && styles.makePortButtonPressed,
                   ]}>
-                  <Text style={styles.makePortText}>MAKE PORT</Text>
+                  <Text style={styles.makePortText}>{t('victory.makePort')}</Text>
                 </HapticPressable>
               </Animated.View>
             )}
@@ -409,10 +411,10 @@ export function BattleView({
             style={[StyleSheet.absoluteFill, styles.retreatWordOverlay]}
             pointerEvents={showDefeatButtons ? 'box-none' : 'none'}>
             <Animated.Text style={[styles.retreatWordText, retreatWordStyle]}>
-              LOST AT SEA
+              {t('defeat.title')}
             </Animated.Text>
             <Animated.Text style={[styles.endgameSubtitle, defeatSubtitleStyle]}>
-              Your fleet was lost.
+              {t('defeat.subtitle')}
             </Animated.Text>
             {showDefeatButtons && (
               <Animated.View style={[styles.endgameButtons, defeatButtonsStyle]}>
@@ -422,7 +424,7 @@ export function BattleView({
                     styles.playAgainButton,
                     pressed && styles.playAgainButtonPressed,
                   ]}>
-                  <Text style={styles.playAgainText}>REVENGE</Text>
+                  <Text style={styles.playAgainText}>{t('defeat.revenge')}</Text>
                 </HapticPressable>
                 <HapticPressable
                   onPress={onMakePort}
@@ -430,7 +432,7 @@ export function BattleView({
                     styles.makePortButton,
                     pressed && styles.makePortButtonPressed,
                   ]}>
-                  <Text style={styles.makePortText}>MAKE PORT</Text>
+                  <Text style={styles.makePortText}>{t('defeat.makePort')}</Text>
                 </HapticPressable>
               </Animated.View>
             )}

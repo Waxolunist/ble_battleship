@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { HapticPressable } from '@/components/haptic-pressable';
 import { IMAGES } from '@/constants/assets';
 import { GameColors } from '@/constants/theme';
@@ -66,6 +67,7 @@ function ShipRow({
   dragY,
   rotateRef,
 }: ShipRowProps) {
+  const { t } = useTranslation('common');
   const size = SHIP_SIZES[type];
   const image = SHIP_IMAGES[type];
 
@@ -99,7 +101,7 @@ function ShipRow({
         </Pressable>
 
         <Text numberOfLines={1} style={[styles.shipLabel, isPlaced && styles.shipLabelPlaced]}>
-          {type.toUpperCase()}
+          {t(`fleet.ships.${type}`)}
         </Text>
 
         <View style={styles.cells}>
@@ -151,9 +153,10 @@ export const ShipTray = forwardRef<View, ShipTrayProps>(function ShipTray(
   }: ShipTrayProps,
   ref,
 ) {
+  const { t } = useTranslation('common');
   return (
     <View ref={ref} style={styles.tray}>
-      <Text style={styles.trayTitle}>FLEET</Text>
+      <Text style={styles.trayTitle}>{t('fleet.title')}</Text>
       <View style={styles.shipList}>
         {SHIP_FLEET.map((type, index) => (
           <ShipRow
@@ -187,7 +190,7 @@ const styles = StyleSheet.create({
     borderColor: GameColors.blueTint,
     borderRadius: 4,
     backgroundColor: GameColors.trayBg,
-    paddingHorizontal: 12,
+    paddingHorizontal: 5,
     paddingVertical: 16,
     gap: 10,
   },
@@ -232,7 +235,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '700',
     letterSpacing: 1,
-    width: 100,
+    width: 120,
   },
   shipLabelPlaced: {
     color: GameColors.labelFaded,

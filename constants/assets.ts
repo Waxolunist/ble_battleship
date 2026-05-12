@@ -5,5 +5,13 @@ export const IMAGES = {
   carrier: require('@/assets/images/carrier.png'),
   submarine: require('@/assets/images/submarine.png'),
   destroyer: require('@/assets/images/destroyer.png'),
-  commenceFiring: require('@/assets/images/commence_firing.png'),
 };
+
+export const LOCALE_IMAGES = {
+  en: {
+    commenceFiring: require('@/assets/images/locales/en/commence_firing.png'),
+  },
+  de: {
+    commenceFiring: require('@/assets/images/locales/de/commence_firing.png'),
+  },
+} satisfies Record<'en' | 'de', { commenceFiring: unknown }>;
