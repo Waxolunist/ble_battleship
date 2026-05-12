@@ -42,7 +42,8 @@ jobs:
           path: |
             ios/Pods
             ~/.cocoapods
-          key: ${{ runner.os }}-pods-${{ hashFiles('ios/Podfile.lock') }}
+          key: ${{ runner.os }}-pods-${{ hashFiles('package-lock.json') }}
+          restore-keys: ${{ runner.os }}-pods-
 
       - name: Install iOS dependencies
         working-directory: ios
