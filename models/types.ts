@@ -61,6 +61,25 @@ export interface Game {
   gameFields: [GameField, GameField];
 }
 
+// ── Rank system ──────────────────────────────────────────────────────────────
+
+export const RANK_TIERS = [
+  { title: 'CADET', threshold: 0 },
+  { title: 'ENSIGN', threshold: 30 },
+  { title: 'CAPTAIN', threshold: 45 },
+  { title: 'COMMODORE', threshold: 60 },
+  { title: 'ADMIRAL', threshold: 70 },
+] as const;
+
+export function getRankTitle(gamesPlayed: number, winRate: number): string {
+  if (gamesPlayed === 0) return 'UNPROVEN';
+  if (gamesPlayed < 3) return 'RECRUIT';
+  for (let i = RANK_TIERS.length - 1; i >= 0; i--) {
+    if (winRate >= RANK_TIERS[i].threshold) return RANK_TIERS[i].title;
+  }
+  return 'CADET';
+}
+
 export type ShotPhase = {
   x: number;
   y: number;

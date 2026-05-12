@@ -4,6 +4,9 @@ import { useRef, useState } from 'react';
 import { FadeIn } from '@/components/fade-in';
 import { useGameStore } from '@/store/useGameStore';
 import { useCaptainStore } from '@/store/useCaptainStore';
+import { useStatsStore } from '@/store/useStatsStore';
+import { GameColors } from '@/constants/theme';
+import { getRankTitle } from '@/models/types';
 import {
   ImageBackground,
   Keyboard,
@@ -26,6 +29,12 @@ export default function HomeScreen() {
 
   const confirmed = captainName.length > 0;
 
+  const gamesPlayed = useStatsStore(s => s.gamesPlayed);
+  const wins = useStatsStore(s => s.wins);
+  const winRate = gamesPlayed > 0 ? Math.round((wins / gamesPlayed) * 100) : 0;
+  const rankStr = getRankTitle(gamesPlayed, winRate);
+  const address = rankStr === 'UNPROVEN' || rankStr === 'RECRUIT' ? 'SIR' : rankStr;
+
   const handleConfirm = () => {
     if (!inputName.trim()) return;
     inputRef.current?.blur();
@@ -47,9 +56,10 @@ export default function HomeScreen() {
           {confirmed ? (
             <>
               <Text style={styles.welcomeText}>
-                ⚓ ALL HANDS ON DECK!{'\n'}
-                CAPTAIN {captainName} HAS TAKEN THE HELM.{'\n'}
-                THE SEA DEMANDS BLOOD.
+                {'⚓ ALL HANDS ON DECK!\n'}
+                <Text style={styles.rankText}>{address}</Text>{' '}
+                <Text style={styles.nameText}>{captainName}</Text>
+                {' HAS TAKEN THE HELM.\nTHE SEA DEMANDS BLOOD.'}
               </Text>
               <HapticPressable
                 onPress={() => {
@@ -210,5 +220,19 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '500',
     letterSpacing: 1,
+  },
+  rankText: {
+    fontFamily: 'BlackOpsOne',
+    fontWeight: 'normal',
+    fontSize: 32,
+    letterSpacing: 3,
+    color: GameColors.gold,
+  },
+  nameText: {
+    fontFamily: 'BlackOpsOne',
+    fontWeight: 'normal',
+    fontSize: 32,
+    letterSpacing: 3,
+    color: '#fff',
   },
 });

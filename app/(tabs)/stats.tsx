@@ -1,7 +1,7 @@
 import { IMAGES } from '@/constants/assets';
 import { Fonts, GameColors } from '@/constants/theme';
+import { getRankTitle, RANK_TIERS, SHIP_FLEET, SHIP_SIZES } from '@/models/types';
 import type { ShipType } from '@/models/types';
-import { SHIP_FLEET, SHIP_SIZES } from '@/models/types';
 import { useCaptainStore } from '@/store/useCaptainStore';
 import type { ShipCounts } from '@/store/useStatsStore';
 import { useStatsStore } from '@/store/useStatsStore';
@@ -11,16 +11,6 @@ import { ImageBackground, ScrollView, StyleSheet, Text, View } from 'react-nativ
 
 function pct(value: number, total: number): number {
   return total > 0 ? value / total : 0;
-}
-
-function rankTitle(gamesPlayed: number, winRate: number): string {
-  if (gamesPlayed === 0) return 'UNPROVEN';
-  if (gamesPlayed < 3) return 'RECRUIT';
-  if (winRate >= 80) return 'ADMIRAL';
-  if (winRate >= 65) return 'COMMODORE';
-  if (winRate >= 50) return 'CAPTAIN';
-  if (winRate >= 35) return 'ENSIGN';
-  return 'CADET';
 }
 
 // ── Sub-components ────────────────────────────────────────────────────────────
@@ -111,6 +101,88 @@ function NoDataState() {
   );
 }
 
+function RankProgressBar({ gamesPlayed, winRate }: { gamesPlayed: number; winRate: number }) {
+  let rankIndex = -1;
+  let fillFraction = 0;
+  let hint = '';
+
+  if (gamesPlayed >= 3) {
+    for (let i = RANK_TIERS.length - 1; i >= 0; i--) {
+      if (winRate >= RANK_TIERS[i].threshold) {
+        rankIndex = i;
+        break;
+      }
+    }
+    if (rankIndex === RANK_TIERS.length - 1) {
+      fillFraction = 1;
+      hint = 'MAXIMUM RANK ACHIEVED';
+    } else {
+      const cur = RANK_TIERS[rankIndex];
+      const next = RANK_TIERS[rankIndex + 1];
+      const withinTier = (winRate - cur.threshold) / (next.threshold - cur.threshold);
+      fillFraction = (rankIndex + withinTier) / (RANK_TIERS.length - 1);
+      hint = `NEXT: ${next.title} AT ${next.threshold}% WIN RATE`;
+    }
+  } else {
+    const games = Math.max(gamesPlayed, 0);
+    fillFraction = 0;
+    const remaining = 3 - games;
+    hint =
+      games === 0
+        ? 'PLAY 3 BATTLES TO ESTABLISH RANK'
+        : `${remaining} MORE BATTLE${remaining === 1 ? '' : 'S'} TO ESTABLISH RANK`;
+  }
+
+  const isMaxRank = rankIndex === RANK_TIERS.length - 1;
+
+  return (
+    <View style={styles.rankProgress}>
+      {/* Rank labels */}
+      <View style={styles.rankLabelsRow}>
+        {RANK_TIERS.map((tier, i) => (
+          <Text
+            key={tier.title}
+            style={[
+              styles.rankLabel,
+              i < rankIndex && styles.rankLabelAchieved,
+              i === rankIndex && styles.rankLabelCurrent,
+            ]}>
+            {tier.title}
+          </Text>
+        ))}
+      </View>
+
+      {/* Bar with dot milestones */}
+      <View style={styles.rankTrackContainer}>
+        <View style={styles.rankBarTrack}>
+          <View
+            style={[
+              styles.rankBarFill,
+              { width: `${Math.min(fillFraction * 100, 100)}%` },
+              isMaxRank && styles.rankBarFillMax,
+            ]}
+          />
+        </View>
+        <View style={styles.rankDotsRow}>
+          {RANK_TIERS.map((tier, i) => (
+            <View
+              key={tier.title}
+              style={[
+                styles.rankDot,
+                i <= rankIndex && styles.rankDotActive,
+                i === rankIndex && styles.rankDotCurrent,
+              ]}
+            />
+          ))}
+        </View>
+      </View>
+
+      {/* Hint */}
+      <Text style={[styles.rankHint, isMaxRank && styles.rankHintMax]}>{hint}</Text>
+    </View>
+  );
+}
+
 // ── Screen ───────────────────────────────────────────────────────────────────
 
 export default function StatsScreen() {
@@ -129,7 +201,7 @@ export default function StatsScreen() {
   const winRate = Math.round(pct(wins, gamesPlayed) * 100);
   const accuracy = Math.round(pct(totalHits, totalShots) * 100);
   const noData = gamesPlayed === 0;
-  const rank = rankTitle(gamesPlayed, winRate);
+  const rank = getRankTitle(gamesPlayed, winRate);
 
   const maxKills = Math.max(...SHIP_FLEET.map(t => (enemyShipsSunkByType as ShipCounts)[t]), 1);
   const maxLost = Math.max(...SHIP_FLEET.map(t => (playerShipsLostByType as ShipCounts)[t]), 1);
@@ -151,6 +223,7 @@ export default function StatsScreen() {
               ? 'AWAITING FIRST ENGAGEMENT'
               : `${gamesPlayed} ENGAGEMENT${gamesPlayed === 1 ? '' : 'S'}`}
           </Text>
+          <RankProgressBar gamesPlayed={gamesPlayed} winRate={winRate} />
         </View>
 
         {noData ? (
@@ -550,6 +623,83 @@ const styles = StyleSheet.create({
     fontFamily: 'BlackOpsOne',
     fontSize: 16,
     letterSpacing: 1,
+  },
+
+  // ── Rank Progress Bar ──
+  rankProgress: {
+    width: '100%',
+    gap: 8,
+    marginTop: 14,
+  },
+  rankLabelsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  rankLabel: {
+    fontFamily: Fonts.mono,
+    fontSize: 8,
+    letterSpacing: 1,
+    color: GameColors.labelFaded,
+    textAlign: 'center',
+    flex: 1,
+  },
+  rankLabelAchieved: {
+    color: GameColors.labelDim,
+  },
+  rankLabelCurrent: {
+    color: GameColors.gold,
+  },
+  rankTrackContainer: {
+    height: 12,
+    justifyContent: 'center',
+  },
+  rankBarTrack: {
+    position: 'absolute',
+    left: 8,
+    right: 8,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: GameColors.statBarTrack,
+    overflow: 'hidden',
+    flexDirection: 'row',
+  },
+  rankBarFill: {
+    height: '100%',
+    backgroundColor: GameColors.statBarWin,
+    borderRadius: 2,
+  },
+  rankBarFillMax: {
+    backgroundColor: GameColors.gold,
+  },
+  rankDotsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  rankDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: GameColors.statBarTrack,
+    borderWidth: 1,
+    borderColor: GameColors.blueBorder,
+  },
+  rankDotActive: {
+    backgroundColor: GameColors.statBarWin,
+    borderColor: GameColors.statBarWin,
+  },
+  rankDotCurrent: {
+    backgroundColor: GameColors.gold,
+    borderColor: GameColors.gold,
+  },
+  rankHint: {
+    fontFamily: Fonts.mono,
+    fontSize: 8,
+    letterSpacing: 2,
+    color: GameColors.labelFaded,
+    textAlign: 'center',
+  },
+  rankHintMax: {
+    color: GameColors.gold,
   },
 
   // ── No data ──
