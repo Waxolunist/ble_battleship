@@ -29,10 +29,11 @@ export function useBLEPermissions() {
   const checkBLEAvailability = useCallback(async () => {
     setIsChecking(true);
     try {
-      // For Expo, BLE availability is platform-dependent
-      // Simulators and some devices may not support BLE
-      // This is a placeholder that assumes BLE is available unless we detect otherwise
-      const available = !__DEV__ || Platform.OS !== 'web';
+      // BLE is available on iOS and Android, but the native module
+      // (munim-bluetooth) only loads on a native build, not Expo Go.
+      // We show the UI in all environments to allow testing the flow;
+      // the BLE service gracefully handles the missing native module.
+      const available = Platform.OS !== 'web';
       setStatus(prev => ({ ...prev, available }));
     } finally {
       setIsChecking(false);
