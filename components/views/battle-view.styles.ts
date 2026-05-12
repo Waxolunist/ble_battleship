@@ -212,6 +212,7 @@ export const styles = StyleSheet.create({
     zIndex: 21,
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 12,
   },
   retreatWordText: {
     fontFamily: 'BlackOpsOne',
@@ -224,6 +225,10 @@ export const styles = StyleSheet.create({
   },
   playerPulseOverlay: {
     backgroundColor: GameColors.playerPulse,
+    borderRadius: 2,
+  },
+  enemyPulseOverlay: {
+    backgroundColor: GameColors.enemyPulse,
     borderRadius: 2,
   },
   defeatGridFlash: {

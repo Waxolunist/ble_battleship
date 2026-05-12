@@ -4,16 +4,19 @@ import {
   interpolate,
   useAnimatedStyle,
   useSharedValue,
+  withRepeat,
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
 import type { SharedValue } from 'react-native-reanimated';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 interface UseRetreatAnimationParams {
   shakeX: SharedValue<number>;
   shakeY: SharedValue<number>;
   turnSV: SharedValue<number>;
+  playerShipsRemaining: number;
+  showOpponentField: boolean;
   onGameEnd?: (outcome: 'victory' | 'defeat') => void;
 }
 
@@ -21,20 +24,25 @@ export function useRetreatAnimation({
   shakeX,
   shakeY,
   turnSV,
+  playerShipsRemaining,
+  showOpponentField,
   onGameEnd,
 }: UseRetreatAnimationParams) {
   const [confirmingRetreat, setConfirmingRetreat] = useState(false);
   const [isRetreating, setIsRetreating] = useState(false);
   const [submergeX, setSubmergeX] = useState(-1);
   const [showDefeatButtons, setShowDefeatButtons] = useState(false);
+  const hasTriggered = useRef(false);
 
   const flagOpacity = useSharedValue(0);
   const flagTranslateY = useSharedValue(10);
   const darkOverlayOpacity = useSharedValue(0);
   const retreatWordOpacity = useSharedValue(0);
+  const retreatWordScale = useSharedValue(0.5);
   const defeatGridFlashOpacity = useSharedValue(0);
   const defeatSubtitleOpacity = useSharedValue(0);
   const defeatButtonsOpacity = useSharedValue(0);
+  const enemyPulseOpacity = useSharedValue(0);
 
   const flagAnimStyle = useAnimatedStyle(() => ({
     opacity: flagOpacity.value,
@@ -45,6 +53,7 @@ export function useRetreatAnimation({
   }));
   const retreatWordStyle = useAnimatedStyle(() => ({
     opacity: retreatWordOpacity.value,
+    transform: [{ scale: retreatWordScale.value }],
   }));
   const defeatGridFlashStyle = useAnimatedStyle(() => ({
     opacity: defeatGridFlashOpacity.value,
@@ -55,12 +64,24 @@ export function useRetreatAnimation({
   const defeatButtonsStyle = useAnimatedStyle(() => ({
     opacity: defeatButtonsOpacity.value,
   }));
+  const enemyPulseStyle = useAnimatedStyle(() => ({
+    opacity: enemyPulseOpacity.value,
+  }));
   // Dims to 50% during enemy turn
   const retreatButtonStyle = useAnimatedStyle(() => ({
     opacity: interpolate(turnSV.value, [0, 1], [1, 0.5]),
   }));
 
+  // Auto-trigger when all player ships are sunk (AI wins)
+  useEffect(() => {
+    if (!showOpponentField || hasTriggered.current || playerShipsRemaining !== 0) return;
+    triggerRetreatVisualization();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [playerShipsRemaining, showOpponentField]);
+
   const triggerRetreatVisualization = async () => {
+    if (hasTriggered.current) return;
+    hasTriggered.current = true;
     setConfirmingRetreat(false);
     setIsRetreating(true);
     onGameEnd?.('defeat');
@@ -113,13 +134,28 @@ export function useRetreatAnimation({
       setTimeout(() => setSubmergeX(col), 400 + col * 100);
     }
 
-    // 3. Screen darkens + title (1.0s)
+    // 3. Screen darkens + "LOST AT SEA" slams in (1.0s)
     setTimeout(() => {
       darkOverlayOpacity.value = withTiming(0.85, { duration: 800 });
+      retreatWordScale.value = 0.5;
+      retreatWordOpacity.value = 0;
+      retreatWordScale.value = withTiming(1, { duration: 350, easing: Easing.out(Easing.cubic) });
       retreatWordOpacity.value = withTiming(1, { duration: 200, easing: Easing.out(Easing.cubic) });
     }, 1000);
 
-    // 4. Subtitle fades in (1.4s)
+    // 4. Enemy fleet pulse (1.2s, loops indefinitely — they prevailed)
+    setTimeout(() => {
+      enemyPulseOpacity.value = withRepeat(
+        withSequence(
+          withTiming(0.4, { duration: 600, easing: Easing.inOut(Easing.sin) }),
+          withTiming(0.15, { duration: 600, easing: Easing.inOut(Easing.sin) }),
+        ),
+        -1,
+        false,
+      );
+    }, 1200);
+
+    // 5. Subtitle fades in (1.4s)
     setTimeout(() => {
       defeatSubtitleOpacity.value = withTiming(1, {
         duration: 300,
@@ -127,7 +163,7 @@ export function useRetreatAnimation({
       });
     }, 1400);
 
-    // 5. Buttons appear (3.0s)
+    // 6. Buttons appear (3.0s)
     setTimeout(() => {
       setShowDefeatButtons(true);
       defeatButtonsOpacity.value = withTiming(1, {
@@ -165,6 +201,7 @@ export function useRetreatAnimation({
     defeatGridFlashStyle,
     defeatSubtitleStyle,
     defeatButtonsStyle,
+    enemyPulseStyle,
     retreatButtonStyle,
     triggerRetreatVisualization,
     handleRetreatPress,

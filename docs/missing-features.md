@@ -7,12 +7,12 @@
 | Priority | Feature | Description |
 |---|---|---|
 | High | **Local two-player via BLE** | Offline head-to-head multiplayer over Bluetooth Low Energy so two players can battle on separate devices without internet. |
-| High | **Tutorial overlays** | Show guided overlay hints on placement and battle views on first launch, with an option to replay them from a settings or help menu. |
+| Done | **Tutorial overlays** | Show guided overlay hints on placement and battle views on first launch, with an option to replay them from a settings or help menu. |
 | Medium | **Sound effects** | Add audio for shots (fire, hit, miss, sunk), phase transitions, victory/defeat, and ambient ocean — the game's haptics and animations are strong but silent, which undercuts the drama. |
 | Low | **Difficulty levels** | Offer at least two AI difficulty modes (e.g. Seaman vs Admiral) so new players aren't frustrated and veterans stay challenged. |
 | Medium | **Settings screen** | A dedicated screen for toggling sound, haptics, viewing credits, replaying the tutorial, and selecting difficulty. |
 | High | **App icon & splash screen** | A polished app icon and branded splash/loading screen to replace the Expo defaults before any store submission. |
-| High | **Defeat screen polish** | The victory screen has a full choreographed animation, but the defeat screen needs equal treatment — a dramatic sinking sequence with the light-light-heavy haptic pattern already spec'd in the guidelines. |
+| Done | **Defeat screen polish** | The victory screen has a full choreographed animation, but the defeat screen needs equal treatment — a dramatic sinking sequence with the light-light-heavy haptic pattern already spec'd in the guidelines. |
 | Done | **Production dev flag cleanup** | `DEV_SHOW_FORCE_VICTORY` is currently `true` — needs a build-time gate or removal before release. |
 | High | **i18n** | Make the app in multiple languages. German and English are a must. |
 

@@ -94,6 +94,8 @@ export const GameColors = {
   // ── Endgame overlays ────────────────────────────────────────────────
   /** Bright blue pulse over surviving player fleet on victory */
   playerPulse: 'rgba(120, 200, 255, 0.9)',
+  /** Red pulse over enemy fleet on defeat — they prevailed */
+  enemyPulse: 'rgba(255, 80, 80, 0.85)',
   /** Warm gold glow behind VICTORY text */
   goldShadow: 'rgba(255, 200, 0, 0.4)',
   /** Subtle blue highlight on pressed secondary buttons */

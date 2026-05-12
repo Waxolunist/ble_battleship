@@ -121,12 +121,20 @@ export function BattleView({
     defeatGridFlashStyle,
     defeatSubtitleStyle,
     defeatButtonsStyle,
+    enemyPulseStyle,
     retreatButtonStyle,
     triggerRetreatVisualization,
     handleRetreatPress,
     handleRetreatLongPress,
     handleRetreatConfirm,
-  } = useRetreatAnimation({ shakeX, shakeY, turnSV, onGameEnd });
+  } = useRetreatAnimation({
+    shakeX,
+    shakeY,
+    turnSV,
+    playerShipsRemaining,
+    showOpponentField,
+    onGameEnd,
+  });
 
   const isPlayerTurn = turn === 'player';
   const dividerText = isPlayerTurn ? 'SELECT TARGET' : 'INCOMING FIRE';
@@ -333,6 +341,12 @@ export function BattleView({
               {isVictory && (
                 <Animated.View
                   style={[StyleSheet.absoluteFill, styles.victoryGridFlash, victoryGridFlashStyle]}
+                  pointerEvents="none"
+                />
+              )}
+              {isRetreating && (
+                <Animated.View
+                  style={[StyleSheet.absoluteFill, styles.enemyPulseOverlay, enemyPulseStyle]}
                   pointerEvents="none"
                 />
               )}
