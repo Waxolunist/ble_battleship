@@ -4,9 +4,10 @@ import { useBLEPermissions } from '@/hooks/useBLEPermissions';
 import { useBLEStore } from '@/store/useBLEStore';
 import { useCaptainStore } from '@/store/useCaptainStore';
 import { useTranslation } from 'react-i18next';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { Animated, StyleSheet, Text, View } from 'react-native';
 import { PlayerListItem } from './PlayerListItem';
+import { bleService } from '@/services/ble';
 
 interface BLEMultiplayerPanelProps {
   onHostPress?: () => void;
@@ -16,7 +17,7 @@ interface BLEMultiplayerPanelProps {
 export function BLEMultiplayerPanel({ onHostPress, onJoinPress }: BLEMultiplayerPanelProps) {
   const { t } = useTranslation('common');
   const { available, isChecking, requestPermissions } = useBLEPermissions();
-  const { state, discoveredPeers, setState, connectedPeer } = useBLEStore();
+  const { state, discoveredPeers, setState, connectedPeer, addDiscoveredPeer } = useBLEStore();
   const { captainName } = useCaptainStore();
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
@@ -42,29 +43,71 @@ export function BLEMultiplayerPanel({ onHostPress, onJoinPress }: BLEMultiplayer
     }
   }, [state, pulseAnim]);
 
+  const handleHostPress = useCallback(async () => {
+    const permitted = await requestPermissions();
+    if (permitted) {
+      try {
+        setState('HOST_ADVERTISING');
+        await bleService.startAdvertising(captainName);
+        onHostPress?.();
+      } catch (error) {
+        console.error('[UI] Failed to start advertising:', error);
+        setState('IDLE');
+      }
+    }
+  }, [requestPermissions, setState, captainName, onHostPress]);
+
+  const handleJoinPress = useCallback(async () => {
+    const permitted = await requestPermissions();
+    if (permitted) {
+      try {
+        setState('SCANNING');
+        await bleService.startScanning((id: string, name: string) => {
+          addDiscoveredPeer({ id, name });
+        });
+        onJoinPress?.();
+      } catch (error) {
+        console.error('[UI] Failed to start scanning:', error);
+        setState('IDLE');
+      }
+    }
+  }, [requestPermissions, setState, addDiscoveredPeer, onJoinPress]);
+
+  const handleConnectToDevice = useCallback(
+    async (deviceId: string) => {
+      try {
+        setState('CONNECTING');
+        await bleService.connect(deviceId);
+        setState('HANDSHAKING');
+        setTimeout(() => {
+          setState('LOBBY');
+        }, 500);
+      } catch (error) {
+        console.error('[UI] Failed to connect:', error);
+        setState('SCANNING');
+      }
+    },
+    [setState],
+  );
+
+  const handleCancel = useCallback(async () => {
+    try {
+      if (state === 'HOST_ADVERTISING') {
+        await bleService.stopAdvertising();
+      } else if (state === 'SCANNING') {
+        await bleService.stopScanning();
+      } else if (state === 'LOBBY' && connectedPeer) {
+        await bleService.disconnect();
+      }
+    } catch (error) {
+      console.error('[UI] Failed to cancel operation:', error);
+    }
+    setState('IDLE');
+  }, [state, connectedPeer, setState]);
+
   if (!available) {
     return null;
   }
-
-  const handleHostPress = async () => {
-    const permitted = await requestPermissions();
-    if (permitted) {
-      setState('HOST_ADVERTISING');
-      onHostPress?.();
-    }
-  };
-
-  const handleJoinPress = async () => {
-    const permitted = await requestPermissions();
-    if (permitted) {
-      setState('SCANNING');
-      onJoinPress?.();
-    }
-  };
-
-  const handleCancel = () => {
-    setState('IDLE');
-  };
 
   if (state === 'IDLE') {
     return (
@@ -140,9 +183,7 @@ export function BLEMultiplayerPanel({ onHostPress, onJoinPress }: BLEMultiplayer
                   key={peer.id}
                   name={peer.name}
                   onPress={() => {
-                    setState('CONNECTING');
-                    // In real implementation, initiate BLE connection here
-                    // and transition to HANDSHAKING on successful connect
+                    handleConnectToDevice(peer.id);
                   }}
                 />
               ))

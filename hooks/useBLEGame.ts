@@ -4,8 +4,15 @@ import { useGameStore } from '@/store/useGameStore';
 import { useStatsStore, computeFieldShotStats, computeSunkShipTypes } from '@/store/useStatsStore';
 import { applyFire } from '@/engine/combat';
 import type { ShipType } from '@/models/types';
+import { bleService } from '@/services/ble';
 
 interface PendingShot {
+  x: number;
+  y: number;
+}
+
+interface FireTimer {
+  timerId: ReturnType<typeof setTimeout>;
   x: number;
   y: number;
 }
@@ -37,6 +44,7 @@ export function useBLEGame() {
     setSunkEvent,
   } = useGameStore();
   const pendingShotRef = useRef<PendingShot | null>(null);
+  const fireTimersRef = useRef<FireTimer[]>([]);
   const [awaitingShotResult, setAwaitingShotResult] = useState(false);
 
   // Serialize placed fleet into FleetPlacement[]
@@ -68,8 +76,13 @@ export function useBLEGame() {
   const handleFireAtWill = useCallback(() => {
     const fleet = serializeFleet();
     setLocalFleetReady(true);
-    // TODO: Send FLEET_READY message over BLE with serialized fleet
-    // fleet is ready to send: fleet satisfies FleetPlacement[]
+    // Send FLEET_READY message over BLE with serialized fleet
+    bleService
+      .sendMessage({
+        type: 'FLEET_READY',
+        data: { fleet },
+      })
+      .catch(e => console.error('[useBLEGame] Failed to send FLEET_READY:', e));
   }, [serializeFleet, setLocalFleetReady]);
 
   // Called when opponent's FLEET_READY is received
@@ -85,7 +98,7 @@ export function useBLEGame() {
   useEffect(() => {
     if (localFleetReady && remoteFleetReady && bleState === 'PLACEMENT' && connectedPeer) {
       // Set turn: host fires first, joiner fires second
-      const isHost = connectedPeer.id === connectedPeer.id; // Placeholder - needs actual host detection
+      const isHost = bleService.getRole() === 'host';
       setTurn(isHost ? 'player' : 'enemy');
       startBattle();
       setState('BATTLE');
@@ -101,9 +114,20 @@ export function useBLEGame() {
       pendingShotRef.current = { x, y };
       setAwaitingShotResult(true);
 
-      // TODO: At verdict beat (900ms), send FIRE message:
-      // { type: 'FIRE', x, y }
-      // Then wait for SHOT_RESULT response
+      // At verdict beat (900ms), send FIRE message to opponent
+      const timerId = setTimeout(() => {
+        bleService
+          .sendMessage({
+            type: 'FIRE',
+            data: { x, y },
+          })
+          .catch(e => console.error('[useBLEGame] Failed to send FIRE:', e));
+
+        // Clean up from tracking
+        fireTimersRef.current = fireTimersRef.current.filter(t => t.timerId !== timerId);
+      }, 900);
+
+      fireTimersRef.current.push({ timerId, x, y });
     },
     [turn, awaitingShotResult],
   );
@@ -125,8 +149,13 @@ export function useBLEGame() {
         setSunkEvent({ shipType: sunkShip.type, owner: 'enemy' });
       }
 
-      // TODO: Send SHOT_RESULT message with result:
-      // { type: 'SHOT_RESULT', x, y, result, shipType?: sunkShip?.type }
+      // Send SHOT_RESULT message with result
+      bleService
+        .sendMessage({
+          type: 'SHOT_RESULT',
+          data: { x, y, result, shipType: sunkShip?.type },
+        })
+        .catch(e => console.error('[useBLEGame] Failed to send SHOT_RESULT:', e));
 
       // Trigger animation sequence (same as AI shot)
       markTargeted('player', x, y);
@@ -169,7 +198,11 @@ export function useBLEGame() {
     if (opponentFleetSunk) {
       // Player won - send GAME_OVER to opponent
       setState('GAME_OVER');
-      // TODO: Send GAME_OVER message to opponent
+      bleService
+        .sendMessage({
+          type: 'GAME_OVER',
+        })
+        .catch(e => console.error('[useBLEGame] Failed to send GAME_OVER:', e));
       recordGame({
         outcome: 'victory',
         hits: 0,
@@ -192,7 +225,11 @@ export function useBLEGame() {
 
   const handleRematchRequest = useCallback(() => {
     setRematchSent(true);
-    // TODO: Send REMATCH message to opponent
+    bleService
+      .sendMessage({
+        type: 'REMATCH',
+      })
+      .catch(e => console.error('[useBLEGame] Failed to send REMATCH:', e));
   }, []);
 
   // Handle incoming REMATCH message
@@ -208,6 +245,13 @@ export function useBLEGame() {
 
   // Handle disconnect/BYE message
   const handleDisconnect = useCallback(() => {
+    // Send BYE message before disconnecting
+    bleService
+      .sendMessage({
+        type: 'BYE',
+      })
+      .catch(e => console.error('[useBLEGame] Failed to send BYE:', e));
+
     setState('IDLE');
     setRematchSent(false);
     setLocalFleetReady(false);
@@ -221,6 +265,75 @@ export function useBLEGame() {
   }, [bleState, remoteFleetReady, turn, awaitingShotResult]);
 
   const recordGame = useStatsStore(s => s.recordGame);
+
+  // Subscribe to incoming BLE messages and route them to handlers
+  useEffect(() => {
+    const unsubscribe = bleService.onMessage(message => {
+      console.log('[useBLEGame] Received message:', message.type);
+
+      switch (message.type) {
+        case 'FLEET_READY': {
+          const fleet = message.data?.fleet as FleetPlacement[] | undefined;
+          if (fleet) {
+            handleRemoteFleetReady(fleet);
+          }
+          break;
+        }
+        case 'FIRE': {
+          const x = message.data?.x as number | undefined;
+          const y = message.data?.y as number | undefined;
+          if (typeof x === 'number' && typeof y === 'number') {
+            handleRemoteFire(x, y);
+          }
+          break;
+        }
+        case 'SHOT_RESULT': {
+          const x = message.data?.x as number | undefined;
+          const y = message.data?.y as number | undefined;
+          const result = message.data?.result as 'hit' | 'miss' | 'sunk' | undefined;
+          const sunkShipType = message.data?.shipType as ShipType | undefined;
+          if (typeof x === 'number' && typeof y === 'number' && result) {
+            handleShotResult(x, y, result, sunkShipType);
+          }
+          break;
+        }
+        case 'GAME_OVER': {
+          handleRemoteGameOver();
+          break;
+        }
+        case 'REMATCH': {
+          handleRemoteRematch();
+          break;
+        }
+        case 'BYE': {
+          handleDisconnect();
+          break;
+        }
+        case 'HELLO': {
+          // HELLO is for initial handshake - not used in current flow
+          console.log('[useBLEGame] Received HELLO');
+          break;
+        }
+      }
+    });
+
+    return unsubscribe;
+  }, [
+    handleRemoteFleetReady,
+    handleRemoteFire,
+    handleShotResult,
+    handleRemoteGameOver,
+    handleRemoteRematch,
+    handleDisconnect,
+  ]);
+
+  // Cleanup fire timers on unmount
+  useEffect(() => {
+    return () => {
+      fireTimersRef.current.forEach(({ timerId }) => clearTimeout(timerId));
+      fireTimersRef.current = [];
+    };
+  }, []);
 
   return {
     handleFireAtWill,
