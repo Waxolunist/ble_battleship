@@ -14,7 +14,7 @@
 | High | **App icon & splash screen** | A polished app icon and branded splash/loading screen to replace the Expo defaults before any store submission. |
 | Done | **Defeat screen polish** | The victory screen has a full choreographed animation, but the defeat screen needs equal treatment — a dramatic sinking sequence with the light-light-heavy haptic pattern already spec'd in the guidelines. |
 | Done | **Production dev flag cleanup** | `DEV_SHOW_FORCE_VICTORY` is currently `true` — needs a build-time gate or removal before release. |
-| High | **i18n** | Make the app in multiple languages. German and English are a must. |
+| Done | **i18n** | Make the app in multiple languages. German and English are a must. |
 
 ### Nice to Haves
 
