@@ -5,6 +5,7 @@ import type { ShipType } from '@/models/types';
 import { useCaptainStore } from '@/store/useCaptainStore';
 import type { ShipCounts } from '@/store/useStatsStore';
 import { useStatsStore } from '@/store/useStatsStore';
+import { HapticPressable } from '@/components/haptic-pressable';
 import { ImageBackground, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -197,6 +198,7 @@ export default function StatsScreen() {
   const totalMisses = useStatsStore(s => s.totalMisses);
   const enemyShipsSunkByType = useStatsStore(s => s.enemyShipsSunkByType);
   const playerShipsLostByType = useStatsStore(s => s.playerShipsLostByType);
+  const resetStats = useStatsStore(s => s.resetStats);
 
   const winRate = Math.round(pct(wins, gamesPlayed) * 100);
   const accuracy = Math.round(pct(totalHits, totalShots) * 100);
@@ -353,6 +355,11 @@ export default function StatsScreen() {
                 </Text>
               </View>
             </View>
+            <HapticPressable
+              onPress={resetStats}
+              style={({ pressed }) => [styles.resetButton, pressed && styles.resetButtonPressed]}>
+              <Text style={styles.resetButtonText}>reset stats</Text>
+            </HapticPressable>
           </>
         )}
       </ScrollView>
@@ -700,6 +707,22 @@ const styles = StyleSheet.create({
   },
   rankHintMax: {
     color: GameColors.gold,
+  },
+
+  // ── Reset button ──
+  resetButton: {
+    marginTop: 8,
+    padding: 8,
+    alignSelf: 'flex-start',
+  },
+  resetButtonPressed: {
+    opacity: 0.5,
+  },
+  resetButtonText: {
+    color: 'rgba(255, 255, 255, 0.6)',
+    fontSize: 13,
+    fontWeight: '500',
+    letterSpacing: 1,
   },
 
   // ── No data ──

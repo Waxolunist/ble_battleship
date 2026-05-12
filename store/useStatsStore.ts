@@ -30,6 +30,7 @@ interface StatsState {
   enemyShipsSunkByType: ShipCounts;
   playerShipsLostByType: ShipCounts;
   recordGame: (result: GameResult) => void;
+  resetStats: () => void;
 }
 
 export const useStatsStore = create<StatsState>()(
@@ -45,6 +46,19 @@ export const useStatsStore = create<StatsState>()(
       totalMisses: 0,
       enemyShipsSunkByType: zeroShipCounts(),
       playerShipsLostByType: zeroShipCounts(),
+      resetStats: () =>
+        set({
+          gamesPlayed: 0,
+          wins: 0,
+          losses: 0,
+          currentStreak: 0,
+          bestWinStreak: 0,
+          totalShots: 0,
+          totalHits: 0,
+          totalMisses: 0,
+          enemyShipsSunkByType: zeroShipCounts(),
+          playerShipsLostByType: zeroShipCounts(),
+        }),
       recordGame: (result: GameResult) =>
         set(s => {
           const isWin = result.outcome === 'victory';
