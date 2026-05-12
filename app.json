@@ -12,7 +12,8 @@
       "bundleIdentifier": "com.anonymous.hulls-and-hellfire",
       "infoPlist": {
         "CFBundleLocalizations": ["en", "de"],
-        "CFBundleDevelopmentRegion": "en"
+        "CFBundleDevelopmentRegion": "en",
+        "NSBluetoothAlwaysUsageDescription": "Bluetooth is required to play multiplayer battles with nearby players."
       }
     },
     "android": {
@@ -26,7 +27,15 @@
       "package": "com.anonymous.hulls_and_hellfire",
       "localeConfig": {
         "path": "./android/app/src/main/res/xml/locales_config.xml"
-      }
+      },
+      "permissions": [
+        "android.permission.BLUETOOTH",
+        "android.permission.BLUETOOTH_ADMIN",
+        "android.permission.BLUETOOTH_SCAN",
+        "android.permission.BLUETOOTH_CONNECT",
+        "android.permission.BLUETOOTH_ADVERTISE",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ]
     },
     "web": {
       "output": "static",

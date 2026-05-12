@@ -39,6 +39,10 @@
   },
   "ble": {
     "host": "HOST",
-    "join": "JOIN"
+    "join": "JOIN",
+    "bluetoothOff": "Bluetooth Off",
+    "bluetoothOffMessage": "Bluetooth is off — enable it in Settings to play multiplayer.",
+    "openSettings": "Open Settings",
+    "cancel": "Cancel"
   }
 }

@@ -1,5 +1,6 @@
 import { HapticPressable } from '@/components/haptic-pressable';
 import { Fonts, GameColors } from '@/constants/theme';
+import { useBLEPermissions } from '@/hooks/useBLEPermissions';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, Text, View } from 'react-native';
 
@@ -10,6 +11,25 @@ interface BLEMultiplayerPanelProps {
 
 export function BLEMultiplayerPanel({ onHostPress, onJoinPress }: BLEMultiplayerPanelProps) {
   const { t } = useTranslation('common');
+  const { available, isChecking, requestPermissions } = useBLEPermissions();
+
+  if (!available) {
+    return null;
+  }
+
+  const handleHostPress = async () => {
+    const permitted = await requestPermissions();
+    if (permitted && onHostPress) {
+      onHostPress();
+    }
+  };
+
+  const handleJoinPress = async () => {
+    const permitted = await requestPermissions();
+    if (permitted && onJoinPress) {
+      onJoinPress();
+    }
+  };
 
   return (
     <View style={styles.panel}>
@@ -17,13 +37,23 @@ export function BLEMultiplayerPanel({ onHostPress, onJoinPress }: BLEMultiplayer
         <Text style={styles.label}>⚔ 2-PLAYER</Text>
         <View style={styles.buttonRow}>
           <HapticPressable
-            onPress={onHostPress}
-            style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}>
+            disabled={isChecking}
+            onPress={handleHostPress}
+            style={({ pressed }) => [
+              styles.button,
+              pressed && styles.buttonPressed,
+              isChecking && styles.buttonDisabled,
+            ]}>
             <Text style={styles.buttonText}>{t('ble.host')}</Text>
           </HapticPressable>
           <HapticPressable
-            onPress={onJoinPress}
-            style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}>
+            disabled={isChecking}
+            onPress={handleJoinPress}
+            style={({ pressed }) => [
+              styles.button,
+              pressed && styles.buttonPressed,
+              isChecking && styles.buttonDisabled,
+            ]}>
             <Text style={styles.buttonText}>{t('ble.join')}</Text>
           </HapticPressable>
         </View>
@@ -70,6 +100,9 @@ const styles = StyleSheet.create({
   },
   buttonPressed: {
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  buttonDisabled: {
+    opacity: 0.5,
   },
   buttonText: {
     color: '#fff',
