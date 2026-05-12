@@ -51,6 +51,7 @@ interface ShipRowProps {
   onDragEnd: (x: number, y: number) => void;
   dragX: SharedValue<number>;
   dragY: SharedValue<number>;
+  rotateRef?: React.RefObject<View | null>;
 }
 
 function ShipRow({
@@ -63,6 +64,7 @@ function ShipRow({
   onDragEnd,
   dragX,
   dragY,
+  rotateRef,
 }: ShipRowProps) {
   const size = SHIP_SIZES[type];
   const image = SHIP_IMAGES[type];
@@ -89,6 +91,7 @@ function ShipRow({
       <Animated.View style={[styles.shipRow, isPlaced && styles.shipRowPlaced]}>
         {/* Orientation toggle */}
         <Pressable
+          ref={rotateRef}
           onPress={isPlaced ? undefined : onOrientationToggle}
           style={[styles.rotateButton, isPlaced && styles.rotateButtonPlaced]}
           hitSlop={6}>
@@ -128,6 +131,8 @@ export interface ShipTrayProps {
   dragX: SharedValue<number>;
   dragY: SharedValue<number>;
   onRandomize: () => void;
+  rotateRef?: React.RefObject<View | null>;
+  shuffleRef?: React.RefObject<View | null>;
 }
 
 export const ShipTray = forwardRef<View, ShipTrayProps>(function ShipTray(
@@ -141,6 +146,8 @@ export const ShipTray = forwardRef<View, ShipTrayProps>(function ShipTray(
     dragX,
     dragY,
     onRandomize,
+    rotateRef,
+    shuffleRef,
   }: ShipTrayProps,
   ref,
 ) {
@@ -148,7 +155,7 @@ export const ShipTray = forwardRef<View, ShipTrayProps>(function ShipTray(
     <View ref={ref} style={styles.tray}>
       <Text style={styles.trayTitle}>FLEET</Text>
       <View style={styles.shipList}>
-        {SHIP_FLEET.map(type => (
+        {SHIP_FLEET.map((type, index) => (
           <ShipRow
             key={type}
             type={type}
@@ -160,10 +167,12 @@ export const ShipTray = forwardRef<View, ShipTrayProps>(function ShipTray(
             onDragEnd={onDragEnd}
             dragX={dragX}
             dragY={dragY}
+            rotateRef={index === 0 ? rotateRef : undefined}
           />
         ))}
       </View>
       <HapticPressable
+        ref={shuffleRef}
         onPress={onRandomize}
         style={({ pressed }) => [styles.shuffleButton, pressed && styles.shuffleButtonPressed]}>
         <Text style={styles.shuffleIcon}>⇄</Text>

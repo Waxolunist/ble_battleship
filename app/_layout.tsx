@@ -1,4 +1,5 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { TourGuideOverlay, TourGuideProvider } from '@wrack/react-native-tour-guide';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -34,20 +35,22 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <ThemeProvider value={theme}>
-        <Stack screenOptions={{ contentStyle: { backgroundColor: '#1a1a1a' } }}>
-          <Stack.Screen
-            name="(tabs)"
-            options={{ headerShown: false, contentStyle: { backgroundColor: '#1a1a1a' } }}
-          />
-          <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-          <Stack.Screen
-            name="battle"
-            options={{ headerShown: false, animation: 'fade_from_bottom' }}
-          />
-        </Stack>
-        <StatusBar style="auto" />
-      </ThemeProvider>
+      <TourGuideProvider>
+        <ThemeProvider value={theme}>
+          <Stack screenOptions={{ contentStyle: { backgroundColor: '#1a1a1a' } }}>
+            <Stack.Screen
+              name="(tabs)"
+              options={{ headerShown: false, contentStyle: { backgroundColor: '#1a1a1a' } }}
+            />
+            <Stack.Screen
+              name="battle"
+              options={{ headerShown: false, animation: 'fade_from_bottom' }}
+            />
+          </Stack>
+          <StatusBar style="auto" />
+        </ThemeProvider>
+        <TourGuideOverlay />
+      </TourGuideProvider>
     </GestureHandlerRootView>
   );
 }

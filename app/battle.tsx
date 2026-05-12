@@ -10,8 +10,10 @@ import { getRankTitle, SHIP_FLEET } from '@/models/types';
 import { useGameStore } from '@/store/useGameStore';
 import { useCaptainStore } from '@/store/useCaptainStore';
 import { useStatsStore, computeFieldShotStats, computeSunkShipTypes } from '@/store/useStatsStore';
+import { usePlacementTour } from '@/hooks/usePlacementTour';
 import { useRouter } from 'expo-router';
 import { Image, ImageBackground, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { useRef } from 'react';
 import Animated from 'react-native-reanimated';
 
 const GRID_PADDING = 32;
@@ -42,8 +44,12 @@ export default function BattleScreen() {
   const address = rankStr === 'UNPROVEN' || rankStr === 'RECRUIT' ? 'SIR' : rankStr;
 
   // Hooks
+  const titleRef = useRef<View>(null);
+  const rotateRef = useRef<View>(null);
+  const shuffleRef = useRef<View>(null);
   const gestures = usePlacementGestures(cellSize);
   const animations = useBattleAnimations();
+  const { replayTour } = usePlacementTour(titleRef, gestures.trayRef, rotateRef, shuffleRef);
   const { onPlayerFire, shotPhase } = useCombat();
 
   const handleVictory = () => {
@@ -94,6 +100,10 @@ export default function BattleScreen() {
             isPreviewValid={gestures.isPreviewValid}
             dragX={gestures.dragX}
             dragY={gestures.dragY}
+            titleRef={titleRef}
+            rotateRef={rotateRef}
+            shuffleRef={shuffleRef}
+            onReplayTutorial={replayTour}
             gridBodyRef={gestures.gridBodyRef}
             trayRef={gestures.trayRef}
             onGridShipDragStart={gestures.onGridShipDragStart}

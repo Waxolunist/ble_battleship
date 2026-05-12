@@ -23,8 +23,11 @@ export type PlacementViewProps = {
   isPreviewValid: boolean;
   dragX: SharedValue<number>;
   dragY: SharedValue<number>;
+  titleRef: React.RefObject<View | null>;
   gridBodyRef: React.RefObject<View | null>;
   trayRef: React.RefObject<View | null>;
+  rotateRef: React.RefObject<View | null>;
+  shuffleRef: React.RefObject<View | null>;
   onGridShipDragStart: (shipType: ShipType, pageX: number, pageY: number) => void;
   onDragging: (pageX: number, pageY: number) => void;
   onDragEnd: (pageX: number, pageY: number) => void;
@@ -33,6 +36,7 @@ export type PlacementViewProps = {
   onFireAtWill: () => void;
   onRetreat: () => void;
   onRandomize: () => void;
+  onReplayTutorial: () => void;
   captainName: string;
   address: string;
 };
@@ -50,8 +54,11 @@ export function PlacementView({
   isPreviewValid,
   dragX,
   dragY,
+  titleRef,
   gridBodyRef,
   trayRef,
+  rotateRef,
+  shuffleRef,
   onGridShipDragStart,
   onDragging,
   onDragEnd,
@@ -60,6 +67,7 @@ export function PlacementView({
   onFireAtWill,
   onRetreat,
   onRandomize,
+  onReplayTutorial,
   captainName,
   address,
 }: PlacementViewProps) {
@@ -68,7 +76,7 @@ export function PlacementView({
       {/* Top: Title & subtitle */}
       <Animated.View style={fireTopStyle}>
         <FadeIn translateY={-30}>
-          <View style={styles.topSection}>
+          <View ref={titleRef} style={styles.topSection}>
             <Text style={styles.title}>⚔ BATTLE STATION ⚔</Text>
             <Text style={styles.subtitle}>
               {'PLACE YOUR FLEET,\n' + address + ' ' + captainName}
@@ -106,6 +114,8 @@ export function PlacementView({
               dragX={dragX}
               dragY={dragY}
               onRandomize={onRandomize}
+              rotateRef={rotateRef}
+              shuffleRef={shuffleRef}
             />
           </Animated.View>
         </View>
@@ -139,6 +149,13 @@ export function PlacementView({
           </View>
         </FadeIn>
       </Animated.View>
+
+      {/* Tutorial replay button — rendered last so it sits above all other children */}
+      <HapticPressable
+        onPress={onReplayTutorial}
+        style={({ pressed }) => [styles.helpButton, pressed && styles.helpButtonPressed]}>
+        <Text style={styles.helpButtonText}>?</Text>
+      </HapticPressable>
     </View>
   );
 }
@@ -228,5 +245,27 @@ const styles = StyleSheet.create({
   },
   fireButtonTextDisabled: {
     color: 'rgba(255,255,255,0.25)',
+  },
+  helpButton: {
+    position: 'absolute',
+    top: 112,
+    right: 36,
+    width: 32,
+    height: 32,
+    borderWidth: 1,
+    borderColor: GameColors.labelFaded,
+    borderRadius: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  helpButtonPressed: {
+    backgroundColor: GameColors.blueButton,
+    borderColor: GameColors.blueBorder,
+  },
+  helpButtonText: {
+    fontFamily: 'BlackOpsOne',
+    fontSize: 16,
+    letterSpacing: 1,
+    color: GameColors.labelFaded,
   },
 });
