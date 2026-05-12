@@ -47,6 +47,8 @@
     "awaitingChallenger": "AWAITING CHALLENGER...",
     "yourCallsign": "Your callsign:",
     "scanning": "SCANNING...",
-    "noDevicesFound": "No devices found"
+    "noDevicesFound": "No devices found",
+    "connecting": "CONNECTING...",
+    "connected": "CONNECTED"
   }
 }

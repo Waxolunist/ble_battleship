@@ -47,6 +47,8 @@
     "awaitingChallenger": "WARTE AUF GEGNER...",
     "yourCallsign": "Ihr Ruf:",
     "scanning": "SCANNE...",
-    "noDevicesFound": "Keine Geräte gefunden"
+    "noDevicesFound": "Keine Geräte gefunden",
+    "connecting": "VERBINDUNG...",
+    "connected": "VERBUNDEN"
   }
 }

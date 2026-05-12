@@ -16,7 +16,7 @@ interface BLEMultiplayerPanelProps {
 export function BLEMultiplayerPanel({ onHostPress, onJoinPress }: BLEMultiplayerPanelProps) {
   const { t } = useTranslation('common');
   const { available, isChecking, requestPermissions } = useBLEPermissions();
-  const { state, discoveredPeers, setState } = useBLEStore();
+  const { state, discoveredPeers, setState, connectedPeer } = useBLEStore();
   const { captainName } = useCaptainStore();
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
@@ -141,6 +141,8 @@ export function BLEMultiplayerPanel({ onHostPress, onJoinPress }: BLEMultiplayer
                   name={peer.name}
                   onPress={() => {
                     setState('CONNECTING');
+                    // In real implementation, initiate BLE connection here
+                    // and transition to HANDSHAKING on successful connect
                   }}
                 />
               ))
@@ -152,6 +154,37 @@ export function BLEMultiplayerPanel({ onHostPress, onJoinPress }: BLEMultiplayer
               style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}>
               <Text style={styles.buttonText}>{t('ble.cancel')}</Text>
             </HapticPressable>
+          </View>
+        </View>
+      </View>
+    );
+  }
+
+  if (state === 'CONNECTING' || state === 'HANDSHAKING') {
+    return (
+      <View style={styles.panel}>
+        <View style={styles.handshakingContainer}>
+          <Text style={styles.handshakingTitle}>{t('ble.connecting')}</Text>
+          <View style={styles.cancelRow}>
+            <HapticPressable
+              onPress={handleCancel}
+              style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}>
+              <Text style={styles.buttonText}>{t('ble.cancel')}</Text>
+            </HapticPressable>
+          </View>
+        </View>
+      </View>
+    );
+  }
+
+  if (state === 'LOBBY' && connectedPeer) {
+    return (
+      <View style={styles.panel}>
+        <View style={styles.lobbyContainer}>
+          <View style={styles.lobbyRow}>
+            <Text style={styles.checkmark}>✓</Text>
+            <Text style={styles.opponentName}>{connectedPeer.name}</Text>
+            <Text style={styles.statusText}>— {t('ble.connected')}</Text>
           </View>
         </View>
       </View>
@@ -267,5 +300,54 @@ const styles = StyleSheet.create({
   cancelRow: {
     alignItems: 'flex-end',
     paddingVertical: 8,
+  },
+  handshakingContainer: {
+    borderWidth: 1,
+    borderColor: GameColors.blueBorder,
+    borderRadius: 4,
+    backgroundColor: GameColors.navyBg,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    gap: 8,
+  },
+  handshakingTitle: {
+    color: GameColors.label,
+    fontSize: 12,
+    fontWeight: '700',
+    fontFamily: Fonts.rounded,
+    letterSpacing: 1,
+    textAlign: 'center',
+  },
+  lobbyContainer: {
+    borderWidth: 1,
+    borderColor: GameColors.blueBorder,
+    borderRadius: 4,
+    backgroundColor: GameColors.navyBg,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  lobbyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 8,
+  },
+  checkmark: {
+    color: GameColors.gold,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  opponentName: {
+    color: GameColors.gold,
+    fontSize: 14,
+    fontWeight: '700',
+    fontFamily: Fonts.rounded,
+    letterSpacing: 1,
+  },
+  statusText: {
+    color: GameColors.label,
+    fontSize: 12,
+    fontWeight: '600',
+    fontFamily: Fonts.rounded,
   },
 });
