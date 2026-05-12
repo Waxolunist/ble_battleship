@@ -7,6 +7,7 @@ import { BLEMultiplayerPanel } from '@/components/ble/BLEMultiplayerPanel';
 import { useGameStore } from '@/store/useGameStore';
 import { useCaptainStore } from '@/store/useCaptainStore';
 import { useStatsStore } from '@/store/useStatsStore';
+import { useBLEStore } from '@/store/useBLEStore';
 import { GameColors } from '@/constants/theme';
 import { getRankTitle, translateRankTitle } from '@/models/types';
 import {
@@ -26,7 +27,9 @@ export default function HomeScreen() {
   const { t } = useTranslation('common');
   const router = useRouter();
   const resetGame = useGameStore(s => s.resetGame);
+  const startBLEGame = useGameStore(s => s.startBLEGame);
   const { captainName, setCaptainName, clearCaptainName } = useCaptainStore();
+  const { state: bleState, setMode } = useBLEStore();
   const [inputName, setInputName] = useState('');
   const inputRef = useRef<TextInput>(null);
 
@@ -44,6 +47,18 @@ export default function HomeScreen() {
     inputRef.current?.blur();
     Keyboard.dismiss();
     setCaptainName(inputName.trim());
+  };
+
+  const handleBattle = () => {
+    // Check if in BLE LOBBY state - if so, start multiplayer game
+    if (bleState === 'LOBBY') {
+      setMode('ble');
+      startBLEGame();
+    } else {
+      setMode('ai');
+      resetGame();
+    }
+    router.push('/battle');
   };
 
   return (
@@ -67,10 +82,7 @@ export default function HomeScreen() {
                 {t('home.hasTakenTheHelm')}
               </Text>
               <HapticPressable
-                onPress={() => {
-                  resetGame();
-                  router.push('/battle');
-                }}
+                onPress={handleBattle}
                 style={({ pressed }) => [styles.readyButton, pressed && styles.readyButtonPressed]}>
                 <Text style={styles.readyButtonText}>{t('home.toBattleStation')}</Text>
               </HapticPressable>

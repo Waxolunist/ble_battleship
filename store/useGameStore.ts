@@ -46,6 +46,7 @@ interface GameActions {
   setSunkEvent: (event: { shipType: ShipType; owner: 'player' | 'enemy' } | null) => void;
   startBattle: () => void;
   resetGame: () => void;
+  startBLEGame: () => void;
   sinkAllOpponentShips: () => void;
   sinkAllPlayerShips: () => void;
 }
@@ -137,6 +138,18 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     set({
       fields: createGameField(PLAYER).fields,
       opponentFields: makeInitialOpponentFields(),
+      placedShips: new Set(),
+      orientations: makeInitialOrientations(),
+      turn: 'player',
+      showOpponentField: false,
+      sunkEvent: null,
+    });
+  },
+
+  startBLEGame() {
+    set({
+      fields: createGameField(PLAYER).fields,
+      opponentFields: createGameField(AI_PLAYER).fields,
       placedShips: new Set(),
       orientations: makeInitialOrientations(),
       turn: 'player',
