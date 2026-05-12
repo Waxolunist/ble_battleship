@@ -39,7 +39,7 @@ jobs:
         uses: android-actions/setup-android@v3
 
       - name: Generate Nitro native bindings
-        run: npx nitrogen
+        run: npx nitrogen node_modules/munim-bluetooth --config node_modules/munim-bluetooth/nitro.json --out node_modules/munim-bluetooth/nitrogen/generated
 
       - name: Prebuild Android
         run: npx expo prebuild --platform android --no-install

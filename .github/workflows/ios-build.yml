@@ -27,7 +27,7 @@ jobs:
           xcode-version: latest
 
       - name: Generate Nitro native bindings
-        run: npx nitrogen
+        run: npx nitrogen node_modules/munim-bluetooth --config node_modules/munim-bluetooth/nitro.json --out node_modules/munim-bluetooth/nitrogen/generated
 
       - name: Prebuild iOS
         run: npx expo prebuild --platform ios --no-install
