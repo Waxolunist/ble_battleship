@@ -55,4 +55,4 @@ jobs:
             -workspace hullsandhellfire.xcworkspace \
             -scheme hullsandhellfire \
             -configuration Release \
-            -destination 'platform=iOS Simulator,name=iPhone 15' \
+            -destination 'platform=iOS Simulator,name=iPhone 16' \
