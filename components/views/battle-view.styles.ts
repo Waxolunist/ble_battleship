@@ -299,8 +299,10 @@ export const styles = StyleSheet.create({
   devButtonsContainer: {
     position: 'absolute',
     bottom: 24,
-    right: 24,
+    left: 0,
+    right: 0,
     flexDirection: 'row',
+    justifyContent: 'center',
     gap: 8,
   },
   devVictoryButton: {

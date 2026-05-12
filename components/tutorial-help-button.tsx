@@ -4,15 +4,21 @@ import { StyleSheet, Text } from 'react-native';
 
 interface TutorialHelpButtonProps {
   onPress: () => void;
-  top: number;
-  right: number;
+  top?: number;
+  bottom?: number;
+  left?: number;
+  right?: number;
 }
 
-export function TutorialHelpButton({ onPress, top, right }: TutorialHelpButtonProps) {
+export function TutorialHelpButton({ onPress, top, bottom, left, right }: TutorialHelpButtonProps) {
   return (
     <HapticPressable
       onPress={onPress}
-      style={({ pressed }) => [styles.button, { top, right }, pressed && styles.buttonPressed]}>
+      style={({ pressed }) => [
+        styles.button,
+        { top, bottom, left, right },
+        pressed && styles.buttonPressed,
+      ]}>
       <Text style={styles.label}>?</Text>
     </HapticPressable>
   );

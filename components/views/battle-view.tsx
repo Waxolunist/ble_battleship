@@ -1,5 +1,6 @@
 import { GameField } from '@/components/game-field';
 import { HapticPressable } from '@/components/haptic-pressable';
+import { TutorialHelpButton } from '@/components/tutorial-help-button';
 import { DEV_SHOW_FORCE_VICTORY } from '@/constants/dev';
 import { GameColors } from '@/constants/theme';
 import type { Field, ShotPhase, ShipType } from '@/models/types';
@@ -44,6 +45,13 @@ export type BattleViewProps = {
   onMakePort?: () => void;
   onGameEnd?: (outcome: 'victory' | 'defeat') => void;
   onSinkAllPlayerShips?: () => void;
+  playerGridRef?: React.RefObject<View | null>;
+  enemyGridRef?: React.RefObject<View | null>;
+  dividerRef?: React.RefObject<View | null>;
+  playerCounterRef?: React.RefObject<View | null>;
+  enemyCounterRef?: React.RefObject<View | null>;
+  retreatRef?: React.RefObject<View | null>;
+  onReplayTutorial?: () => void;
 };
 
 export function BattleView({
@@ -59,6 +67,13 @@ export function BattleView({
   onMakePort,
   onGameEnd,
   onSinkAllPlayerShips,
+  playerGridRef,
+  enemyGridRef,
+  dividerRef,
+  playerCounterRef,
+  enemyCounterRef,
+  retreatRef,
+  onReplayTutorial,
 }: BattleViewProps) {
   const playerShipsRemaining = countShipsRemaining(fields);
   const enemyShipsRemaining = countShipsRemaining(opponentFields);
@@ -141,7 +156,7 @@ export function BattleView({
 
       {/* Retreat button — bottom-left, dims during enemy turn, hidden once animation begins */}
       {!isRetreating && !isVictory && (
-        <Animated.View style={[styles.retreatButton, retreatButtonStyle]}>
+        <Animated.View ref={retreatRef} style={[styles.retreatButton, retreatButtonStyle]}>
           <Pressable
             onPress={handleRetreatPress}
             onLongPress={handleRetreatLongPress}
@@ -192,7 +207,7 @@ export function BattleView({
         )}
 
         {/* Player grid — dims on player's turn, glows red on enemy's turn */}
-        <Animated.View style={[styles.gridWrapper, playerFieldStyle]}>
+        <Animated.View ref={playerGridRef} style={[styles.gridWrapper, playerFieldStyle]}>
           {isRetreating && (
             <Animated.View
               style={[StyleSheet.absoluteFill, styles.defeatGridFlash, defeatGridFlashStyle]}
@@ -225,9 +240,11 @@ export function BattleView({
         {showOpponentField && (
           <Animated.View entering={FadeInDown.duration(500).easing(Easing.out(Easing.cubic))}>
             {/* Divider — swaps text and color each turn; flashes verdict on shot resolve */}
-            <View style={styles.divider}>
+            <View ref={dividerRef} style={styles.divider}>
               {/* Left counter — player ships remaining */}
-              <Animated.View style={[styles.counterWrapper, playerCountScaleStyle]}>
+              <Animated.View
+                ref={playerCounterRef}
+                style={[styles.counterWrapper, playerCountScaleStyle]}>
                 <View style={styles.shipIconPlayer} />
                 <View style={styles.counterTextContainer}>
                   <Text style={[styles.counterText, { color: PLAYER_COUNTER_COLOR }]}>
@@ -272,7 +289,9 @@ export function BattleView({
               />
 
               {/* Right counter — enemy ships remaining */}
-              <Animated.View style={[styles.counterWrapper, enemyCountScaleStyle]}>
+              <Animated.View
+                ref={enemyCounterRef}
+                style={[styles.counterWrapper, enemyCountScaleStyle]}>
                 <View style={styles.counterTextContainer}>
                   <Text style={[styles.counterText, { color: ENEMY_COUNTER_COLOR }]}>
                     {enemyShipsRemaining}
@@ -294,7 +313,7 @@ export function BattleView({
             </View>
 
             {/* Enemy grid — glows gold on player's turn, dims on enemy's turn */}
-            <Animated.View style={[styles.gridWrapper, enemyFieldStyle]}>
+            <Animated.View ref={enemyGridRef} style={[styles.gridWrapper, enemyFieldStyle]}>
               <GameField
                 fields={opponentFields}
                 tint={GameColors.enemyGridTint}
@@ -358,6 +377,11 @@ export function BattleView({
             )}
           </Animated.View>
         </>
+      )}
+
+      {/* Tutorial replay button — bottom-right, hidden during endgame */}
+      {!isRetreating && !isVictory && showOpponentField && onReplayTutorial && (
+        <TutorialHelpButton onPress={onReplayTutorial} bottom={24} right={24} />
       )}
 
       {/* Defeat visualization overlays — rendered last so they sit above all game UI */}

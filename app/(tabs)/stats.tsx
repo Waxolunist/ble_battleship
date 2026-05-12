@@ -5,6 +5,7 @@ import type { ShipType } from '@/models/types';
 import { useCaptainStore } from '@/store/useCaptainStore';
 import type { ShipCounts } from '@/store/useStatsStore';
 import { useStatsStore } from '@/store/useStatsStore';
+import { resetTutorials } from '@/store/tutorialStorage';
 import { HapticPressable } from '@/components/haptic-pressable';
 import { ImageBackground, ScrollView, StyleSheet, Text, View } from 'react-native';
 
@@ -355,13 +356,16 @@ export default function StatsScreen() {
                 </Text>
               </View>
             </View>
-            <HapticPressable
-              onPress={resetStats}
-              style={({ pressed }) => [styles.resetButton, pressed && styles.resetButtonPressed]}>
-              <Text style={styles.resetButtonText}>reset stats</Text>
-            </HapticPressable>
           </>
         )}
+        <HapticPressable
+          onPress={() => {
+            resetStats();
+            resetTutorials();
+          }}
+          style={({ pressed }) => [styles.resetButton, pressed && styles.resetButtonPressed]}>
+          <Text style={styles.resetButtonText}>reset stats</Text>
+        </HapticPressable>
       </ScrollView>
     </ImageBackground>
   );
@@ -380,6 +384,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
+    flexGrow: 1,
     paddingTop: 72,
     paddingBottom: 48,
     paddingHorizontal: 20,
@@ -727,8 +732,9 @@ const styles = StyleSheet.create({
 
   // ── No data ──
   noDataContainer: {
+    flex: 1,
     alignItems: 'center',
-    paddingVertical: 60,
+    justifyContent: 'center',
     gap: 12,
   },
   noDataIcon: {

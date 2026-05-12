@@ -11,6 +11,7 @@ import { useGameStore } from '@/store/useGameStore';
 import { useCaptainStore } from '@/store/useCaptainStore';
 import { useStatsStore, computeFieldShotStats, computeSunkShipTypes } from '@/store/useStatsStore';
 import { usePlacementTour } from '@/hooks/usePlacementTour';
+import { useBattleTour } from '@/hooks/useBattleTour';
 import { useRouter } from 'expo-router';
 import { Image, ImageBackground, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useRef } from 'react';
@@ -47,9 +48,29 @@ export default function BattleScreen() {
   const titleRef = useRef<View>(null);
   const rotateRef = useRef<View>(null);
   const shuffleRef = useRef<View>(null);
+  const playerGridRef = useRef<View>(null);
+  const enemyGridRef = useRef<View>(null);
+  const dividerRef = useRef<View>(null);
+  const playerCounterRef = useRef<View>(null);
+  const enemyCounterRef = useRef<View>(null);
+  const retreatRef = useRef<View>(null);
   const gestures = usePlacementGestures(cellSize);
   const animations = useBattleAnimations();
-  const { replayTour } = usePlacementTour(titleRef, gestures.trayRef, rotateRef, shuffleRef);
+  const { replayTour: replayPlacementTour } = usePlacementTour(
+    titleRef,
+    gestures.trayRef,
+    rotateRef,
+    shuffleRef,
+  );
+  const { replayTour: replayBattleTour } = useBattleTour(
+    showOpponentField,
+    playerGridRef,
+    enemyGridRef,
+    dividerRef,
+    playerCounterRef,
+    enemyCounterRef,
+    retreatRef,
+  );
   const { onPlayerFire, shotPhase } = useCombat();
 
   const handleVictory = () => {
@@ -103,7 +124,7 @@ export default function BattleScreen() {
             titleRef={titleRef}
             rotateRef={rotateRef}
             shuffleRef={shuffleRef}
-            onReplayTutorial={replayTour}
+            onReplayTutorial={replayPlacementTour}
             gridBodyRef={gestures.gridBodyRef}
             trayRef={gestures.trayRef}
             onGridShipDragStart={gestures.onGridShipDragStart}
@@ -136,6 +157,13 @@ export default function BattleScreen() {
             onMakePort={handleMakePort}
             onGameEnd={handleGameEnd}
             onSinkAllPlayerShips={sinkAllPlayerShips}
+            playerGridRef={playerGridRef}
+            enemyGridRef={enemyGridRef}
+            dividerRef={dividerRef}
+            playerCounterRef={playerCounterRef}
+            enemyCounterRef={enemyCounterRef}
+            retreatRef={retreatRef}
+            onReplayTutorial={replayBattleTour}
           />
         </Animated.View>
 
