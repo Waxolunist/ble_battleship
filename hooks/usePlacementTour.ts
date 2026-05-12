@@ -1,9 +1,19 @@
 import { useCallback, useEffect } from 'react';
 import type { View } from 'react-native';
 import { useTourPersistence } from '@wrack/react-native-tour-guide';
-import type { TourGuideConfig, TourStep } from '@wrack/react-native-tour-guide';
+import type { TourGuideConfig, TourStep, TourStorage } from '@wrack/react-native-tour-guide';
 import { fileSystemStorage } from '@/store/persistence';
 import { GameColors, Fonts } from '@/constants/theme';
+
+const tourStorage: TourStorage = {
+  getItem: key => fileSystemStorage.getItem(key),
+  setItem: (key, value) => {
+    fileSystemStorage.setItem(key, value);
+  },
+  removeItem: key => {
+    fileSystemStorage.removeItem(key);
+  },
+};
 
 const PLACEMENT_TOUR_CONFIG: TourGuideConfig = {
   tourId: 'placement',
@@ -103,7 +113,7 @@ export function usePlacementTour(
   rotateRef: React.RefObject<View | null>,
   shuffleRef: React.RefObject<View | null>,
 ) {
-  const { startTour } = useTourPersistence(fileSystemStorage);
+  const { startTour } = useTourPersistence(tourStorage);
 
   useEffect(() => {
     void startTour(buildSteps(titleRef, trayRef, rotateRef, shuffleRef), PLACEMENT_TOUR_CONFIG);

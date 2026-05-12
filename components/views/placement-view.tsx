@@ -3,6 +3,7 @@ import { GameField } from '@/components/game-field';
 import { GameColors } from '@/constants/theme';
 import { HapticPressable } from '@/components/haptic-pressable';
 import { ShipTray } from '@/components/ship-tray';
+import { TutorialHelpButton } from '@/components/tutorial-help-button';
 import type { Field, Orientation, ShipType } from '@/models/types';
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
@@ -151,11 +152,7 @@ export function PlacementView({
       </Animated.View>
 
       {/* Tutorial replay button — rendered last so it sits above all other children */}
-      <HapticPressable
-        onPress={onReplayTutorial}
-        style={({ pressed }) => [styles.helpButton, pressed && styles.helpButtonPressed]}>
-        <Text style={styles.helpButtonText}>?</Text>
-      </HapticPressable>
+      <TutorialHelpButton onPress={onReplayTutorial} top={112} right={36} />
     </View>
   );
 }
@@ -245,27 +242,5 @@ const styles = StyleSheet.create({
   },
   fireButtonTextDisabled: {
     color: 'rgba(255,255,255,0.25)',
-  },
-  helpButton: {
-    position: 'absolute',
-    top: 112,
-    right: 36,
-    width: 32,
-    height: 32,
-    borderWidth: 1,
-    borderColor: GameColors.labelFaded,
-    borderRadius: 4,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  helpButtonPressed: {
-    backgroundColor: GameColors.blueButton,
-    borderColor: GameColors.blueBorder,
-  },
-  helpButtonText: {
-    fontFamily: 'BlackOpsOne',
-    fontSize: 16,
-    letterSpacing: 1,
-    color: GameColors.labelFaded,
   },
 });
