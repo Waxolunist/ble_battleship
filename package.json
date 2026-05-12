@@ -51,12 +51,16 @@
     "zustand": "^5.0.13"
   },
   "devDependencies": {
+    "@react-native-community/cli": "latest",
     "@types/react": "~19.2.10",
     "eslint": "^9.25.0",
     "eslint-config-expo": "~55.0.0",
+    "nitrogen": "0.31.5",
     "prettier": "^3.8.3",
-    "typescript": "~5.9.2",
-    "@react-native-community/cli": "latest"
+    "typescript": "~5.9.2"
+  },
+  "overrides": {
+    "uuid": "^11.0.0"
   },
   "private": true
 }

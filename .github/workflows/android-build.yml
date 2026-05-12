@@ -38,6 +38,9 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
+      - name: Generate Nitro native bindings
+        run: npx nitrogen
+
       - name: Prebuild Android
         run: npx expo prebuild --platform android --no-install
 

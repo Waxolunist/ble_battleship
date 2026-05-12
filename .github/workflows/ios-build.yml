@@ -26,6 +26,9 @@ jobs:
         with:
           xcode-version: latest
 
+      - name: Generate Nitro native bindings
+        run: npx nitrogen
+
       - name: Prebuild iOS
         run: npx expo prebuild --platform ios --no-install
 
