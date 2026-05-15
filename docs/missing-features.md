@@ -26,6 +26,7 @@
 | Medium   | **Animated water / ocean background** | Subtle looping wave or ripple animation on the grids to add atmosphere beyond the static navy cells.                                       |
 | Medium   | **Rate / share prompt**               | A non-intrusive prompt after a victory to rate the app or share a battle result, helping with organic discovery.                           |
 | Medium   | **Visual inconsistencies**            | \* Shots can be fired though a dialogue is visible.                                                                                        |
+| Medium | **Tabbar White** | Tabbar should always be black independent of the phone. |
 
 - The retreat dialogue needs some work. Not fancy enough.
 - When a ship is sunk, the text is not centered. |

@@ -77,16 +77,16 @@ class BLEService {
 
       const nameBytes = Array.from(captainName).map(c => c.charCodeAt(0));
       const manufacturerData = [...Array.from(BLE_ADVERTISEMENT_MAGIC), ...nameBytes];
+      const manufacturerDataHex = manufacturerData
+        .map(byte => byte.toString(16).padStart(2, '0'))
+        .join('');
 
       const advertisement = {
         serviceUUIDs: [BLE_SERVICE_UUID],
-        manufacturerData: {
-          id: 0xffff,
-          data: manufacturerData,
-        },
+        manufacturerData: manufacturerDataHex,
       };
 
-      await ble.startAdvertising(BLE_SERVICE_UUID, advertisement);
+      await ble.startAdvertising(advertisement);
 
       // Setup listener for incoming client writes
       ble.onCharacteristicWrite?.(
@@ -141,11 +141,14 @@ class BLEService {
       // Setup discovery listener
       ble.onDiscoverPeripheral?.((peripheral: any) => {
         if (peripheral.advertising?.serviceUUIDs?.includes(BLE_SERVICE_UUID)) {
-          const manufacturerData = peripheral.advertising.manufacturerData;
-          if (manufacturerData && this._startsWithMagic(manufacturerData)) {
-            const nameBytes = manufacturerData.slice(4);
-            const name = String.fromCharCode(...nameBytes);
-            onDeviceFound(peripheral.id, name);
+          const manufacturerDataHex = peripheral.advertising.manufacturerData;
+          if (manufacturerDataHex) {
+            const manufacturerData = this._hexToByteArray(manufacturerDataHex);
+            if (this._startsWithMagic(manufacturerData)) {
+              const nameBytes = manufacturerData.slice(4);
+              const name = String.fromCharCode(...nameBytes);
+              onDeviceFound(peripheral.id, name);
+            }
           }
         }
       });
@@ -317,6 +320,17 @@ class BLEService {
    */
   getConnectedDeviceId(): string | null {
     return this.connectedDeviceId;
+  }
+
+  /**
+   * Convert hex string to byte array
+   */
+  private _hexToByteArray(hex: string): number[] {
+    const bytes: number[] = [];
+    for (let i = 0; i < hex.length; i += 2) {
+      bytes.push(parseInt(hex.slice(i, i + 2), 16));
+    }
+    return bytes;
   }
 
   /**
