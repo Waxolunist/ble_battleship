@@ -6,7 +6,7 @@
 
 | Priority | Feature                         | Description                                                                                                                                                                                                  |
 | -------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| High     | **Local two-player via BLE**    | Offline head-to-head multiplayer over Bluetooth Low Energy so two players can battle on separate devices without internet.                                                                                   |
+| WIP      | **Local two-player via BLE**    | Offline head-to-head multiplayer over Bluetooth Low Energy so two players can battle on separate devices without internet. Currently when clicking on Host or Join the app crashes.                          |
 | Done     | **Tutorial overlays**           | Show guided overlay hints on placement and battle views on first launch, with an option to replay them from a settings or help menu.                                                                         |
 | Medium   | **Sound effects**               | Add audio for shots (fire, hit, miss, sunk), phase transitions, victory/defeat, and ambient ocean — the game's haptics and animations are strong but silent, which undercuts the drama.                      |
 | Low      | **Difficulty levels**           | Offer at least two AI difficulty modes (e.g. Seaman vs Admiral) so new players aren't frustrated and veterans stay challenged.                                                                               |
@@ -25,8 +25,13 @@
 | Very Low | **Ship skins / fleet customization**  | Let players choose alternate visual themes or color palettes for their fleet as a cosmetic reward for rank progression.                    |
 | Medium   | **Animated water / ocean background** | Subtle looping wave or ripple animation on the grids to add atmosphere beyond the static navy cells.                                       |
 | Medium   | **Rate / share prompt**               | A non-intrusive prompt after a victory to rate the app or share a battle result, helping with organic discovery.                           |
-| Medium   | **Visual inconsistencies**            | Shots can be fired though a dialogue is visible. The retreat dialogue needs some work. Not fancy enough.                                   |
-| Medium   | **Outdated dependencies**             | Update dependencies and script that.                                                                                                       |
+| Medium   | **Visual inconsistencies**            | \* Shots can be fired though a dialogue is visible.                                                                                        |
+
+- The retreat dialogue needs some work. Not fancy enough.
+- When a ship is sunk, the text is not centered. |
+  | Done | **Outdated dependencies** | Update dependencies and script that. |
+  | High | **Responsiveness** | The app is not responsive. Smaller screens don't display everything. |
+  | High | **DEV Options** | Disable the DEV Options in CI builds. |
 
 ## Missing Work
 

@@ -1,8 +1,6 @@
 # Tools to install
 
-- lsof
-- tree
-- python3
+None currently required.
 
 # Infra TODOs
 

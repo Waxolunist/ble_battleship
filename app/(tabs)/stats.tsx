@@ -215,7 +215,7 @@ export default function StatsScreen() {
   const winRate = Math.round(pct(wins, gamesPlayed) * 100);
   const accuracy = Math.round(pct(totalHits, totalShots) * 100);
   const noData = gamesPlayed === 0;
-  const rank = getRankTitle(gamesPlayed, winRate);
+  const rank = translateRankTitle(getRankTitle(gamesPlayed, winRate), t);
 
   const maxKills = Math.max(...SHIP_FLEET.map(t => (enemyShipsSunkByType as ShipCounts)[t]), 1);
   const maxLost = Math.max(...SHIP_FLEET.map(t => (playerShipsLostByType as ShipCounts)[t]), 1);
