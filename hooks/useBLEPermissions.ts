@@ -8,73 +8,122 @@ interface BLEPermissionStatus {
   permissionGranted: boolean;
 }
 
+type MunimBLE = typeof import('munim-bluetooth');
+
+let bleModule: MunimBLE | null = null;
+let bleModuleLoaded = false;
+
+const loadBLE = (): MunimBLE | null => {
+  if (bleModuleLoaded) return bleModule;
+  bleModuleLoaded = true;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    bleModule = require('munim-bluetooth') as MunimBLE;
+  } catch {
+    bleModule = null;
+  }
+  return bleModule;
+};
+
 /**
- * Hook for checking Bluetooth availability and requesting permissions.
- * Returns the current permission status and a function to request permissions.
+ * Hook for checking Bluetooth availability and requesting runtime permissions
+ * via munim-bluetooth's native bridge (Android: BLUETOOTH_SCAN/CONNECT/ADVERTISE
+ * + ACCESS_FINE_LOCATION on Android < 12; iOS: CBManager authorization check).
  */
 export function useBLEPermissions() {
   const { t } = useTranslation('common');
   const [status, setStatus] = useState<BLEPermissionStatus>({
     available: true,
-    bluetoothEnabled: true,
+    bluetoothEnabled: false,
     permissionGranted: false,
   });
   const [isChecking, setIsChecking] = useState(false);
 
-  // Check if BLE is available on the device
   useEffect(() => {
-    checkBLEAvailability();
+    void checkBLEAvailability();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const checkBLEAvailability = useCallback(async () => {
     setIsChecking(true);
     try {
-      // BLE is available on iOS and Android, but the native module
-      // (munim-bluetooth) only loads on a native build, not Expo Go.
-      // We show the UI in all environments to allow testing the flow;
-      // the BLE service gracefully handles the missing native module.
-      const available = Platform.OS !== 'web';
-      setStatus(prev => ({ ...prev, available }));
+      if (Platform.OS === 'web') {
+        setStatus({ available: false, bluetoothEnabled: false, permissionGranted: false });
+        return;
+      }
+      const ble = loadBLE();
+      if (!ble) {
+        // Native module unavailable (Expo Go / simulator without rebuild).
+        setStatus({ available: false, bluetoothEnabled: false, permissionGranted: false });
+        return;
+      }
+      let bluetoothEnabled = false;
+      try {
+        bluetoothEnabled = await ble.isBluetoothEnabled();
+      } catch (e) {
+        console.warn('[BLE perms] isBluetoothEnabled threw:', e);
+      }
+      setStatus(prev => ({ ...prev, available: true, bluetoothEnabled }));
     } finally {
       setIsChecking(false);
+    }
+  }, []);
+
+  const openSettings = useCallback(() => {
+    if (Platform.OS === 'ios') {
+      Linking.openURL('app-settings:');
+    } else {
+      Linking.openSettings();
     }
   }, []);
 
   const requestPermissions = useCallback(async (): Promise<boolean> => {
     setIsChecking(true);
     try {
-      // Permission request would be handled here
-      // For now, we assume permissions are granted after the user accepts the native prompt
-      // In a real implementation, this would call native permission APIs
-
-      // Check if Bluetooth is enabled (this is a simplified check)
-      const bluetoothEnabled = status.bluetoothEnabled;
-
-      if (!bluetoothEnabled) {
-        // Bluetooth is off - show alert with deep-link to settings
-        Alert.alert(t('ble.bluetoothOff'), t('ble.bluetoothOffMessage'), [
-          {
-            text: t('ble.openSettings'),
-            onPress: () => {
-              if (Platform.OS === 'ios') {
-                Linking.openURL('app-settings://');
-              } else {
-                Linking.openURL('android.settings.BLUETOOTH_SETTINGS');
-              }
-            },
-          },
-          { text: t('ble.cancel'), style: 'cancel' },
-        ]);
+      const ble = loadBLE();
+      if (!ble) {
         return false;
       }
 
-      // Permissions granted
-      setStatus(prev => ({ ...prev, permissionGranted: true }));
+      let granted = false;
+      try {
+        granted = await ble.requestBluetoothPermission();
+      } catch (e) {
+        console.warn('[BLE perms] requestBluetoothPermission threw:', e);
+        granted = false;
+      }
+
+      if (!granted) {
+        Alert.alert(t('ble.permissionDenied'), t('ble.permissionDeniedMessage'), [
+          { text: t('ble.openSettings'), onPress: openSettings },
+          { text: t('ble.cancel'), style: 'cancel' },
+        ]);
+        setStatus(prev => ({ ...prev, permissionGranted: false }));
+        return false;
+      }
+
+      let bluetoothEnabled = false;
+      try {
+        bluetoothEnabled = await ble.isBluetoothEnabled();
+      } catch (e) {
+        console.warn('[BLE perms] isBluetoothEnabled threw:', e);
+      }
+
+      if (!bluetoothEnabled) {
+        Alert.alert(t('ble.bluetoothOff'), t('ble.bluetoothOffMessage'), [
+          { text: t('ble.openSettings'), onPress: openSettings },
+          { text: t('ble.cancel'), style: 'cancel' },
+        ]);
+        setStatus(prev => ({ ...prev, permissionGranted: true, bluetoothEnabled: false }));
+        return false;
+      }
+
+      setStatus(prev => ({ ...prev, permissionGranted: true, bluetoothEnabled: true }));
       return true;
     } finally {
       setIsChecking(false);
     }
-  }, [status.bluetoothEnabled, t]);
+  }, [t, openSettings]);
 
   return {
     ...status,

@@ -408,3 +408,25 @@ The result screen "PLAY AGAIN" button sends `REMATCH`. The first device to send 
 - Cross-version gameplay (beyond version-mismatch detection)
 - Reconnection after a mid-game BLE drop (disconnect = game abandoned)
 - Leaderboards or cloud sync of multiplayer stats
+
+
+# While wiring this up I found a fundamental gap in munim-bluetooth itself: the peripheral side cannot receive writes or push notifications to JS.
+
+Android: BluetoothGattServerCallback.onCharacteristicWriteRequest just stores the byte buffer and sends an ACK — it never emits an event to React Native (HybridMunimBluetooth.kt:689-702). There's also no public method to push a notification from the peripheral.
+iOS: the CBPeripheralManagerDelegate has no didReceiveWrite: or didReceiveRead: handler at all — confirmed by grep didReceive returning nothing in ios/.
+So with this library, the joiner → host direction works (joiner writes to the host's RX characteristic, the value lands on the GATT server) but the host has no callback to learn it happened — and the host → joiner direction doesn't work either, since notifyCharacteristicChanged from the peripheral isn't exposed.
+
+Concretely, after my fixes:
+
+✅ App won't crash on HOST or JOIN tap
+✅ Permissions are properly requested on Android 12+
+✅ Host advertises, joiner discovers + connects, joiner can send FIRE/FLEET_READY to host's RX characteristic (the bytes arrive)
+❌ The host's JS code will never see those messages
+❌ Host cannot send SHOT_RESULT/HELLO/etc. back to the joiner
+To make the full multiplayer flow actually function, one of these needs to happen:
+
+Patch / fork munim-bluetooth to (a) emit a characteristicWriteRequest event from onCharacteristicWriteRequest, and (b) expose a notifyCharacteristicChanged(serviceUUID, charUUID, value) method that calls BluetoothGattServer.notifyCharacteristicChanged on Android and CBPeripheralManager.updateValue(...) on iOS. ~50 lines of native code per platform.
+Switch BLE library. react-native-ble-plx (central) + react-native-ble-peripheral or @dotintent/react-native-ble-plx peripheral variants — but cross-platform peripheral support is patchy.
+Drop the peripheral/central asymmetry. Both peers scan-only, use Wi-Fi P2P or local UDP/mDNS. Bigger refactor, but the library landscape there is more mature.
+Want me to (a) prototype a patch to munim-bluetooth so the existing architecture works end-to-end, (b) evaluate option 2/3, or (c) leave this where it is and you'll decide?
+

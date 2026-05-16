@@ -6,23 +6,19 @@ import {
 } from '@/constants/ble';
 
 // Lazy-load munim-bluetooth (native module, only available on iOS/Android after build)
-let BLE: any = null;
+type MunimBLE = typeof import('munim-bluetooth');
+let BLE: MunimBLE | null = null;
 let bleLoaded = false;
 
-const getBLE = () => {
+const getBLE = (): MunimBLE | null => {
   if (bleLoaded) return BLE;
   bleLoaded = true;
 
   try {
-    // @ts-ignore - munim-bluetooth is a native module not in tsconfig
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const module = require('munim-bluetooth');
-    BLE = module.BLE || module.default;
-    if (BLE) {
-      console.log('[BLE] munim-bluetooth loaded');
-    }
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  } catch (e) {
+    BLE = require('munim-bluetooth') as MunimBLE;
+    console.log('[BLE] munim-bluetooth loaded');
+  } catch {
     console.log('[BLE] munim-bluetooth not available (expected on web/development)');
     BLE = null;
   }
@@ -48,9 +44,74 @@ export type BLERole = 'host' | 'joiner';
 
 export type BLEEventHandler = (message: BLEMessage) => void;
 
+interface DeviceFoundPayload {
+  id: string;
+  name?: string;
+  advertisingData?: {
+    manufacturerData?: string;
+  };
+}
+
+interface CharacteristicChangedPayload {
+  deviceId: string;
+  serviceUUID: string;
+  characteristicUUID: string;
+  value: string;
+}
+
+interface PeripheralWritePayload {
+  centralId: string;
+  serviceUUID: string;
+  characteristicUUID: string;
+  value: string;
+}
+
+interface PeripheralSubscribePayload {
+  centralId: string;
+  serviceUUID: string;
+  characteristicUUID: string;
+}
+
+interface DeviceDisconnectedPayload {
+  deviceId: string;
+}
+
+const bytesToHex = (bytes: number[] | Uint8Array): string => {
+  const arr = bytes instanceof Uint8Array ? Array.from(bytes) : bytes;
+  return arr.map(b => (b & 0xff).toString(16).padStart(2, '0')).join('');
+};
+
+const hexToBytes = (hex: string): number[] => {
+  const bytes: number[] = [];
+  const clean = hex.replace(/[^0-9a-fA-F]/g, '');
+  for (let i = 0; i < clean.length; i += 2) {
+    bytes.push(parseInt(clean.slice(i, i + 2), 16));
+  }
+  return bytes;
+};
+
+const stringToHex = (str: string): string => {
+  const encoder = new TextEncoder();
+  return bytesToHex(Array.from(encoder.encode(str)));
+};
+
+const hexToString = (hex: string): string => {
+  const bytes = hexToBytes(hex);
+  const decoder = new TextDecoder();
+  return decoder.decode(new Uint8Array(bytes));
+};
+
+const sameUUID = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
+
 /**
- * BLE Communication Service
- * Uses munim-bluetooth for native BLE operations on iOS and Android.
+ * BLE Communication Service.
+ *
+ * Host = peripheral: setServices() + startAdvertising(). Receives joiner writes via
+ * the `peripheralWriteRequest` event; pushes data to the joiner via
+ * `updateCharacteristicValue(...notify=true)` on the TX characteristic.
+ *
+ * Joiner = central: startScan() → connect → subscribeToCharacteristic on TX.
+ * Receives via `characteristicValueChanged`, sends via writeCharacteristic on RX.
  */
 class BLEService {
   private isAdvertising = false;
@@ -58,44 +119,99 @@ class BLEService {
   private isConnected = false;
   private role: BLERole | null = null;
   private connectedDeviceId: string | null = null;
+  private subscribedCentralId: string | null = null;
   private eventHandlers: BLEEventHandler[] = [];
   private messageQueue: BLEMessage[] = [];
-  private notificationUnsubscribe: (() => void) | null = null;
+
+  private deviceFoundUnsub: (() => void) | null = null;
+  private valueChangedUnsub: (() => void) | null = null;
+  private deviceDisconnectedUnsub: (() => void) | null = null;
+  private peripheralWriteUnsub: (() => void) | null = null;
+  private peripheralSubscribedUnsub: (() => void) | null = null;
+  private peripheralUnsubscribedUnsub: (() => void) | null = null;
+
+  private onDeviceFound: ((id: string, name: string) => void) | null = null;
+  private onDisconnect: (() => void) | null = null;
+  private onCentralConnected: (() => void) | null = null;
 
   /**
-   * Start advertising as a BLE host with captain name in manufacturer field
+   * Host: register the GATT service (TX notify + RX write) and start advertising
+   * the captain name in manufacturer data.
    */
   async startAdvertising(captainName: string): Promise<void> {
     if (this.isAdvertising) return;
 
+    const ble = getBLE();
+    if (!ble) {
+      console.warn('[BLE] munim-bluetooth not available');
+      return;
+    }
+
     try {
-      const ble = getBLE();
-      if (!ble) {
-        console.warn('[BLE] munim-bluetooth not available');
-        return;
-      }
+      ble.setServices([
+        {
+          uuid: BLE_SERVICE_UUID,
+          characteristics: [
+            {
+              uuid: BLE_TX_CHARACTERISTIC_UUID,
+              properties: ['notify', 'read'],
+            },
+            {
+              uuid: BLE_RX_CHARACTERISTIC_UUID,
+              properties: ['write', 'writeWithoutResponse'],
+            },
+          ],
+        },
+      ]);
 
-      const nameBytes = Array.from(captainName).map(c => c.charCodeAt(0));
-      const manufacturerData = [...Array.from(BLE_ADVERTISEMENT_MAGIC), ...nameBytes];
-      const manufacturerDataHex = manufacturerData
-        .map(byte => byte.toString(16).padStart(2, '0'))
-        .join('');
-
-      const advertisement = {
-        serviceUUIDs: [BLE_SERVICE_UUID],
-        manufacturerData: manufacturerDataHex,
-      };
-
-      await ble.startAdvertising(advertisement);
-
-      // Setup listener for incoming client writes
-      ble.onCharacteristicWrite?.(
-        (_peripheral: any, _service: any, characteristic: any, value: number[]) => {
-          if (characteristic.uuid === BLE_RX_CHARACTERISTIC_UUID) {
-            this._handleIncomingData(value);
+      this.peripheralWriteUnsub?.();
+      this.peripheralWriteUnsub = ble.addEventListener(
+        'peripheralWriteRequest',
+        (payload: PeripheralWritePayload) => {
+          if (sameUUID(payload.characteristicUUID, BLE_RX_CHARACTERISTIC_UUID)) {
+            this._handleIncomingHex(payload.value);
           }
         },
       );
+
+      this.peripheralSubscribedUnsub?.();
+      this.peripheralSubscribedUnsub = ble.addEventListener(
+        'peripheralSubscribed',
+        (payload: PeripheralSubscribePayload) => {
+          if (sameUUID(payload.characteristicUUID, BLE_TX_CHARACTERISTIC_UUID)) {
+            const firstSubscription = !this.subscribedCentralId;
+            this.subscribedCentralId = payload.centralId;
+            this.isConnected = true;
+            if (firstSubscription) {
+              this._flushQueue();
+              this.onCentralConnected?.();
+            }
+          }
+        },
+      );
+
+      this.peripheralUnsubscribedUnsub?.();
+      this.peripheralUnsubscribedUnsub = ble.addEventListener(
+        'peripheralUnsubscribed',
+        (payload: PeripheralSubscribePayload) => {
+          if (
+            sameUUID(payload.characteristicUUID, BLE_TX_CHARACTERISTIC_UUID) &&
+            payload.centralId === this.subscribedCentralId
+          ) {
+            this._handlePeerLeft();
+          }
+        },
+      );
+
+      const nameHex = stringToHex(captainName.slice(0, 16));
+      const magicHex = bytesToHex(BLE_ADVERTISEMENT_MAGIC);
+      const manufacturerDataHex = magicHex + nameHex;
+
+      ble.startAdvertising({
+        serviceUUIDs: [BLE_SERVICE_UUID],
+        localName: captainName.slice(0, 16),
+        manufacturerData: manufacturerDataHex,
+      });
 
       this.isAdvertising = true;
       this.role = 'host';
@@ -106,18 +222,23 @@ class BLEService {
     }
   }
 
-  /**
-   * Stop advertising
-   */
   async stopAdvertising(): Promise<void> {
     if (!this.isAdvertising) return;
-
+    const ble = getBLE();
     try {
-      const ble = getBLE();
-      if (ble) {
-        await ble.stopAdvertising?.();
-      }
+      ble?.stopAdvertising();
+      this.peripheralWriteUnsub?.();
+      this.peripheralWriteUnsub = null;
+      this.peripheralSubscribedUnsub?.();
+      this.peripheralSubscribedUnsub = null;
+      this.peripheralUnsubscribedUnsub?.();
+      this.peripheralUnsubscribedUnsub = null;
+      this.subscribedCentralId = null;
       this.isAdvertising = false;
+      if (this.role === 'host') {
+        this.isConnected = false;
+        this.role = null;
+      }
       console.log('[BLE] Stopped advertising');
     } catch (error) {
       console.error('[BLE] Failed to stop advertising:', error);
@@ -126,38 +247,32 @@ class BLEService {
   }
 
   /**
-   * Start scanning for BLE devices advertising the service
+   * Joiner: scan for hosts advertising the Hulls & Hellfire service. Decodes
+   * captain name from the manufacturer-data magic prefix.
    */
   async startScanning(onDeviceFound: (id: string, name: string) => void): Promise<void> {
     if (this.isScanning) return;
+    const ble = getBLE();
+    if (!ble) {
+      console.warn('[BLE] munim-bluetooth not available');
+      return;
+    }
 
     try {
-      const ble = getBLE();
-      if (!ble) {
-        console.warn('[BLE] munim-bluetooth not available');
-        return;
-      }
-
-      // Setup discovery listener
-      ble.onDiscoverPeripheral?.((peripheral: any) => {
-        if (peripheral.advertising?.serviceUUIDs?.includes(BLE_SERVICE_UUID)) {
-          const manufacturerDataHex = peripheral.advertising.manufacturerData;
-          if (manufacturerDataHex) {
-            const manufacturerData = this._hexToByteArray(manufacturerDataHex);
-            if (this._startsWithMagic(manufacturerData)) {
-              const nameBytes = manufacturerData.slice(4);
-              const name = String.fromCharCode(...nameBytes);
-              onDeviceFound(peripheral.id, name);
-            }
-          }
+      this.onDeviceFound = onDeviceFound;
+      this.deviceFoundUnsub?.();
+      this.deviceFoundUnsub = ble.addDeviceFoundListener((device: DeviceFoundPayload) => {
+        const name = this._extractCaptainName(device);
+        if (name !== null) {
+          this.onDeviceFound?.(device.id, name);
         }
       });
 
-      // Start scan
-      await ble.startScan?.(
-        [BLE_SERVICE_UUID], // serviceUUIDs
-        true, // allowDuplicates
-      );
+      ble.startScan({
+        serviceUUIDs: [BLE_SERVICE_UUID],
+        allowDuplicates: false,
+        scanMode: 'lowLatency',
+      });
 
       this.isScanning = true;
       console.log('[BLE] Started scanning for devices');
@@ -167,17 +282,14 @@ class BLEService {
     }
   }
 
-  /**
-   * Stop scanning
-   */
   async stopScanning(): Promise<void> {
     if (!this.isScanning) return;
-
+    const ble = getBLE();
     try {
-      const ble = getBLE();
-      if (ble) {
-        await ble.stopScan?.();
-      }
+      ble?.stopScan();
+      this.deviceFoundUnsub?.();
+      this.deviceFoundUnsub = null;
+      this.onDeviceFound = null;
       this.isScanning = false;
       console.log('[BLE] Stopped scanning');
     } catch (error) {
@@ -187,43 +299,51 @@ class BLEService {
   }
 
   /**
-   * Connect to a BLE device (joiner role)
+   * Joiner: connect to a host, discover services, subscribe to its TX
+   * characteristic for inbound notifications.
    */
   async connect(deviceId: string): Promise<void> {
     if (this.isConnected) return;
+    const ble = getBLE();
+    if (!ble) {
+      console.warn('[BLE] munim-bluetooth not available');
+      return;
+    }
 
     try {
-      const ble = getBLE();
-      if (!ble) {
-        console.warn('[BLE] munim-bluetooth not available');
-        return;
-      }
+      await ble.connect(deviceId);
+      await ble.discoverServices(deviceId);
 
-      // Connect to peripheral
-      await ble.connectPeripheral?.(deviceId);
-
-      // Discover services and characteristics
-      await ble.discoverAllServicesAndCharacteristics?.(deviceId);
-
-      // Setup notification listener for incoming messages
-      this.notificationUnsubscribe = await ble.startNotification?.(
-        deviceId,
-        BLE_SERVICE_UUID,
-        BLE_RX_CHARACTERISTIC_UUID,
-        (value: number[]) => this._handleIncomingData(value),
+      this.valueChangedUnsub?.();
+      this.valueChangedUnsub = ble.addEventListener(
+        'characteristicValueChanged',
+        (payload: CharacteristicChangedPayload) => {
+          if (
+            payload.deviceId === deviceId &&
+            sameUUID(payload.characteristicUUID, BLE_TX_CHARACTERISTIC_UUID)
+          ) {
+            this._handleIncomingHex(payload.value);
+          }
+        },
       );
+
+      this.deviceDisconnectedUnsub?.();
+      this.deviceDisconnectedUnsub = ble.addEventListener(
+        'deviceDisconnected',
+        (payload: DeviceDisconnectedPayload) => {
+          if (payload.deviceId === deviceId) {
+            this._handlePeerLeft();
+          }
+        },
+      );
+
+      ble.subscribeToCharacteristic(deviceId, BLE_SERVICE_UUID, BLE_TX_CHARACTERISTIC_UUID);
 
       this.isConnected = true;
       this.connectedDeviceId = deviceId;
       this.role = 'joiner';
 
-      // Flush queued messages
-      const queued = this.messageQueue;
-      this.messageQueue = [];
-      for (const msg of queued) {
-        await this.sendMessage(msg);
-      }
-
+      this._flushQueue();
       console.log('[BLE] Connected to device:', deviceId);
     } catch (error) {
       console.error('[BLE] Failed to connect:', error);
@@ -231,27 +351,36 @@ class BLEService {
     }
   }
 
-  /**
-   * Disconnect from BLE device
-   */
+  setOnDisconnect(handler: (() => void) | null): void {
+    this.onDisconnect = handler;
+  }
+
+  setOnCentralConnected(handler: (() => void) | null): void {
+    this.onCentralConnected = handler;
+  }
+
   async disconnect(): Promise<void> {
-    if (!this.isConnected) return;
+    if (!this.isConnected && !this.isAdvertising) return;
 
+    const ble = getBLE();
     try {
-      const ble = getBLE();
-      if (ble && this.connectedDeviceId) {
-        await ble.cancelTransaction?.(this.connectedDeviceId);
+      if (this.role === 'joiner' && ble && this.connectedDeviceId) {
+        try {
+          ble.unsubscribeFromCharacteristic(
+            this.connectedDeviceId,
+            BLE_SERVICE_UUID,
+            BLE_TX_CHARACTERISTIC_UUID,
+          );
+        } catch (e) {
+          console.warn('[BLE] unsubscribe failed (ignoring):', e);
+        }
+        ble.disconnect(this.connectedDeviceId);
       }
-
-      if (this.notificationUnsubscribe) {
-        this.notificationUnsubscribe();
-        this.notificationUnsubscribe = null;
+      if (this.role === 'host') {
+        // Stop advertising too — host-side disconnect should also tear the link down.
+        await this.stopAdvertising();
       }
-
-      this.isConnected = false;
-      this.connectedDeviceId = null;
-      this.role = null;
-      this.messageQueue = [];
+      this._teardownConnection();
       console.log('[BLE] Disconnected');
     } catch (error) {
       console.error('[BLE] Failed to disconnect:', error);
@@ -259,41 +388,75 @@ class BLEService {
     }
   }
 
+  private _teardownConnection(): void {
+    this.valueChangedUnsub?.();
+    this.valueChangedUnsub = null;
+    this.deviceDisconnectedUnsub?.();
+    this.deviceDisconnectedUnsub = null;
+    this.isConnected = false;
+    this.connectedDeviceId = null;
+    this.subscribedCentralId = null;
+    this.role = null;
+    this.messageQueue = [];
+  }
+
+  private _handlePeerLeft(): void {
+    console.log('[BLE] Peer disconnected');
+    this._teardownConnection();
+    this.onDisconnect?.();
+  }
+
   /**
-   * Send a BLE message
+   * Send a message to the connected peer. Direction depends on role:
+   * - host: updateCharacteristicValue on TX (notifies subscribed joiner)
+   * - joiner: writeCharacteristic on RX (write-without-response)
    */
   async sendMessage(message: BLEMessage): Promise<void> {
     if (!this.isConnected) {
       this.messageQueue.push(message);
       return;
     }
+    const ble = getBLE();
+    if (!ble) return;
+
+    const json = JSON.stringify(message);
+    const hex = stringToHex(json);
 
     try {
-      const ble = getBLE();
-      if (!ble || !this.connectedDeviceId) {
+      if (this.role === 'host') {
+        await ble.updateCharacteristicValue(
+          BLE_SERVICE_UUID,
+          BLE_TX_CHARACTERISTIC_UUID,
+          hex,
+          true,
+        );
+      } else if (this.role === 'joiner' && this.connectedDeviceId) {
+        await ble.writeCharacteristic(
+          this.connectedDeviceId,
+          BLE_SERVICE_UUID,
+          BLE_RX_CHARACTERISTIC_UUID,
+          hex,
+          'writeWithoutResponse',
+        );
+      } else {
+        console.warn('[BLE] sendMessage called with no active role');
         return;
       }
-
-      const json = JSON.stringify(message);
-      const data = Array.from(json).map(c => c.charCodeAt(0));
-
-      await ble.writeCharacteristicWithoutResponse?.(
-        this.connectedDeviceId,
-        BLE_SERVICE_UUID,
-        BLE_TX_CHARACTERISTIC_UUID,
-        data,
-      );
-
-      console.log('[BLE] Sent message:', message);
+      console.log('[BLE] Sent message:', message.type);
     } catch (error) {
       console.error('[BLE] Failed to send message:', error);
       throw error;
     }
   }
 
-  /**
-   * Subscribe to BLE messages
-   */
+  private _flushQueue(): void {
+    const queued = this.messageQueue;
+    this.messageQueue = [];
+    for (const msg of queued) {
+      this.sendMessage(msg).catch(e => console.error('[BLE] flush failed:', e));
+    }
+  }
+
   onMessage(handler: BLEEventHandler): () => void {
     this.eventHandlers.push(handler);
     return () => {
@@ -301,53 +464,39 @@ class BLEService {
     };
   }
 
-  /**
-   * Get current BLE role (host or joiner)
-   */
   getRole(): BLERole | null {
     return this.role;
   }
 
-  /**
-   * Check if connected
-   */
   isConnectedToBLE(): boolean {
     return this.isConnected;
   }
 
-  /**
-   * Get the connected device ID
-   */
   getConnectedDeviceId(): string | null {
     return this.connectedDeviceId;
   }
 
-  /**
-   * Convert hex string to byte array
-   */
-  private _hexToByteArray(hex: string): number[] {
-    const bytes: number[] = [];
-    for (let i = 0; i < hex.length; i += 2) {
-      bytes.push(parseInt(hex.slice(i, i + 2), 16));
-    }
-    return bytes;
-  }
-
-  /**
-   * Check if data starts with BLE_ADVERTISEMENT_MAGIC
-   */
-  private _startsWithMagic(data: number[]): boolean {
-    if (data.length < 4) return false;
+  /** Extract captain name from manufacturer data (magic prefix + UTF-8 name). */
+  private _extractCaptainName(device: DeviceFoundPayload): string | null {
+    const mfgHex = device.advertisingData?.manufacturerData;
+    if (!mfgHex) return device.name ?? null;
+    const bytes = hexToBytes(mfgHex);
+    if (bytes.length < 4) return device.name ?? null;
     const magic = Array.from(BLE_ADVERTISEMENT_MAGIC);
-    return data.slice(0, 4).every((byte, i) => byte === magic[i]);
+    const startsWithMagic = bytes.slice(0, 4).every((b, i) => b === magic[i]);
+    if (!startsWithMagic) return null;
+    if (bytes.length === 4) return device.name ?? '';
+    const nameHex = bytesToHex(bytes.slice(4));
+    try {
+      return hexToString(nameHex);
+    } catch {
+      return device.name ?? '';
+    }
   }
 
-  /**
-   * Handle incoming BLE data (internal)
-   */
-  private _handleIncomingData(data: number[]): void {
+  private _handleIncomingHex(hex: string): void {
     try {
-      const json = String.fromCharCode(...data);
+      const json = hexToString(hex);
       const message = JSON.parse(json) as BLEMessage;
       this._emitMessage(message);
     } catch (e) {
@@ -355,16 +504,11 @@ class BLEService {
     }
   }
 
-  /**
-   * Emit a message to all handlers (internal use for testing/mocking)
-   */
   private _emitMessage(message: BLEMessage): void {
     this.eventHandlers.forEach(handler => handler(message));
   }
 
-  /**
-   * Simulate receiving a BLE message (for testing/mocking)
-   */
+  /** Test/mock hook — simulate receiving a BLE message. */
   _simulateMessage(message: BLEMessage): void {
     this._emitMessage(message);
   }

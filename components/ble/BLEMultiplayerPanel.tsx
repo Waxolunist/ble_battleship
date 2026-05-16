@@ -5,7 +5,7 @@ import { useBLEStore } from '@/store/useBLEStore';
 import { useCaptainStore } from '@/store/useCaptainStore';
 import { useTranslation } from 'react-i18next';
 import { useEffect, useRef, useCallback } from 'react';
-import { Animated, StyleSheet, Text, View } from 'react-native';
+import { Alert, Animated, StyleSheet, Text, View } from 'react-native';
 import { PlayerListItem } from './PlayerListItem';
 import { bleService } from '@/services/ble';
 
@@ -17,9 +17,31 @@ interface BLEMultiplayerPanelProps {
 export function BLEMultiplayerPanel({ onHostPress, onJoinPress }: BLEMultiplayerPanelProps) {
   const { t } = useTranslation('common');
   const { available, isChecking, requestPermissions } = useBLEPermissions();
-  const { state, discoveredPeers, setState, connectedPeer, addDiscoveredPeer } = useBLEStore();
+  const { state, discoveredPeers, setState, connectedPeer, addDiscoveredPeer, setConnectedPeer } =
+    useBLEStore();
   const { captainName } = useCaptainStore();
   const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  // Surface BLE disconnects (out-of-range, peer left) as an alert and reset.
+  useEffect(() => {
+    bleService.setOnDisconnect(() => {
+      Alert.alert(t('ble.connectionLost'), t('ble.connectionLostMessage'));
+      setConnectedPeer(null);
+      setState('IDLE');
+    });
+    return () => bleService.setOnDisconnect(null);
+  }, [setState, setConnectedPeer, t]);
+
+  // Host: a central subscribing to TX is our signal that the link is live.
+  // Transition HOST_ADVERTISING → LOBBY. We don't yet know the joiner's
+  // captain name, so fall back to a generic label until HELLO carries it.
+  useEffect(() => {
+    bleService.setOnCentralConnected(() => {
+      setConnectedPeer({ id: 'remote', name: t('ble.opponent'), version: '1' });
+      setState('LOBBY');
+    });
+    return () => bleService.setOnCentralConnected(null);
+  }, [setState, setConnectedPeer, t]);
 
   // Pulsing animation for "AWAITING CHALLENGER..."
   useEffect(() => {
