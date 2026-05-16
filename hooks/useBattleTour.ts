@@ -141,6 +141,7 @@ export function useBattleTour(
   retreatRef: React.RefObject<View | null>,
 ) {
   const { t } = useTranslation('tutorial');
+  const translate = t as unknown as (key: string) => string;
   const { startTour } = useTourPersistence(tourStorage);
   const hasStarted = useRef(false);
 
@@ -155,9 +156,9 @@ export function useBattleTour(
         playerCounterRef,
         enemyCounterRef,
         retreatRef,
-        t,
+        translate,
       ),
-      getBattleTourConfig(t),
+      getBattleTourConfig(translate),
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showOpponentField, t]);
@@ -171,9 +172,9 @@ export function useBattleTour(
         playerCounterRef,
         enemyCounterRef,
         retreatRef,
-        t,
+        translate,
       ),
-      getBattleTourConfig(t),
+      getBattleTourConfig(translate),
       true,
     );
   }, [
@@ -184,7 +185,7 @@ export function useBattleTour(
     playerCounterRef,
     enemyCounterRef,
     retreatRef,
-    t,
+    translate,
   ]);
 
   return { replayTour };

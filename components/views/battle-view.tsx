@@ -98,7 +98,11 @@ export function BattleView({
   } = useTurnAnimations(turn, sunkEvent);
 
   const { verdictFlash, regularTextStyle, verdictTextStyle, sunkLabel, sunkLabelStyle } =
-    useVerdictAnimations(shotPhase, sunkEvent, t);
+    useVerdictAnimations(
+      shotPhase,
+      sunkEvent,
+      t as unknown as (key: string, options?: Record<string, string>) => string,
+    );
 
   const {
     isVictory,

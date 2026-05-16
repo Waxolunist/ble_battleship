@@ -116,23 +116,24 @@ export function usePlacementTour(
   shuffleRef: React.RefObject<View | null>,
 ) {
   const { t } = useTranslation('tutorial');
+  const translate = t as unknown as (key: string) => string;
   const { startTour } = useTourPersistence(tourStorage);
 
   useEffect(() => {
     void startTour(
-      buildSteps(titleRef, trayRef, rotateRef, shuffleRef, t),
-      getPlacementTourConfig(t),
+      buildSteps(titleRef, trayRef, rotateRef, shuffleRef, translate),
+      getPlacementTourConfig(translate),
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [t]);
 
   const replayTour = useCallback(() => {
     void startTour(
-      buildSteps(titleRef, trayRef, rotateRef, shuffleRef, t),
-      getPlacementTourConfig(t),
+      buildSteps(titleRef, trayRef, rotateRef, shuffleRef, translate),
+      getPlacementTourConfig(translate),
       true,
     );
-  }, [startTour, titleRef, trayRef, rotateRef, shuffleRef, t]);
+  }, [startTour, titleRef, trayRef, rotateRef, shuffleRef, translate]);
 
   return { replayTour };
 }
