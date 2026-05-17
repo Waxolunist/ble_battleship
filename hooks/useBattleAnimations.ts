@@ -1,4 +1,4 @@
-import { serializeFleet } from '@/engine/fleet-serialization';
+import { serializeFleet } from '@/engine/fleet-conversion';
 import type { Opponent } from '@/models/opponent';
 import { useGameStore } from '@/store/useGameStore';
 import { useNavigation } from '@react-navigation/native';
@@ -78,7 +78,16 @@ export function useBattleAnimations(opponent: Opponent): BattleAnimations {
 
     setTimeout(async () => {
       const localFleet = serializeFleet(useGameStore.getState().fields);
-      const prepared = await opponent.prepareBattle(localFleet);
+      let prepared;
+      try {
+        prepared = await opponent.prepareBattle(localFleet);
+      } catch (err) {
+        // Peer disconnect / send failure mid-handshake. Bail back to the
+        // previous screen rather than leaving the user on a half-faded battle.
+        console.error('[useBattleAnimations] prepareBattle failed:', err);
+        router.back();
+        return;
+      }
       startBattle(prepared);
       flashScale.value = 0.2;
       flashOpacity.value = withSequence(

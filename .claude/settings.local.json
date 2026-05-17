@@ -23,7 +23,9 @@
       "Bash(adb kill-server *)",
       "Bash(adb start-server *)",
       "Bash(adb devices *)",
-      "Bash(system_profiler SPUSBDataType)"
+      "Bash(system_profiler SPUSBDataType)",
+      "Bash(git mv *)",
+      "Bash(git rm *)"
     ]
   }
 }
