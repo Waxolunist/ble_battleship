@@ -13,6 +13,11 @@ function makeInitialOpponentFields(): Field[][] {
   return result ? result.fields : createGameField(AI_PLAYER).fields;
 }
 
+export interface StartBattleArgs {
+  opponentFields: Field[][];
+  firstTurn: 'player' | 'enemy';
+}
+
 function makeInitialOrientations(): Record<ShipType, Orientation> {
   return Object.fromEntries(SHIP_FLEET.map(t => [t, 'horizontal'])) as Record<
     ShipType,
@@ -44,9 +49,8 @@ interface GameActions {
   resolveShot: (grid: 'player' | 'opponent', x: number, y: number) => void;
   setTurn: (turn: 'player' | 'enemy') => void;
   setSunkEvent: (event: { shipType: ShipType; owner: 'player' | 'enemy' } | null) => void;
-  startBattle: () => void;
+  startBattle: (args: StartBattleArgs) => void;
   resetGame: () => void;
-  startBLEGame: () => void;
   sinkAllOpponentShips: () => void;
   sinkAllPlayerShips: () => void;
 }
@@ -146,18 +150,6 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     });
   },
 
-  startBLEGame() {
-    set({
-      fields: createGameField(PLAYER).fields,
-      opponentFields: createGameField(AI_PLAYER).fields,
-      placedShips: new Set(),
-      orientations: makeInitialOrientations(),
-      turn: 'player',
-      showOpponentField: false,
-      sunkEvent: null,
-    });
-  },
-
   sinkAllOpponentShips() {
     set(s => ({
       opponentFields: s.opponentFields.map(row =>
@@ -182,12 +174,12 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     }));
   },
 
-  startBattle() {
+  startBattle({ opponentFields, firstTurn }) {
     set(s => ({
       showOpponentField: true,
-      opponentFields: makeInitialOpponentFields(),
+      opponentFields,
       fields: s.fields.map(row => row.map(f => ({ ...f, status: 'empty' as const }))),
-      turn: 'player',
+      turn: firstTurn,
       sunkEvent: null,
     }));
   },

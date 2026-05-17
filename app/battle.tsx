@@ -4,9 +4,11 @@ import { BattleView } from '@/components/views/battle-view';
 import { PlacementView } from '@/components/views/placement-view';
 import { IMAGES, LOCALE_IMAGES } from '@/constants/assets';
 import { useTranslation } from 'react-i18next';
+import { useAIOpponent } from '@/hooks/useAIOpponent';
 import { useBattleAnimations } from '@/hooks/useBattleAnimations';
 import { useCombat } from '@/hooks/useCombat';
 import { usePlacementGestures } from '@/hooks/usePlacementGestures';
+import type { Opponent } from '@/models/opponent';
 import { getRankTitle, translateRankTitle, SHIP_FLEET } from '@/models/types';
 import { useGameStore } from '@/store/useGameStore';
 import { useCaptainStore } from '@/store/useCaptainStore';
@@ -21,6 +23,12 @@ import Animated from 'react-native-reanimated';
 const GRID_PADDING = 32;
 
 export default function BattleScreen() {
+  // Phase 1: AI-only. Phase 2 will branch on mode === 'ble' to mount useBLEOpponent.
+  const opponent = useAIOpponent();
+  return <BattleScreenBody opponent={opponent} />;
+}
+
+function BattleScreenBody({ opponent }: { opponent: Opponent }) {
   const { i18n, t } = useTranslation();
   const locale = (i18n.language === 'de' ? 'de' : 'en') as keyof typeof LOCALE_IMAGES;
   const { width } = useWindowDimensions();
@@ -59,7 +67,7 @@ export default function BattleScreen() {
   const enemyCounterRef = useRef<View>(null);
   const retreatRef = useRef<View>(null);
   const gestures = usePlacementGestures(cellSize);
-  const animations = useBattleAnimations();
+  const animations = useBattleAnimations(opponent);
   const { replayTour: replayPlacementTour } = usePlacementTour(
     titleRef,
     gestures.trayRef,
@@ -75,7 +83,7 @@ export default function BattleScreen() {
     enemyCounterRef,
     retreatRef,
   );
-  const { onPlayerFire, shotPhase } = useCombat();
+  const { onPlayerFire, shotPhase } = useCombat(opponent);
 
   const handleVictory = () => {
     sinkAllOpponentShips();

@@ -28,7 +28,6 @@ export default function HomeScreen() {
   const { t } = useTranslation('common');
   const router = useRouter();
   const resetGame = useGameStore(s => s.resetGame);
-  const startBLEGame = useGameStore(s => s.startBLEGame);
   const { captainName, setCaptainName, clearCaptainName } = useCaptainStore();
   const { state: bleState, setMode } = useBLEStore();
   const [inputName, setInputName] = useState('');
@@ -52,13 +51,8 @@ export default function HomeScreen() {
   };
 
   const handleBattle = () => {
-    if (bleState === 'LOBBY') {
-      setMode('ble');
-      startBLEGame();
-    } else {
-      setMode('ai');
-      resetGame();
-    }
+    setMode(bleState === 'LOBBY' ? 'ble' : 'ai');
+    resetGame();
     router.push('/battle');
   };
 

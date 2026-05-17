@@ -99,11 +99,22 @@ export function useBLEGame() {
     if (localFleetReady && remoteFleetReady && bleState === 'PLACEMENT' && connectedPeer) {
       // Set turn: host fires first, joiner fires second
       const isHost = bleService.getRole() === 'host';
-      setTurn(isHost ? 'player' : 'enemy');
-      startBattle();
+      const firstTurn = isHost ? 'player' : 'enemy';
+      setTurn(firstTurn);
+      // TODO(phase 2): derive opponentFields from peer's FLEET_READY payload.
+      startBattle({ opponentFields, firstTurn });
       setState('BATTLE');
     }
-  }, [localFleetReady, remoteFleetReady, bleState, connectedPeer, setTurn, startBattle, setState]);
+  }, [
+    localFleetReady,
+    remoteFleetReady,
+    bleState,
+    connectedPeer,
+    opponentFields,
+    setTurn,
+    startBattle,
+    setState,
+  ]);
 
   // Intercept player fire to send FIRE message at verdict beat
   const handlePlayerFire = useCallback(

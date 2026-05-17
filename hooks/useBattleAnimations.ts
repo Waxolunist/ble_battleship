@@ -1,3 +1,5 @@
+import { serializeFleet } from '@/engine/fleet-serialization';
+import type { Opponent } from '@/models/opponent';
 import { useGameStore } from '@/store/useGameStore';
 import { useNavigation } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
@@ -23,7 +25,7 @@ export interface BattleAnimations {
   onRetreat: () => void;
 }
 
-export function useBattleAnimations(): BattleAnimations {
+export function useBattleAnimations(opponent: Opponent): BattleAnimations {
   const router = useRouter();
   const navigation = useNavigation();
   const startBattle = useGameStore(s => s.startBattle);
@@ -74,8 +76,10 @@ export function useBattleAnimations(): BattleAnimations {
     playerFieldTranslateY.value = withTiming(-10, fadeConfig);
     battlePhaseOpacity.value = withTiming(1, { duration: 350, easing: Easing.out(Easing.cubic) });
 
-    setTimeout(() => {
-      startBattle();
+    setTimeout(async () => {
+      const localFleet = serializeFleet(useGameStore.getState().fields);
+      const prepared = await opponent.prepareBattle(localFleet);
+      startBattle(prepared);
       flashScale.value = 0.2;
       flashOpacity.value = withSequence(
         withTiming(1, { duration: 600, easing: Easing.out(Easing.cubic) }),
