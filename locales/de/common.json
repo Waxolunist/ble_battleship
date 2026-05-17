@@ -54,6 +54,8 @@
     "scanning": "SCANNE...",
     "noDevicesFound": "Keine Geräte gefunden",
     "connecting": "VERBINDUNG...",
-    "connected": "VERBUNDEN"
+    "connected": "VERBUNDEN",
+    "waitingPlacement": "WARTE AUF GEGNER\nBEIM PLATZIEREN...",
+    "rematchRequested": "REVANCHE ANGEFORDERT\nWARTE AUF GEGNER..."
   }
 }

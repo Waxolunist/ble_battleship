@@ -1,8 +1,10 @@
 import { DragPreview } from '@/components/drag-preview';
 import { LABEL_SIZE } from '@/components/game-field';
+import { BLEConnectionGuard, useBLEGuard } from '@/components/ble/BLEConnectionGuard';
 import { BattleView } from '@/components/views/battle-view';
 import { PlacementView } from '@/components/views/placement-view';
 import { IMAGES, LOCALE_IMAGES } from '@/constants/assets';
+import { GameColors } from '@/constants/theme';
 import { useTranslation } from 'react-i18next';
 import { useAIOpponent } from '@/hooks/useAIOpponent';
 import { useBLEOpponent } from '@/hooks/useBLEOpponent';
@@ -19,8 +21,15 @@ import { usePlacementTour } from '@/hooks/usePlacementTour';
 import { useBattleTour } from '@/hooks/useBattleTour';
 import { useRouter } from 'expo-router';
 import { Image, ImageBackground, StyleSheet, useWindowDimensions, View } from 'react-native';
-import { useRef } from 'react';
-import Animated from 'react-native-reanimated';
+import { useEffect, useRef } from 'react';
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
 
 const GRID_PADDING = 32;
 
@@ -37,11 +46,61 @@ function AIBattleScreen() {
 }
 
 function BLEBattleScreen() {
-  const opponent = useBLEOpponent();
-  return <BattleScreenBody opponent={opponent} />;
+  return (
+    <BLEConnectionGuard>
+      <BLEBattleContent />
+    </BLEConnectionGuard>
+  );
 }
 
-function BattleScreenBody({ opponent }: { opponent: Opponent }) {
+function BLEBattleContent() {
+  const { t } = useTranslation('common');
+  const opponent = useBLEOpponent();
+  const { requestRematch, rematchPending } = useBLEGuard();
+  const localFleetReady = useBLEStore(s => s.localFleetReady);
+  const remoteFleetReady = useBLEStore(s => s.remoteFleetReady);
+
+  return (
+    <View style={StyleSheet.absoluteFill}>
+      <BattleScreenBody opponent={opponent} onPlayAgain={requestRematch} />
+      {localFleetReady && !remoteFleetReady && (
+        <BLEWaitingOverlay message={t('ble.waitingPlacement')} />
+      )}
+      {rematchPending && <BLEWaitingOverlay message={t('ble.rematchRequested')} />}
+    </View>
+  );
+}
+
+function BLEWaitingOverlay({ message }: { message: string }) {
+  const pulse = useSharedValue(1);
+
+  useEffect(() => {
+    pulse.value = withRepeat(
+      withSequence(
+        withTiming(0.35, { duration: 700, easing: Easing.inOut(Easing.sin) }),
+        withTiming(1, { duration: 700, easing: Easing.inOut(Easing.sin) }),
+      ),
+      -1,
+      false,
+    );
+  }, [pulse]);
+
+  const textStyle = useAnimatedStyle(() => ({ opacity: pulse.value }));
+
+  return (
+    <View style={[StyleSheet.absoluteFill, styles.waitingOverlay]}>
+      <Animated.Text style={[styles.waitingText, textStyle]}>{message}</Animated.Text>
+    </View>
+  );
+}
+
+function BattleScreenBody({
+  opponent,
+  onPlayAgain: onPlayAgainProp,
+}: {
+  opponent: Opponent;
+  onPlayAgain?: () => void;
+}) {
   const { i18n, t } = useTranslation();
   const locale = (i18n.language === 'de' ? 'de' : 'en') as keyof typeof LOCALE_IMAGES;
   const { width } = useWindowDimensions();
@@ -115,10 +174,12 @@ function BattleScreenBody({ opponent }: { opponent: Opponent }) {
     opponent.notifyGameOver(outcome);
   };
 
-  const handlePlayAgain = () => {
-    resetGame();
-    router.replace('/battle');
-  };
+  const handlePlayAgain =
+    onPlayAgainProp ??
+    (() => {
+      resetGame();
+      router.replace('/battle');
+    });
 
   const handleMakePort = () => {
     resetGame();
@@ -236,5 +297,18 @@ const styles = StyleSheet.create({
     width: '80%',
     height: undefined,
     aspectRatio: 1,
+  },
+  waitingOverlay: {
+    backgroundColor: GameColors.confirmOverlayBg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  waitingText: {
+    color: GameColors.label,
+    fontFamily: 'BlackOpsOne',
+    fontSize: 18,
+    letterSpacing: 3,
+    textAlign: 'center',
+    lineHeight: 30,
   },
 });

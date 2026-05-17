@@ -54,6 +54,8 @@
     "scanning": "SCANNING...",
     "noDevicesFound": "No devices found",
     "connecting": "CONNECTING...",
-    "connected": "CONNECTED"
+    "connected": "CONNECTED",
+    "waitingPlacement": "WAITING FOR OPPONENT\nTO FINISH PLACEMENT...",
+    "rematchRequested": "REMATCH REQUESTED\nAWAITING OPPONENT..."
   }
 }
