@@ -14,3 +14,11 @@ export const DEV_FORCE_LANGUAGE = process.env.EXPO_PUBLIC_DEV_FORCE_LANGUAGE as
   | 'en'
   | 'de'
   | undefined;
+
+/**
+ * DEV_SHOW_BLE_DEBUG — renders a collapsible overlay that streams BLE
+ * advertising/scanning/connection events plus every TX/RX message. Defaults
+ * on in __DEV__ so you don't need adb/Xcode log tail to see what's happening
+ * on a tethered device. Set EXPO_PUBLIC_DEV_SHOW_BLE_DEBUG=false to hide.
+ */
+export const DEV_SHOW_BLE_DEBUG = __DEV__ && process.env.EXPO_PUBLIC_DEV_SHOW_BLE_DEBUG !== 'false';

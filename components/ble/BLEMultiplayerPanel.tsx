@@ -8,6 +8,7 @@ import { useEffect, useRef, useCallback } from 'react';
 import { Alert, Animated, StyleSheet, Text, View } from 'react-native';
 import { PlayerListItem } from './PlayerListItem';
 import { bleService } from '@/services/ble';
+import { bleDebugLog } from '@/services/ble-debug-log';
 
 interface BLEMultiplayerPanelProps {
   onHostPress?: () => void;
@@ -25,6 +26,7 @@ export function BLEMultiplayerPanel({ onHostPress, onJoinPress }: BLEMultiplayer
   // Surface BLE disconnects (out-of-range, peer left) as an alert and reset.
   useEffect(() => {
     bleService.setOnDisconnect(() => {
+      bleDebugLog.push('event', 'UI: connection lost → IDLE');
       Alert.alert(t('ble.connectionLost'), t('ble.connectionLostMessage'));
       setConnectedPeer(null);
       setState('IDLE');
@@ -32,12 +34,17 @@ export function BLEMultiplayerPanel({ onHostPress, onJoinPress }: BLEMultiplayer
     return () => bleService.setOnDisconnect(null);
   }, [setState, setConnectedPeer, t]);
 
-  // Host: a central subscribing to TX is our signal that the link is live.
-  // Transition HOST_ADVERTISING → LOBBY. We don't yet know the joiner's
-  // captain name, so fall back to a generic label until HELLO carries it.
+  // Host: HELLO handshake just completed (validated magic + protocol version).
+  // The peer name comes from the joiner's HELLO payload, so we display the
+  // real callsign instead of a generic placeholder.
   useEffect(() => {
-    bleService.setOnCentralConnected(() => {
-      setConnectedPeer({ id: 'remote', name: t('ble.opponent'), version: '1' });
+    bleService.setOnCentralConnected((peerName: string) => {
+      bleDebugLog.push('event', 'UI: host → LOBBY (HELLO accepted)', peerName);
+      setConnectedPeer({
+        id: 'remote',
+        name: peerName || t('ble.opponent'),
+        version: '1',
+      });
       setState('LOBBY');
     });
     return () => bleService.setOnCentralConnected(null);
@@ -66,7 +73,9 @@ export function BLEMultiplayerPanel({ onHostPress, onJoinPress }: BLEMultiplayer
   }, [state, pulseAnim]);
 
   const handleHostPress = useCallback(async () => {
+    bleDebugLog.push('event', 'UI: HOST pressed');
     const permitted = await requestPermissions();
+    bleDebugLog.push('info', `UI: permissions ${permitted ? 'granted' : 'denied'}`);
     if (permitted) {
       try {
         setState('HOST_ADVERTISING');
@@ -74,13 +83,16 @@ export function BLEMultiplayerPanel({ onHostPress, onJoinPress }: BLEMultiplayer
         onHostPress?.();
       } catch (error) {
         console.error('[UI] Failed to start advertising:', error);
+        bleDebugLog.push('error', 'UI: host flow failed', String(error));
         setState('IDLE');
       }
     }
   }, [requestPermissions, setState, captainName, onHostPress]);
 
   const handleJoinPress = useCallback(async () => {
+    bleDebugLog.push('event', 'UI: JOIN pressed');
     const permitted = await requestPermissions();
+    bleDebugLog.push('info', `UI: permissions ${permitted ? 'granted' : 'denied'}`);
     if (permitted) {
       try {
         setState('SCANNING');
@@ -90,29 +102,39 @@ export function BLEMultiplayerPanel({ onHostPress, onJoinPress }: BLEMultiplayer
         onJoinPress?.();
       } catch (error) {
         console.error('[UI] Failed to start scanning:', error);
+        bleDebugLog.push('error', 'UI: join flow failed', String(error));
         setState('IDLE');
       }
     }
   }, [requestPermissions, setState, addDiscoveredPeer, onJoinPress]);
 
   const handleConnectToDevice = useCallback(
-    async (deviceId: string) => {
+    async (deviceId: string, deviceName: string) => {
+      bleDebugLog.push('event', 'UI: peer tapped → CONNECTING', deviceId);
       try {
         setState('CONNECTING');
-        await bleService.connect(deviceId);
         setState('HANDSHAKING');
-        setTimeout(() => {
-          setState('LOBBY');
-        }, 500);
+        // connect() now exchanges HELLO with the host before resolving.
+        // The returned name comes from the host's HELLO payload — fall back
+        // to the advertised name (from scan) if HELLO didn't carry one.
+        const peerName = await bleService.connect(deviceId, captainName);
+        setConnectedPeer({
+          id: deviceId,
+          name: peerName || deviceName || t('ble.opponent'),
+          version: '1',
+        });
+        setState('LOBBY');
       } catch (error) {
         console.error('[UI] Failed to connect:', error);
+        bleDebugLog.push('error', 'UI: connect flow failed', String(error));
         setState('SCANNING');
       }
     },
-    [setState],
+    [setState, setConnectedPeer, captainName, t],
   );
 
   const handleCancel = useCallback(async () => {
+    bleDebugLog.push('event', `UI: CANCEL from ${state}`);
     try {
       if (state === 'HOST_ADVERTISING') {
         await bleService.stopAdvertising();
@@ -123,6 +145,7 @@ export function BLEMultiplayerPanel({ onHostPress, onJoinPress }: BLEMultiplayer
       }
     } catch (error) {
       console.error('[UI] Failed to cancel operation:', error);
+      bleDebugLog.push('error', 'UI: cancel failed', String(error));
     }
     setState('IDLE');
   }, [state, connectedPeer, setState]);
@@ -205,7 +228,7 @@ export function BLEMultiplayerPanel({ onHostPress, onJoinPress }: BLEMultiplayer
                   key={peer.id}
                   name={peer.name}
                   onPress={() => {
-                    handleConnectToDevice(peer.id);
+                    handleConnectToDevice(peer.id, peer.name);
                   }}
                 />
               ))

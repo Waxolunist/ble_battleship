@@ -9,6 +9,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 import '@/i18n';
 import { useLanguageStore } from '@/store/useLanguageStore';
+import { BLEDebugPanel } from '@/components/ble/BLEDebugPanel';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
@@ -53,6 +54,7 @@ export default function RootLayout() {
           <StatusBar style="auto" />
         </ThemeProvider>
         <TourGuideOverlay />
+        <BLEDebugPanel />
       </TourGuideProvider>
     </GestureHandlerRootView>
   );
