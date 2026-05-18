@@ -61,7 +61,7 @@ export default function HomeScreen() {
       flex: 1,
     },
     overlay: {
-      ...StyleSheet.absoluteFillObject,
+      ...StyleSheet.absoluteFill,
       backgroundColor: 'rgba(0, 0, 0, 0.3)',
     },
     content: {

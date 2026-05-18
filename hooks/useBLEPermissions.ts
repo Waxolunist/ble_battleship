@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { Alert, Linking, Platform } from 'react-native';
+import { Alert, Linking, PermissionsAndroid, Platform } from 'react-native';
 import { useCallback, useEffect, useState } from 'react';
 
 interface BLEPermissionStatus {
@@ -28,7 +28,7 @@ const loadBLE = (): MunimBLE | null => {
 /**
  * Hook for checking Bluetooth availability and requesting runtime permissions
  * via munim-bluetooth's native bridge (Android: BLUETOOTH_SCAN/CONNECT/ADVERTISE
- * + ACCESS_FINE_LOCATION on Android < 12; iOS: CBManager authorization check).
+ * + ACCESS_FINE_LOCATION + ACCESS_COARSE_LOCATION; iOS: CBManager authorization check).
  */
 export function useBLEPermissions() {
   const { t } = useTranslation('common');
@@ -83,6 +83,26 @@ export function useBLEPermissions() {
       const ble = loadBLE();
       if (!ble) {
         return false;
+      }
+
+      if (Platform.OS === 'android') {
+        const locationResults = await PermissionsAndroid.requestMultiple([
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+          PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION,
+        ]);
+        const locationGranted =
+          locationResults[PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION] ===
+            PermissionsAndroid.RESULTS.GRANTED ||
+          locationResults[PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION] ===
+            PermissionsAndroid.RESULTS.GRANTED;
+        if (!locationGranted) {
+          Alert.alert(t('ble.permissionDenied'), t('ble.permissionDeniedMessage'), [
+            { text: t('ble.openSettings'), onPress: openSettings },
+            { text: t('ble.cancel'), style: 'cancel' },
+          ]);
+          setStatus(prev => ({ ...prev, permissionGranted: false }));
+          return false;
+        }
       }
 
       let granted = false;

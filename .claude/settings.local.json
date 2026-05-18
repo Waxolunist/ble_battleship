@@ -27,7 +27,16 @@
       "Bash(git mv *)",
       "Bash(git rm *)",
       "Bash(npx eslint *)",
-      "Bash(xcrun simctl *)"
+      "Bash(xcrun simctl *)",
+      "Bash(ls node_modules/eslint-import-resolver-typescript*)",
+      "Bash(node -e \"const r = require\\('./node_modules/eslint-config-expo/node_modules/eslint-import-resolver-typescript'\\); console.log\\(Object.keys\\(r\\)\\)\")",
+      "Bash(node -e \"const r = require\\('./node_modules/eslint-config-expo/node_modules/eslint-import-resolver-typescript'\\); console.log\\('interfaceVersion:', r.interfaceVersion\\); console.log\\('resolve type:', typeof r.resolve\\)\")",
+      "Bash(node -e \"const r = require\\('./node_modules/eslint-module-utils/resolve.js'\\); \")",
+      "Bash(ls node_modules/eslint-config-expo/*.js)",
+      "Bash(node -e \"const p = require\\('./node_modules/eslint-config-expo/node_modules/eslint-plugin-import'\\); console.log\\(Object.keys\\(p.flatConfigs || {}\\)\\); const tc = p.flatConfigs && p.flatConfigs.typescript; console.log\\(JSON.stringify\\(tc && tc.settings, null, 2\\)\\)\")",
+      "Bash(node -e \"const p = require\\('./node_modules/eslint-plugin-import'\\); console.log\\('version:', p && p.meta && p.meta.version\\); console.log\\(Object.keys\\(p.flatConfigs || {}\\)\\)\")",
+      "Bash(node -e \"const p = require\\('./node_modules/eslint-config-expo/node_modules/eslint-plugin-import'\\); const tc = p.flatConfigs && p.flatConfigs.typescript; console.log\\(JSON.stringify\\(tc, null, 2\\)\\)\")",
+      "Bash(npm install:*)"
     ]
   }
 }
