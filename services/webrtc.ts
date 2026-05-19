@@ -1,5 +1,7 @@
 import { STUN_SERVER_URL } from '@/constants/multiplayer';
-import { RTCDataChannel, RTCPeerConnection, RTCSessionDescription } from 'react-native-webrtc';
+import { RTCPeerConnection, RTCSessionDescription } from 'react-native-webrtc';
+
+type RTCDataChannelType = ReturnType<RTCPeerConnection['createDataChannel']>;
 import { multiplayerDebugLog } from './multiplayer-debug-log';
 
 type RawMessageHandler = (data: string) => void;
@@ -23,7 +25,7 @@ const ICE_CONFIG = {
  */
 class WebRTCService {
   private pc: RTCPeerConnection | null = null;
-  private dc: RTCDataChannel | null = null;
+  private dc: RTCDataChannelType | null = null;
   private rawHandlers: RawMessageHandler[] = [];
   private openResolve: (() => void) | null = null;
   private openReject: ((err: Error) => void) | null = null;
@@ -45,9 +47,9 @@ class WebRTCService {
     this.dc = this.pc.createDataChannel(DATA_CHANNEL_LABEL);
     this._setupDataChannel(this.dc);
 
-    this.pc.oniceconnectionstatechange = () => {
+    (this.pc as unknown as EventTarget).addEventListener('iceconnectionstatechange', () => {
       multiplayerDebugLog.push('event', 'ICE state', this.pc?.iceConnectionState);
-    };
+    });
 
     const offer = await this.pc.createOffer({});
     await this.pc.setLocalDescription(offer);
@@ -69,14 +71,14 @@ class WebRTCService {
     multiplayerDebugLog.push('event', 'WebRTC setRemoteOffer →');
 
     // Joiner receives the data channel via ondatachannel.
-    this.pc.ondatachannel = (event: { channel: RTCDataChannel }) => {
-      this.dc = event.channel;
+    (this.pc as unknown as EventTarget).addEventListener('datachannel', (event: Event) => {
+      this.dc = (event as unknown as { channel: RTCDataChannelType }).channel;
       this._setupDataChannel(this.dc);
-    };
+    });
 
-    this.pc.oniceconnectionstatechange = () => {
+    (this.pc as unknown as EventTarget).addEventListener('iceconnectionstatechange', () => {
       multiplayerDebugLog.push('event', 'ICE state', this.pc?.iceConnectionState);
-    };
+    });
 
     await this.pc.setRemoteDescription(new RTCSessionDescription({ type: 'offer', sdp }));
   }
@@ -174,8 +176,10 @@ class WebRTCService {
     }
   }
 
-  private _setupDataChannel(dc: RTCDataChannel): void {
-    dc.onopen = () => {
+  private _setupDataChannel(dc: RTCDataChannelType): void {
+    const et = dc as unknown as EventTarget;
+
+    et.addEventListener('open', () => {
       multiplayerDebugLog.push('info', 'WebRTC data channel open');
       if (this.openTimer) {
         clearTimeout(this.openTimer);
@@ -185,20 +189,21 @@ class WebRTCService {
       this.openResolve = null;
       this.openReject = null;
       resolve?.();
-    };
+    });
 
-    dc.onmessage = (event: { data: unknown }) => {
-      const raw = typeof event.data === 'string' ? event.data : String(event.data);
+    et.addEventListener('message', (event: Event) => {
+      const data = (event as unknown as { data: unknown }).data;
+      const raw = typeof data === 'string' ? data : String(data);
       this.rawHandlers.forEach(h => h(raw));
-    };
+    });
 
-    dc.onerror = (event: unknown) => {
+    et.addEventListener('error', (event: Event) => {
       multiplayerDebugLog.push('error', 'WebRTC data channel error', String(event));
-    };
+    });
 
-    dc.onclose = () => {
+    et.addEventListener('close', () => {
       multiplayerDebugLog.push('event', 'WebRTC data channel closed');
-    };
+    });
   }
 
   private _waitForICEGathering(): Promise<void> {
@@ -211,13 +216,14 @@ class WebRTCService {
         resolve();
         return;
       }
+      const et = this.pc as unknown as EventTarget;
       const handler = () => {
         if (this.pc?.iceGatheringState === 'complete') {
-          this.pc.removeEventListener('icegatheringstatechange', handler);
+          et.removeEventListener('icegatheringstatechange', handler);
           resolve();
         }
       };
-      this.pc.addEventListener('icegatheringstatechange', handler);
+      et.addEventListener('icegatheringstatechange', handler);
     });
   }
 }

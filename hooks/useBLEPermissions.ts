@@ -8,17 +8,20 @@ interface BLEPermissionStatus {
   permissionGranted: boolean;
 }
 
-type MunimBLE = typeof import('munim-bluetooth');
+type BLEModule = {
+  isBluetoothEnabled(): Promise<boolean>;
+  requestBluetoothPermission(): Promise<boolean>;
+};
 
-let bleModule: MunimBLE | null = null;
+let bleModule: BLEModule | null = null;
 let bleModuleLoaded = false;
 
-const loadBLE = (): MunimBLE | null => {
+const loadBLE = (): BLEModule | null => {
   if (bleModuleLoaded) return bleModule;
   bleModuleLoaded = true;
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    bleModule = require('munim-bluetooth') as MunimBLE;
+    bleModule = require('munim-bluetooth') as BLEModule;
   } catch {
     bleModule = null;
   }

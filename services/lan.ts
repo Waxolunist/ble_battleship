@@ -258,15 +258,15 @@ class LanService {
 
   private _attachSocketHandlers(): void {
     const sock = this.socket as {
-      on(event: string, cb: (data: Buffer | string) => void): void;
+      on(event: string, cb: (data: Uint8Array | string) => void): void;
     } & {
       on(event: 'close', cb: (hadError: boolean) => void): void;
     } & {
       on(event: 'error', cb: (err: Error) => void): void;
     };
 
-    sock.on('data', (raw: Buffer | string) => {
-      const text = typeof raw === 'string' ? raw : raw.toString('utf8');
+    sock.on('data', (raw: Uint8Array | string) => {
+      const text = typeof raw === 'string' ? raw : new TextDecoder().decode(raw);
       this._handleData(text);
     });
 
