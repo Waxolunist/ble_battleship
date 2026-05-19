@@ -7,7 +7,7 @@ import { IMAGES, LOCALE_IMAGES } from '@/constants/assets';
 import { GameColors } from '@/constants/theme';
 import { useTranslation } from 'react-i18next';
 import { useAIOpponent } from '@/hooks/useAIOpponent';
-import { useBLEOpponent } from '@/hooks/useBLEOpponent';
+import { useMultiplayerOpponent } from '@/hooks/useMultiplayerOpponent';
 import { useBattleAnimations } from '@/hooks/useBattleAnimations';
 import { useCombat } from '@/hooks/useCombat';
 import { usePlacementGestures } from '@/hooks/usePlacementGestures';
@@ -55,7 +55,7 @@ function BLEBattleScreen() {
 
 function BLEBattleContent() {
   const { t } = useTranslation('common');
-  const opponent = useBLEOpponent();
+  const opponent = useMultiplayerOpponent();
   const { requestRematch, rematchPending } = useBLEGuard();
   const localFleetReady = useMultiplayerStore(s => s.localFleetReady);
   const remoteFleetReady = useMultiplayerStore(s => s.remoteFleetReady);
