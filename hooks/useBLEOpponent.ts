@@ -1,8 +1,8 @@
 import { placeFleet } from '@/engine/fleet-conversion';
 import type { GameOutcome, Opponent, PreparedBattle, ShotResult } from '@/models/opponent';
 import { GRID_SIZE, SHIP_FLEET, type ShipType } from '@/models/types';
-import { bleService } from '@/services/ble';
-import { useBLEStore, type FleetPlacement } from '@/store/useBLEStore';
+import { multiplayerService } from '@/services/multiplayer';
+import { useMultiplayerStore, type FleetPlacement } from '@/store/useMultiplayerStore';
 import { useGameStore } from '@/store/useGameStore';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 
@@ -53,10 +53,10 @@ function computeLocalShotResult(x: number, y: number): ShotResult {
 }
 
 export function useBLEOpponent(): Opponent {
-  const setOpponentFleet = useBLEStore(s => s.setOpponentFleet);
-  const setLocalFleetReady = useBLEStore(s => s.setLocalFleetReady);
-  const setRemoteFleetReady = useBLEStore(s => s.setRemoteFleetReady);
-  const setBLEState = useBLEStore(s => s.setState);
+  const setOpponentFleet = useMultiplayerStore(s => s.setOpponentFleet);
+  const setLocalFleetReady = useMultiplayerStore(s => s.setLocalFleetReady);
+  const setRemoteFleetReady = useMultiplayerStore(s => s.setRemoteFleetReady);
+  const setBLEState = useMultiplayerStore(s => s.setState);
 
   const pendingShotRef = useRef<PendingShot | null>(null);
   const enemyShotHandlerRef = useRef<((x: number, y: number) => void) | null>(null);
@@ -64,7 +64,7 @@ export function useBLEOpponent(): Opponent {
   const fleetReadyResolverRef = useRef<((fleet: FleetPlacement[]) => void) | null>(null);
 
   useEffect(() => {
-    const unsubscribe = bleService.onMessage(message => {
+    const unsubscribe = multiplayerService.onMessage(message => {
       switch (message.type) {
         case 'FLEET_READY': {
           const fleet = parseFleetPayload(message.data?.fleet);
@@ -149,7 +149,7 @@ export function useBLEOpponent(): Opponent {
 
       pendingShotRef.current = { x, y, resolve, reject, timeoutId };
 
-      bleService.sendMessage({ type: 'FIRE', data: { x, y } }).catch(err => {
+      multiplayerService.sendMessage({ type: 'FIRE', data: { x, y } }).catch(err => {
         if (pendingShotRef.current?.timeoutId !== timeoutId) return;
         clearTimeout(timeoutId);
         pendingShotRef.current = null;
@@ -174,7 +174,7 @@ export function useBLEOpponent(): Opponent {
       const ship = fields[y][x].shipPart?.ship;
       shipType = ship?.type as ShipType | undefined;
     }
-    bleService
+    multiplayerService
       .sendMessage({ type: 'SHOT_RESULT', data: { x, y, result, shipType } })
       .catch(err => console.error('[useBLEOpponent] Failed to send SHOT_RESULT:', err));
   }, []);
@@ -183,10 +183,10 @@ export function useBLEOpponent(): Opponent {
     async (localFleet: FleetPlacement[]): Promise<PreparedBattle> => {
       setBLEState('PLACEMENT');
       setLocalFleetReady(true);
-      await bleService.sendMessage({ type: 'FLEET_READY', data: { fleet: localFleet } });
+      await multiplayerService.sendMessage({ type: 'FLEET_READY', data: { fleet: localFleet } });
 
       // Peer may have already sent FLEET_READY before our prepare started.
-      const existing = useBLEStore.getState().opponentFleet;
+      const existing = useMultiplayerStore.getState().opponentFleet;
       const opponentFleet =
         existing ??
         (await new Promise<FleetPlacement[]>(resolve => {
@@ -194,7 +194,7 @@ export function useBLEOpponent(): Opponent {
         }));
 
       const opponentFields = placeFleet(opponentFleet);
-      const firstTurn = bleService.getRole() === 'host' ? 'player' : 'enemy';
+      const firstTurn = multiplayerService.getRole() === 'host' ? 'player' : 'enemy';
       setBLEState('BATTLE');
       return { opponentFields, firstTurn };
     },
@@ -205,7 +205,7 @@ export function useBLEOpponent(): Opponent {
     (outcome: GameOutcome) => {
       setBLEState('GAME_OVER');
       if (outcome === 'victory') {
-        bleService
+        multiplayerService
           .sendMessage({ type: 'GAME_OVER' })
           .catch(err => console.error('[useBLEOpponent] Failed to send GAME_OVER:', err));
       }

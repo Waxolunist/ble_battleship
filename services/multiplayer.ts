@@ -260,9 +260,7 @@ class MultiplayerService {
   // Intermediate state between tap 1 (offer read) and tap 2 (answer written).
   private nfcAnswerSdp: string | null = null;
 
-  private async _runNFCScanFlow(
-    onDeviceFound: (id: string, name: string) => void,
-  ): Promise<void> {
+  private async _runNFCScanFlow(onDeviceFound: (id: string, name: string) => void): Promise<void> {
     multiplayerDebugLog.push('info', 'NFC joiner scan started — waiting for tap 1');
 
     // Tap 1: read the host's offer.

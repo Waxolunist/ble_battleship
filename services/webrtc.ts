@@ -1,9 +1,5 @@
 import { STUN_SERVER_URL } from '@/constants/multiplayer';
-import {
-  RTCDataChannel,
-  RTCPeerConnection,
-  RTCSessionDescription,
-} from 'react-native-webrtc';
+import { RTCDataChannel, RTCPeerConnection, RTCSessionDescription } from 'react-native-webrtc';
 import { multiplayerDebugLog } from './multiplayer-debug-log';
 
 type RawMessageHandler = (data: string) => void;

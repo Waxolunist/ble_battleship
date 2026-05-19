@@ -1,14 +1,14 @@
 import { HapticPressable } from '@/components/haptic-pressable';
 import { Fonts, GameColors } from '@/constants/theme';
 import { useBLEPermissions } from '@/hooks/useBLEPermissions';
-import { useBLEStore } from '@/store/useBLEStore';
+import { useMultiplayerStore } from '@/store/useMultiplayerStore';
 import { useCaptainStore } from '@/store/useCaptainStore';
 import { useTranslation } from 'react-i18next';
 import { useEffect, useRef, useCallback } from 'react';
 import { Alert, Animated, StyleSheet, Text, View } from 'react-native';
 import { PlayerListItem } from './PlayerListItem';
-import { bleService } from '@/services/ble';
-import { bleDebugLog } from '@/services/ble-debug-log';
+import { multiplayerService } from '@/services/multiplayer';
+import { multiplayerDebugLog } from '@/services/multiplayer-debug-log';
 
 interface BLEMultiplayerPanelProps {
   onHostPress?: () => void;
@@ -19,27 +19,27 @@ export function BLEMultiplayerPanel({ onHostPress, onJoinPress }: BLEMultiplayer
   const { t } = useTranslation('common');
   const { available, isChecking, requestPermissions } = useBLEPermissions();
   const { state, discoveredPeers, setState, connectedPeer, addDiscoveredPeer, setConnectedPeer } =
-    useBLEStore();
+    useMultiplayerStore();
   const { captainName } = useCaptainStore();
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
   // Surface BLE disconnects (out-of-range, peer left) as an alert and reset.
   useEffect(() => {
-    bleService.setOnDisconnect(() => {
-      bleDebugLog.push('event', 'UI: connection lost → IDLE');
+    multiplayerService.setOnDisconnect(() => {
+      multiplayerDebugLog.push('event', 'UI: connection lost → IDLE');
       Alert.alert(t('ble.connectionLost'), t('ble.connectionLostMessage'));
       setConnectedPeer(null);
       setState('IDLE');
     });
-    return () => bleService.setOnDisconnect(null);
+    return () => multiplayerService.setOnDisconnect(null);
   }, [setState, setConnectedPeer, t]);
 
   // Host: HELLO handshake just completed (validated magic + protocol version).
   // The peer name comes from the joiner's HELLO payload, so we display the
   // real callsign instead of a generic placeholder.
   useEffect(() => {
-    bleService.setOnCentralConnected((peerName: string) => {
-      bleDebugLog.push('event', 'UI: host → LOBBY (HELLO accepted)', peerName);
+    multiplayerService.setOnCentralConnected((peerName: string) => {
+      multiplayerDebugLog.push('event', 'UI: host → LOBBY (HELLO accepted)', peerName);
       setConnectedPeer({
         id: 'remote',
         name: peerName || t('ble.opponent'),
@@ -47,7 +47,7 @@ export function BLEMultiplayerPanel({ onHostPress, onJoinPress }: BLEMultiplayer
       });
       setState('LOBBY');
     });
-    return () => bleService.setOnCentralConnected(null);
+    return () => multiplayerService.setOnCentralConnected(null);
   }, [setState, setConnectedPeer, t]);
 
   // Pulsing animation for "AWAITING CHALLENGER..."
@@ -73,36 +73,36 @@ export function BLEMultiplayerPanel({ onHostPress, onJoinPress }: BLEMultiplayer
   }, [state, pulseAnim]);
 
   const handleHostPress = useCallback(async () => {
-    bleDebugLog.push('event', 'UI: HOST pressed');
+    multiplayerDebugLog.push('event', 'UI: HOST pressed');
     const permitted = await requestPermissions();
-    bleDebugLog.push('info', `UI: permissions ${permitted ? 'granted' : 'denied'}`);
+    multiplayerDebugLog.push('info', `UI: permissions ${permitted ? 'granted' : 'denied'}`);
     if (permitted) {
       try {
         setState('HOST_ADVERTISING');
-        await bleService.startAdvertising(captainName);
+        await multiplayerService.startAdvertising(captainName);
         onHostPress?.();
       } catch (error) {
         console.error('[UI] Failed to start advertising:', error);
-        bleDebugLog.push('error', 'UI: host flow failed', String(error));
+        multiplayerDebugLog.push('error', 'UI: host flow failed', String(error));
         setState('IDLE');
       }
     }
   }, [requestPermissions, setState, captainName, onHostPress]);
 
   const handleJoinPress = useCallback(async () => {
-    bleDebugLog.push('event', 'UI: JOIN pressed');
+    multiplayerDebugLog.push('event', 'UI: JOIN pressed');
     const permitted = await requestPermissions();
-    bleDebugLog.push('info', `UI: permissions ${permitted ? 'granted' : 'denied'}`);
+    multiplayerDebugLog.push('info', `UI: permissions ${permitted ? 'granted' : 'denied'}`);
     if (permitted) {
       try {
         setState('SCANNING');
-        await bleService.startScanning((id: string, name: string) => {
+        await multiplayerService.startScanning((id: string, name: string) => {
           addDiscoveredPeer({ id, name });
         });
         onJoinPress?.();
       } catch (error) {
         console.error('[UI] Failed to start scanning:', error);
-        bleDebugLog.push('error', 'UI: join flow failed', String(error));
+        multiplayerDebugLog.push('error', 'UI: join flow failed', String(error));
         setState('IDLE');
       }
     }
@@ -110,14 +110,14 @@ export function BLEMultiplayerPanel({ onHostPress, onJoinPress }: BLEMultiplayer
 
   const handleConnectToDevice = useCallback(
     async (deviceId: string, deviceName: string) => {
-      bleDebugLog.push('event', 'UI: peer tapped → CONNECTING', deviceId);
+      multiplayerDebugLog.push('event', 'UI: peer tapped → CONNECTING', deviceId);
       try {
         setState('CONNECTING');
         setState('HANDSHAKING');
         // connect() now exchanges HELLO with the host before resolving.
         // The returned name comes from the host's HELLO payload — fall back
         // to the advertised name (from scan) if HELLO didn't carry one.
-        const peerName = await bleService.connect(deviceId, captainName);
+        const peerName = await multiplayerService.connect(deviceId, captainName);
         setConnectedPeer({
           id: deviceId,
           name: peerName || deviceName || t('ble.opponent'),
@@ -126,7 +126,7 @@ export function BLEMultiplayerPanel({ onHostPress, onJoinPress }: BLEMultiplayer
         setState('LOBBY');
       } catch (error) {
         console.error('[UI] Failed to connect:', error);
-        bleDebugLog.push('error', 'UI: connect flow failed', String(error));
+        multiplayerDebugLog.push('error', 'UI: connect flow failed', String(error));
         setState('SCANNING');
       }
     },
@@ -134,18 +134,18 @@ export function BLEMultiplayerPanel({ onHostPress, onJoinPress }: BLEMultiplayer
   );
 
   const handleCancel = useCallback(async () => {
-    bleDebugLog.push('event', `UI: CANCEL from ${state}`);
+    multiplayerDebugLog.push('event', `UI: CANCEL from ${state}`);
     try {
       if (state === 'HOST_ADVERTISING') {
-        await bleService.stopAdvertising();
+        await multiplayerService.stopAdvertising();
       } else if (state === 'SCANNING') {
-        await bleService.stopScanning();
+        await multiplayerService.stopScanning();
       } else if (state === 'LOBBY' && connectedPeer) {
-        await bleService.disconnect();
+        await multiplayerService.disconnect();
       }
     } catch (error) {
       console.error('[UI] Failed to cancel operation:', error);
-      bleDebugLog.push('error', 'UI: cancel failed', String(error));
+      multiplayerDebugLog.push('error', 'UI: cancel failed', String(error));
     }
     setState('IDLE');
   }, [state, connectedPeer, setState]);

@@ -140,9 +140,7 @@ class LanService {
 
     this.zeroconf.on('resolved', (service: Record<string, unknown>) => {
       const name = String(service.name ?? '');
-      const host = String(
-        (service.addresses as string[] | undefined)?.[0] ?? service.host ?? '',
-      );
+      const host = String((service.addresses as string[] | undefined)?.[0] ?? service.host ?? '');
       const port = Number(service.port ?? TCP_PORT);
       multiplayerDebugLog.push('event', 'mDNS resolved', `${name} @ ${host}:${port}`);
       this.resolvedPeers.set(name, { host, port });
@@ -186,13 +184,10 @@ class LanService {
     multiplayerDebugLog.push('event', 'LAN connect →', `${peer.host}:${peer.port}`);
 
     await new Promise<void>((resolve, reject) => {
-      this.socket = TcpSocket.createConnection(
-        { port: peer.port, host: peer.host },
-        () => {
-          multiplayerDebugLog.push('info', 'TCP connected');
-          resolve();
-        },
-      );
+      this.socket = TcpSocket.createConnection({ port: peer.port, host: peer.host }, () => {
+        multiplayerDebugLog.push('info', 'TCP connected');
+        resolve();
+      });
       (this.socket as { on(event: string, cb: (e: Error) => void): void }).on(
         'error',
         (err: Error) => {
@@ -435,7 +430,9 @@ class LanService {
     const queued = this.messageQueue;
     this.messageQueue = [];
     for (const msg of queued) {
-      this.sendMessage(msg).catch(e => multiplayerDebugLog.push('error', 'LAN flush failed', String(e)));
+      this.sendMessage(msg).catch(e =>
+        multiplayerDebugLog.push('error', 'LAN flush failed', String(e)),
+      );
     }
   }
 

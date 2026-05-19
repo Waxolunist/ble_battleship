@@ -7,7 +7,7 @@ import { BLEMultiplayerPanel } from '@/components/ble/BLEMultiplayerPanel';
 import { useGameStore } from '@/store/useGameStore';
 import { useCaptainStore } from '@/store/useCaptainStore';
 import { useStatsStore } from '@/store/useStatsStore';
-import { useBLEStore } from '@/store/useBLEStore';
+import { useMultiplayerStore } from '@/store/useMultiplayerStore';
 import { GameColors } from '@/constants/theme';
 import { getRankTitle, translateRankTitle } from '@/models/types';
 import {
@@ -29,7 +29,7 @@ export default function HomeScreen() {
   const router = useRouter();
   const resetGame = useGameStore(s => s.resetGame);
   const { captainName, setCaptainName, clearCaptainName } = useCaptainStore();
-  const { state: bleState, setMode } = useBLEStore();
+  const { state: bleState, setMode } = useMultiplayerStore();
   const [inputName, setInputName] = useState('');
   const inputRef = useRef<TextInput>(null);
   const { s, fs } = useResponsive();
@@ -51,7 +51,7 @@ export default function HomeScreen() {
   };
 
   const handleBattle = () => {
-    setMode(bleState === 'LOBBY' ? 'ble' : 'ai');
+    setMode(bleState === 'LOBBY' ? 'multiplayer' : 'ai');
     resetGame();
     router.push('/battle');
   };

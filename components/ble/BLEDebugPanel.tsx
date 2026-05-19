@@ -1,6 +1,10 @@
 import { DEV_SHOW_BLE_DEBUG } from '@/constants/dev';
 import { Fonts, GameColors } from '@/constants/theme';
-import { bleDebugLog, type BLEDebugEntry, type BLEDebugLevel } from '@/services/ble-debug-log';
+import {
+  multiplayerDebugLog,
+  type MultiplayerDebugEntry,
+  type MultiplayerDebugLevel,
+} from '@/services/multiplayer-debug-log';
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
@@ -12,12 +16,14 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
  * Tap the header to expand/collapse. Tap CLEAR to wipe the buffer.
  */
 export function BLEDebugPanel() {
-  const [entries, setEntries] = useState<BLEDebugEntry[]>(() => bleDebugLog.getAll());
+  const [entries, setEntries] = useState<MultiplayerDebugEntry[]>(() =>
+    multiplayerDebugLog.getAll(),
+  );
   const [collapsed, setCollapsed] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
 
   useEffect(() => {
-    return bleDebugLog.subscribe(setEntries);
+    return multiplayerDebugLog.subscribe(setEntries);
   }, []);
 
   useEffect(() => {
@@ -48,7 +54,7 @@ export function BLEDebugPanel() {
             hitSlop={6}
             onPress={e => {
               e.stopPropagation();
-              bleDebugLog.clear();
+              multiplayerDebugLog.clear();
             }}>
             <Text style={styles.clearText}>CLEAR</Text>
           </Pressable>
@@ -74,7 +80,7 @@ export function BLEDebugPanel() {
   );
 }
 
-function LogRow({ entry }: { entry: BLEDebugEntry }) {
+function LogRow({ entry }: { entry: MultiplayerDebugEntry }) {
   const time = formatTime(entry.ts);
   const tag = levelTag(entry.level);
   return (
@@ -93,8 +99,8 @@ function LogRow({ entry }: { entry: BLEDebugEntry }) {
   );
 }
 
-function countByLevel(entries: BLEDebugEntry[]): Record<BLEDebugLevel, number> {
-  const acc: Record<BLEDebugLevel, number> = {
+function countByLevel(entries: MultiplayerDebugEntry[]): Record<MultiplayerDebugLevel, number> {
+  const acc: Record<MultiplayerDebugLevel, number> = {
     info: 0,
     tx: 0,
     rx: 0,
@@ -106,7 +112,7 @@ function countByLevel(entries: BLEDebugEntry[]): Record<BLEDebugLevel, number> {
   return acc;
 }
 
-function levelTag(level: BLEDebugLevel): { label: string; color: string } {
+function levelTag(level: MultiplayerDebugLevel): { label: string; color: string } {
   switch (level) {
     case 'tx':
       return { label: 'TX', color: GameColors.gold };

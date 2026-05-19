@@ -141,10 +141,10 @@ The current implementation uses `munim-bluetooth` (BLE/GATT) for peer discovery 
 
 ### 5 — Store
 
-- [ ] Rename `store/useBLEStore.ts` → `store/useMultiplayerStore.ts`; update all imports
-- [ ] Rename the store hook export (`useBLEStore` → `useMultiplayerStore`) and the Zustand store name
-- [ ] Replace mode value `'ble'` with `'multiplayer'` throughout the store and all consumers
-- [ ] Add `connectionPath: 'lan' | 'nfc-webrtc' | null` field to store state, set by the multiplayer service when a path is chosen
+- [x] Rename `store/useBLEStore.ts` → `store/useMultiplayerStore.ts`; update all imports
+- [x] Rename the store hook export (`useBLEStore` → `useMultiplayerStore`) and the Zustand store name
+- [x] Replace mode value `'ble'` with `'multiplayer'` throughout the store and all consumers
+- [x] Add `connectionPath: 'lan' | 'nfc-webrtc' | null` field to store state, set by the multiplayer service when a path is chosen
 
 ---
 
