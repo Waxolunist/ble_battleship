@@ -36,7 +36,10 @@
       "Bash(node -e \"const p = require\\('./node_modules/eslint-config-expo/node_modules/eslint-plugin-import'\\); console.log\\(Object.keys\\(p.flatConfigs || {}\\)\\); const tc = p.flatConfigs && p.flatConfigs.typescript; console.log\\(JSON.stringify\\(tc && tc.settings, null, 2\\)\\)\")",
       "Bash(node -e \"const p = require\\('./node_modules/eslint-plugin-import'\\); console.log\\('version:', p && p.meta && p.meta.version\\); console.log\\(Object.keys\\(p.flatConfigs || {}\\)\\)\")",
       "Bash(node -e \"const p = require\\('./node_modules/eslint-config-expo/node_modules/eslint-plugin-import'\\); const tc = p.flatConfigs && p.flatConfigs.typescript; console.log\\(JSON.stringify\\(tc, null, 2\\)\\)\")",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(git commit -m ':*)",
+      "Bash(git reset:*)",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d.get\\('ble', {}\\), indent=2\\)\\)\")"
     ]
   }
 }

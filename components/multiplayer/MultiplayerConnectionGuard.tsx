@@ -1,5 +1,5 @@
-import { bleService } from '@/services/ble';
-import { useBLEStore } from '@/store/useBLEStore';
+import { multiplayerService } from '@/services/multiplayer';
+import { useMultiplayerStore } from '@/store/useMultiplayerStore';
 import { useGameStore } from '@/store/useGameStore';
 import { useRouter } from 'expo-router';
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
@@ -11,22 +11,22 @@ interface GuardContext {
   rematchPending: boolean;
 }
 
-const BLEGuardContext = createContext<GuardContext | null>(null);
+const MultiplayerGuardContext = createContext<GuardContext | null>(null);
 
-export function useBLEGuard(): GuardContext {
-  const ctx = useContext(BLEGuardContext);
-  if (!ctx) throw new Error('useBLEGuard must be used inside BLEConnectionGuard');
+export function useMultiplayerGuard(): GuardContext {
+  const ctx = useContext(MultiplayerGuardContext);
+  if (!ctx) throw new Error('useMultiplayerGuard must be used inside MultiplayerConnectionGuard');
   return ctx;
 }
 
-export function BLEConnectionGuard({ children }: { children: React.ReactNode }) {
+export function MultiplayerConnectionGuard({ children }: { children: React.ReactNode }) {
   const { t } = useTranslation('common');
   const router = useRouter();
-  const reset = useBLEStore(s => s.reset);
-  const setBLEState = useBLEStore(s => s.setState);
-  const setLocalFleetReady = useBLEStore(s => s.setLocalFleetReady);
-  const setRemoteFleetReady = useBLEStore(s => s.setRemoteFleetReady);
-  const setOpponentFleet = useBLEStore(s => s.setOpponentFleet);
+  const reset = useMultiplayerStore(s => s.reset);
+  const setState = useMultiplayerStore(s => s.setState);
+  const setLocalFleetReady = useMultiplayerStore(s => s.setLocalFleetReady);
+  const setRemoteFleetReady = useMultiplayerStore(s => s.setRemoteFleetReady);
+  const setOpponentFleet = useMultiplayerStore(s => s.setOpponentFleet);
   const resetGame = useGameStore(s => s.resetGame);
 
   const [rematchPending, setRematchPending] = useState(false);
@@ -40,30 +40,30 @@ export function BLEConnectionGuard({ children }: { children: React.ReactNode }) 
     localRequestedRef.current = false;
     setRematchPending(false);
     // Clear fleet state so prepareBattle starts fresh on the next round.
-    setBLEState('PLACEMENT');
+    setState('PLACEMENT');
     setLocalFleetReady(false);
     setRemoteFleetReady(false);
     setOpponentFleet(null);
     resetGame();
     router.replace('/battle');
-  }, [resetGame, router, setBLEState, setLocalFleetReady, setRemoteFleetReady, setOpponentFleet]);
+  }, [resetGame, router, setState, setLocalFleetReady, setRemoteFleetReady, setOpponentFleet]);
 
   // Disconnect / out-of-range: alert then home.
   useEffect(() => {
-    bleService.setOnDisconnect(() => {
+    multiplayerService.setOnDisconnect(() => {
       setRematchPending(false);
       peerRequestedRef.current = false;
       localRequestedRef.current = false;
-      Alert.alert(t('ble.connectionLost'), t('ble.connectionLostMessage'));
+      Alert.alert(t('multiplayer.connectionLost'), t('multiplayer.connectionLostMessage'));
       reset();
       router.replace('/');
     });
-    return () => bleService.setOnDisconnect(null);
+    return () => multiplayerService.setOnDisconnect(null);
   }, [t, reset, router]);
 
   // REMATCH from peer: if we already sent ours, kick off the new battle.
   useEffect(() => {
-    return bleService.onMessage(message => {
+    return multiplayerService.onMessage(message => {
       if (message.type !== 'REMATCH') return;
       peerRequestedRef.current = true;
       if (localRequestedRef.current) {
@@ -75,11 +75,9 @@ export function BLEConnectionGuard({ children }: { children: React.ReactNode }) 
   const requestRematch = useCallback(() => {
     localRequestedRef.current = true;
     setRematchPending(true);
-    bleService.sendMessage({ type: 'REMATCH' }).catch(err => {
+    multiplayerService.sendMessage({ type: 'REMATCH' }).catch(err => {
       // Clear pending so the UI doesn't stay stuck on the waiting overlay.
-      // A failure here usually precedes the disconnect path, which handles
-      // navigation; this just unwedges the local state in case it doesn't.
-      console.error('[BLEConnectionGuard] REMATCH send failed:', err);
+      console.error('[MultiplayerConnectionGuard] REMATCH send failed:', err);
       localRequestedRef.current = false;
       setRematchPending(false);
     });
@@ -90,8 +88,8 @@ export function BLEConnectionGuard({ children }: { children: React.ReactNode }) 
   }, [startNewBattle]);
 
   return (
-    <BLEGuardContext.Provider value={{ requestRematch, rematchPending }}>
+    <MultiplayerGuardContext.Provider value={{ requestRematch, rematchPending }}>
       {children}
-    </BLEGuardContext.Provider>
+    </MultiplayerGuardContext.Provider>
   );
 }

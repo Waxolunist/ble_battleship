@@ -1,19 +1,22 @@
 import { DragPreview } from '@/components/drag-preview';
 import { LABEL_SIZE } from '@/components/game-field';
-import { BLEConnectionGuard, useBLEGuard } from '@/components/ble/BLEConnectionGuard';
+import {
+  MultiplayerConnectionGuard,
+  useMultiplayerGuard,
+} from '@/components/multiplayer/MultiplayerConnectionGuard';
 import { BattleView } from '@/components/views/battle-view';
 import { PlacementView } from '@/components/views/placement-view';
 import { IMAGES, LOCALE_IMAGES } from '@/constants/assets';
 import { GameColors } from '@/constants/theme';
 import { useTranslation } from 'react-i18next';
 import { useAIOpponent } from '@/hooks/useAIOpponent';
-import { useBLEOpponent } from '@/hooks/useBLEOpponent';
+import { useMultiplayerOpponent } from '@/hooks/useMultiplayerOpponent';
 import { useBattleAnimations } from '@/hooks/useBattleAnimations';
 import { useCombat } from '@/hooks/useCombat';
 import { usePlacementGestures } from '@/hooks/usePlacementGestures';
 import type { Opponent } from '@/models/opponent';
 import { getRankTitle, translateRankTitle, SHIP_FLEET } from '@/models/types';
-import { useBLEStore } from '@/store/useBLEStore';
+import { useMultiplayerStore } from '@/store/useMultiplayerStore';
 import { useGameStore } from '@/store/useGameStore';
 import { useCaptainStore } from '@/store/useCaptainStore';
 import { useStatsStore, computeFieldShotStats, computeSunkShipTypes } from '@/store/useStatsStore';
@@ -33,11 +36,10 @@ import Animated, {
 
 const GRID_PADDING = 32;
 
-// The single mode === 'ble' decision in the runtime path. Each branch mounts a
-// sibling component so the opponent hook (BLE or AI) is called unconditionally.
+// Each branch mounts a sibling component so the opponent hook is called unconditionally.
 export default function BattleScreen() {
-  const mode = useBLEStore(s => s.mode);
-  return mode === 'ble' ? <BLEBattleScreen /> : <AIBattleScreen />;
+  const mode = useMultiplayerStore(s => s.mode);
+  return mode === 'multiplayer' ? <MultiplayerBattleScreen /> : <AIBattleScreen />;
 }
 
 function AIBattleScreen() {
@@ -45,33 +47,33 @@ function AIBattleScreen() {
   return <BattleScreenBody opponent={opponent} />;
 }
 
-function BLEBattleScreen() {
+function MultiplayerBattleScreen() {
   return (
-    <BLEConnectionGuard>
-      <BLEBattleContent />
-    </BLEConnectionGuard>
+    <MultiplayerConnectionGuard>
+      <MultiplayerBattleContent />
+    </MultiplayerConnectionGuard>
   );
 }
 
-function BLEBattleContent() {
+function MultiplayerBattleContent() {
   const { t } = useTranslation('common');
-  const opponent = useBLEOpponent();
-  const { requestRematch, rematchPending } = useBLEGuard();
-  const localFleetReady = useBLEStore(s => s.localFleetReady);
-  const remoteFleetReady = useBLEStore(s => s.remoteFleetReady);
+  const opponent = useMultiplayerOpponent();
+  const { requestRematch, rematchPending } = useMultiplayerGuard();
+  const localFleetReady = useMultiplayerStore(s => s.localFleetReady);
+  const remoteFleetReady = useMultiplayerStore(s => s.remoteFleetReady);
 
   return (
     <View style={StyleSheet.absoluteFill}>
       <BattleScreenBody opponent={opponent} onPlayAgain={requestRematch} />
       {localFleetReady && !remoteFleetReady && (
-        <BLEWaitingOverlay message={t('ble.waitingPlacement')} />
+        <MultiplayerWaitingOverlay message={t('multiplayer.waitingPlacement')} />
       )}
-      {rematchPending && <BLEWaitingOverlay message={t('ble.rematchRequested')} />}
+      {rematchPending && <MultiplayerWaitingOverlay message={t('multiplayer.rematchRequested')} />}
     </View>
   );
 }
 
-function BLEWaitingOverlay({ message }: { message: string }) {
+function MultiplayerWaitingOverlay({ message }: { message: string }) {
   const pulse = useSharedValue(1);
 
   useEffect(() => {
