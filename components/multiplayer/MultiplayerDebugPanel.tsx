@@ -1,4 +1,4 @@
-import { DEV_SHOW_BLE_DEBUG } from '@/constants/dev';
+import { DEV_SHOW_MULTIPLAYER_DEBUG } from '@/constants/dev';
 import { Fonts, GameColors } from '@/constants/theme';
 import {
   multiplayerDebugLog,
@@ -9,7 +9,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 /**
- * On-device multiplayer event log overlay. Dev-only (gated by DEV_SHOW_BLE_DEBUG).
+ * On-device multiplayer event log overlay. Dev-only (gated by DEV_SHOW_MULTIPLAYER_DEBUG).
  * Floats over the active screen so you can watch the host/join/connect/TX/RX
  * stream live, without tethering to Metro or logcat.
  *
@@ -34,7 +34,7 @@ export function MultiplayerDebugPanel() {
     }
   }, [entries, collapsed]);
 
-  if (!DEV_SHOW_BLE_DEBUG) return null;
+  if (!DEV_SHOW_MULTIPLAYER_DEBUG) return null;
 
   const counts = countByLevel(entries);
 

@@ -33,7 +33,8 @@
       "permissions": [
         "android.permission.NFC",
         "android.permission.ACCESS_WIFI_STATE",
-        "android.permission.CHANGE_WIFI_MULTICAST_STATE"
+        "android.permission.CHANGE_WIFI_MULTICAST_STATE",
+        "android.permission.INTERNET"
       ]
     },
     "web": {

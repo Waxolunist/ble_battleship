@@ -9,7 +9,7 @@ import { multiplayerDebugLog } from './multiplayer-debug-log';
 import * as nfc from './nfc';
 import { webrtcService } from './webrtc';
 
-// ─── Exported types (replace the old BLE types) ───────────────────────────
+// ─── Exported types ──────────────────────────────────────────────────────
 
 export type MultiplayerMessageType =
   | 'HELLO'
@@ -64,7 +64,7 @@ class MultiplayerService {
   private onDisconnectCb: (() => void) | null = null;
   private onCentralConnectedCb: ((peerName: string) => void) | null = null;
 
-  // ─── Public API (mirrors the old BLEService) ────────────────────────────
+  // ─── Public API ─────────────────────────────────────────────────────────
 
   setOnDisconnect(handler: (() => void) | null): void {
     this.onDisconnectCb = handler;
@@ -92,9 +92,11 @@ class MultiplayerService {
       await lanService.startAdvertising(captainName);
     } else {
       // NFC+WebRTC host flow — runs in the background; UI shows "TAP PHONES".
-      this._runNFCHostFlow(captainName).catch(err =>
-        multiplayerDebugLog.push('error', 'NFC host flow failed', String(err)),
-      );
+      this._runNFCHostFlow(captainName).catch(err => {
+        multiplayerDebugLog.push('error', 'NFC host flow failed', String(err));
+        this._reset();
+        this.onDisconnectCb?.();
+      });
     }
   }
 
@@ -302,6 +304,14 @@ class MultiplayerService {
 
   private _attachWebRTCHandlers(): void {
     this.webrtcRawUnsub?.();
+
+    webrtcService.setOnChannelClosed(() => {
+      if (!this.isConnected) return;
+      multiplayerDebugLog.push('event', 'WebRTC channel closed → disconnect');
+      this._reset();
+      this.onDisconnectCb?.();
+    });
+
     this.webrtcRawUnsub = webrtcService.onRawMessage(raw => {
       try {
         const message = JSON.parse(raw) as MultiplayerMessage;

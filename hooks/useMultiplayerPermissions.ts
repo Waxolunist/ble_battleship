@@ -73,10 +73,22 @@ export function useMultiplayerPermissions() {
         return false;
       }
     }
-    // Re-check after the user returns from settings.
-    await checkPermissions();
-    return status.permissionsGranted;
-  }, [checkPermissions, status.permissionsGranted]);
+
+    // Re-check NFC state and return the fresh result directly rather than
+    // reading from the (stale) React state closure.
+    if (Platform.OS === 'web') return false;
+    let nfcSupported = false;
+    let nfcEnabled = false;
+    try {
+      nfcSupported = await NfcManager.isSupported();
+      if (nfcSupported) nfcEnabled = await NfcManager.isEnabled();
+    } catch {
+      // ignore
+    }
+    const granted = Platform.OS === 'ios' ? nfcSupported : nfcEnabled;
+    setStatus({ available: true, permissionsGranted: granted, isChecking: false });
+    return granted;
+  }, []);
 
   return {
     ...status,

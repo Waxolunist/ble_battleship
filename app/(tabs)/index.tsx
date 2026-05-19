@@ -29,7 +29,7 @@ export default function HomeScreen() {
   const router = useRouter();
   const resetGame = useGameStore(s => s.resetGame);
   const { captainName, setCaptainName, clearCaptainName } = useCaptainStore();
-  const { state: bleState, setMode } = useMultiplayerStore();
+  const { state: mpState, setMode } = useMultiplayerStore();
   const [inputName, setInputName] = useState('');
   const inputRef = useRef<TextInput>(null);
   const { s, fs } = useResponsive();
@@ -51,7 +51,7 @@ export default function HomeScreen() {
   };
 
   const handleBattle = () => {
-    setMode(bleState === 'LOBBY' ? 'multiplayer' : 'ai');
+    setMode(mpState === 'LOBBY' ? 'multiplayer' : 'ai');
     resetGame();
     router.push('/battle');
   };

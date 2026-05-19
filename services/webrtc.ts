@@ -8,6 +8,7 @@ type RawMessageHandler = (data: string) => void;
 
 const DATA_CHANNEL_LABEL = 'game';
 const OPEN_TIMEOUT_MS = 30_000;
+const ICE_GATHERING_TIMEOUT_MS = 15_000;
 
 const ICE_CONFIG = {
   iceServers: [{ urls: STUN_SERVER_URL }],
@@ -30,6 +31,7 @@ class WebRTCService {
   private openResolve: (() => void) | null = null;
   private openReject: ((err: Error) => void) | null = null;
   private openTimer: ReturnType<typeof setTimeout> | null = null;
+  private onChannelClosedCb: (() => void) | null = null;
 
   /**
    * Host: create the peer connection, open the data channel, generate an SDP
@@ -134,6 +136,11 @@ class WebRTCService {
     this.dc.send(json);
   }
 
+  /** Register a callback for when the remote peer's data channel closes. */
+  setOnChannelClosed(handler: (() => void) | null): void {
+    this.onChannelClosedCb = handler;
+  }
+
   /** Subscribe to raw JSON strings arriving on the data channel. */
   onRawMessage(handler: RawMessageHandler): () => void {
     this.rawHandlers.push(handler);
@@ -150,6 +157,10 @@ class WebRTCService {
     this.openReject?.(new Error('WebRTC closed'));
     this.openResolve = null;
     this.openReject = null;
+    this.rawHandlers = [];
+    this.onChannelClosedCb = null;
+    // Closing the pc/dc tears down the underlying native resources; the
+    // event-target-shim listeners are GC'd with the JS objects.
     try {
       this.dc?.close();
     } catch {
@@ -203,11 +214,12 @@ class WebRTCService {
 
     et.addEventListener('close', () => {
       multiplayerDebugLog.push('event', 'WebRTC data channel closed');
+      this.onChannelClosedCb?.();
     });
   }
 
   private _waitForICEGathering(): Promise<void> {
-    return new Promise<void>(resolve => {
+    return new Promise<void>((resolve, reject) => {
       if (!this.pc) {
         resolve();
         return;
@@ -217,8 +229,14 @@ class WebRTCService {
         return;
       }
       const et = this.pc as unknown as EventTarget;
+      const timer = setTimeout(() => {
+        et.removeEventListener('icegatheringstatechange', handler);
+        multiplayerDebugLog.push('error', 'ICE gathering timeout');
+        reject(new Error('ICE gathering timeout'));
+      }, ICE_GATHERING_TIMEOUT_MS);
       const handler = () => {
         if (this.pc?.iceGatheringState === 'complete') {
+          clearTimeout(timer);
           et.removeEventListener('icegatheringstatechange', handler);
           resolve();
         }
