@@ -9,13 +9,13 @@ import { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 /**
- * On-device BLE event log overlay. Dev-only (gated by DEV_SHOW_BLE_DEBUG).
+ * On-device multiplayer event log overlay. Dev-only (gated by DEV_SHOW_BLE_DEBUG).
  * Floats over the active screen so you can watch the host/join/connect/TX/RX
  * stream live, without tethering to Metro or logcat.
  *
  * Tap the header to expand/collapse. Tap CLEAR to wipe the buffer.
  */
-export function BLEDebugPanel() {
+export function MultiplayerDebugPanel() {
   const [entries, setEntries] = useState<MultiplayerDebugEntry[]>(() =>
     multiplayerDebugLog.getAll(),
   );
@@ -42,7 +42,7 @@ export function BLEDebugPanel() {
     <View style={styles.container} pointerEvents="box-none">
       <View style={styles.panel}>
         <Pressable onPress={() => setCollapsed(c => !c)} style={styles.header}>
-          <Text style={styles.headerTitle}>BLE · {entries.length}</Text>
+          <Text style={styles.headerTitle}>MP · {entries.length}</Text>
           <Text style={styles.headerCounts}>
             <Text style={styles.txTag}>tx {counts.tx}</Text>
             <Text> </Text>

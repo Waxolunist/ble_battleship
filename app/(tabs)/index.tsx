@@ -3,7 +3,7 @@ import { useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FadeIn } from '@/components/fade-in';
-import { BLEMultiplayerPanel } from '@/components/ble/BLEMultiplayerPanel';
+import { MultiplayerPanel } from '@/components/multiplayer/MultiplayerPanel';
 import { useGameStore } from '@/store/useGameStore';
 import { useCaptainStore } from '@/store/useCaptainStore';
 import { useStatsStore } from '@/store/useStatsStore';
@@ -234,7 +234,7 @@ export default function HomeScreen() {
           )}
         </View>
       </KeyboardAvoidingView>
-      <BLEMultiplayerPanel />
+      <MultiplayerPanel />
       {confirmed && (
         <HapticPressable
           onPress={() => {

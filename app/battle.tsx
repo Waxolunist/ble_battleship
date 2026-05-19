@@ -1,6 +1,9 @@
 import { DragPreview } from '@/components/drag-preview';
 import { LABEL_SIZE } from '@/components/game-field';
-import { BLEConnectionGuard, useBLEGuard } from '@/components/ble/BLEConnectionGuard';
+import {
+  MultiplayerConnectionGuard,
+  useMultiplayerGuard,
+} from '@/components/multiplayer/MultiplayerConnectionGuard';
 import { BattleView } from '@/components/views/battle-view';
 import { PlacementView } from '@/components/views/placement-view';
 import { IMAGES, LOCALE_IMAGES } from '@/constants/assets';
@@ -33,11 +36,10 @@ import Animated, {
 
 const GRID_PADDING = 32;
 
-// The single mode === 'ble' decision in the runtime path. Each branch mounts a
-// sibling component so the opponent hook (BLE or AI) is called unconditionally.
+// Each branch mounts a sibling component so the opponent hook is called unconditionally.
 export default function BattleScreen() {
   const mode = useMultiplayerStore(s => s.mode);
-  return mode === 'multiplayer' ? <BLEBattleScreen /> : <AIBattleScreen />;
+  return mode === 'multiplayer' ? <MultiplayerBattleScreen /> : <AIBattleScreen />;
 }
 
 function AIBattleScreen() {
@@ -45,18 +47,18 @@ function AIBattleScreen() {
   return <BattleScreenBody opponent={opponent} />;
 }
 
-function BLEBattleScreen() {
+function MultiplayerBattleScreen() {
   return (
-    <BLEConnectionGuard>
-      <BLEBattleContent />
-    </BLEConnectionGuard>
+    <MultiplayerConnectionGuard>
+      <MultiplayerBattleContent />
+    </MultiplayerConnectionGuard>
   );
 }
 
-function BLEBattleContent() {
+function MultiplayerBattleContent() {
   const { t } = useTranslation('common');
   const opponent = useMultiplayerOpponent();
-  const { requestRematch, rematchPending } = useBLEGuard();
+  const { requestRematch, rematchPending } = useMultiplayerGuard();
   const localFleetReady = useMultiplayerStore(s => s.localFleetReady);
   const remoteFleetReady = useMultiplayerStore(s => s.remoteFleetReady);
 
@@ -64,14 +66,14 @@ function BLEBattleContent() {
     <View style={StyleSheet.absoluteFill}>
       <BattleScreenBody opponent={opponent} onPlayAgain={requestRematch} />
       {localFleetReady && !remoteFleetReady && (
-        <BLEWaitingOverlay message={t('ble.waitingPlacement')} />
+        <MultiplayerWaitingOverlay message={t('ble.waitingPlacement')} />
       )}
-      {rematchPending && <BLEWaitingOverlay message={t('ble.rematchRequested')} />}
+      {rematchPending && <MultiplayerWaitingOverlay message={t('ble.rematchRequested')} />}
     </View>
   );
 }
 
-function BLEWaitingOverlay({ message }: { message: string }) {
+function MultiplayerWaitingOverlay({ message }: { message: string }) {
   const pulse = useSharedValue(1);
 
   useEffect(() => {

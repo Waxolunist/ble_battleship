@@ -4,18 +4,22 @@ import { useMultiplayerPermissions } from '@/hooks/useMultiplayerPermissions';
 import { useMultiplayerStore } from '@/store/useMultiplayerStore';
 import { useCaptainStore } from '@/store/useCaptainStore';
 import { useTranslation } from 'react-i18next';
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import { Alert, Animated, StyleSheet, Text, View } from 'react-native';
 import { PlayerListItem } from './PlayerListItem';
-import { multiplayerService } from '@/services/multiplayer';
+import { multiplayerService, NFC_PEER_ID } from '@/services/multiplayer';
 import { multiplayerDebugLog } from '@/services/multiplayer-debug-log';
+import { getNetworkPath, type NetworkPath } from '@/services/network-detector';
 
-interface BLEMultiplayerPanelProps {
+// How long to scan on LAN before falling back to the NFC path (Scenario 3).
+const LAN_SCAN_FALLBACK_MS = 8_000;
+
+interface MultiplayerPanelProps {
   onHostPress?: () => void;
   onJoinPress?: () => void;
 }
 
-export function BLEMultiplayerPanel({ onHostPress, onJoinPress }: BLEMultiplayerPanelProps) {
+export function MultiplayerPanel({ onHostPress, onJoinPress }: MultiplayerPanelProps) {
   const { t } = useTranslation('common');
   const { available, isChecking, requestPermissions } = useMultiplayerPermissions();
   const { state, discoveredPeers, setState, connectedPeer, addDiscoveredPeer, setConnectedPeer } =
@@ -23,7 +27,17 @@ export function BLEMultiplayerPanel({ onHostPress, onJoinPress }: BLEMultiplayer
   const { captainName } = useCaptainStore();
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
-  // Surface BLE disconnects (out-of-range, peer left) as an alert and reset.
+  const [networkPath, setNetworkPath] = useState<NetworkPath | null>(null);
+
+  // Detect the preferred path once on mount so the UI can show the right screen
+  // before the user presses HOST or JOIN.
+  useEffect(() => {
+    getNetworkPath()
+      .then(setNetworkPath)
+      .catch(() => setNetworkPath('nfc-webrtc'));
+  }, []);
+
+  // Surface disconnects as an alert and reset.
   useEffect(() => {
     multiplayerService.setOnDisconnect(() => {
       multiplayerDebugLog.push('event', 'UI: connection lost → IDLE');
@@ -34,9 +48,7 @@ export function BLEMultiplayerPanel({ onHostPress, onJoinPress }: BLEMultiplayer
     return () => multiplayerService.setOnDisconnect(null);
   }, [setState, setConnectedPeer, t]);
 
-  // Host: HELLO handshake just completed (validated magic + protocol version).
-  // The peer name comes from the joiner's HELLO payload, so we display the
-  // real callsign instead of a generic placeholder.
+  // Host: HELLO handshake completed — peer name comes from the HELLO payload.
   useEffect(() => {
     multiplayerService.setOnCentralConnected((peerName: string) => {
       multiplayerDebugLog.push('event', 'UI: host → LOBBY (HELLO accepted)', peerName);
@@ -71,6 +83,64 @@ export function BLEMultiplayerPanel({ onHostPress, onJoinPress }: BLEMultiplayer
       return () => pulse.stop();
     }
   }, [state, pulseAnim]);
+
+  // Scenario 3 — LAN scan fallback: if we've been scanning on LAN with no
+  // peers discovered for LAN_SCAN_FALLBACK_MS, stop the LAN scan and restart
+  // on the NFC+WebRTC path so the players can tap phones together instead.
+  const discoveredPeersCount = discoveredPeers.length;
+  useEffect(() => {
+    if (state !== 'SCANNING' || networkPath !== 'lan' || discoveredPeersCount > 0) return;
+
+    const timer = setTimeout(() => {
+      void (async () => {
+        multiplayerDebugLog.push('event', 'UI: LAN scan timeout → NFC fallback');
+        await multiplayerService.stopScanning();
+        setNetworkPath('nfc-webrtc');
+        try {
+          await multiplayerService.startScanning(
+            (id: string, name: string) => addDiscoveredPeer({ id, name }),
+            { pathOverride: 'nfc-webrtc' },
+          );
+        } catch (err) {
+          multiplayerDebugLog.push('error', 'UI: NFC fallback scan failed', String(err));
+          setState('IDLE');
+        }
+      })();
+    }, LAN_SCAN_FALLBACK_MS);
+
+    return () => clearTimeout(timer);
+  }, [state, networkPath, discoveredPeersCount, addDiscoveredPeer, setState]);
+
+  // NFC joiner — after tap 1 the service calls onDeviceFound(NFC_PEER_ID, '').
+  // Auto-connect immediately so the user only needs to tap phones twice total.
+  const handleConnectToDevice = useCallback(
+    async (deviceId: string, deviceName: string) => {
+      multiplayerDebugLog.push('event', 'UI: peer tapped → CONNECTING', deviceId);
+      try {
+        setState('CONNECTING');
+        setState('HANDSHAKING');
+        const peerName = await multiplayerService.connect(deviceId, captainName);
+        setConnectedPeer({
+          id: deviceId,
+          name: peerName || deviceName || t('ble.opponent'),
+          version: '1',
+        });
+        setState('LOBBY');
+      } catch (error) {
+        console.error('[UI] Failed to connect:', error);
+        multiplayerDebugLog.push('error', 'UI: connect flow failed', String(error));
+        setState('SCANNING');
+      }
+    },
+    [setState, setConnectedPeer, captainName, t],
+  );
+
+  useEffect(() => {
+    if (networkPath !== 'nfc-webrtc') return;
+    const nfcPeer = discoveredPeers.find(p => p.id === NFC_PEER_ID);
+    if (!nfcPeer || state !== 'SCANNING') return;
+    handleConnectToDevice(NFC_PEER_ID, '');
+  }, [discoveredPeers, networkPath, state, handleConnectToDevice]);
 
   const handleHostPress = useCallback(async () => {
     multiplayerDebugLog.push('event', 'UI: HOST pressed');
@@ -107,31 +177,6 @@ export function BLEMultiplayerPanel({ onHostPress, onJoinPress }: BLEMultiplayer
       }
     }
   }, [requestPermissions, setState, addDiscoveredPeer, onJoinPress]);
-
-  const handleConnectToDevice = useCallback(
-    async (deviceId: string, deviceName: string) => {
-      multiplayerDebugLog.push('event', 'UI: peer tapped → CONNECTING', deviceId);
-      try {
-        setState('CONNECTING');
-        setState('HANDSHAKING');
-        // connect() now exchanges HELLO with the host before resolving.
-        // The returned name comes from the host's HELLO payload — fall back
-        // to the advertised name (from scan) if HELLO didn't carry one.
-        const peerName = await multiplayerService.connect(deviceId, captainName);
-        setConnectedPeer({
-          id: deviceId,
-          name: peerName || deviceName || t('ble.opponent'),
-          version: '1',
-        });
-        setState('LOBBY');
-      } catch (error) {
-        console.error('[UI] Failed to connect:', error);
-        multiplayerDebugLog.push('error', 'UI: connect flow failed', String(error));
-        setState('SCANNING');
-      }
-    },
-    [setState, setConnectedPeer, captainName, t],
-  );
 
   const handleCancel = useCallback(async () => {
     multiplayerDebugLog.push('event', `UI: CANCEL from ${state}`);
@@ -186,17 +231,33 @@ export function BLEMultiplayerPanel({ onHostPress, onJoinPress }: BLEMultiplayer
     );
   }
 
+  // NFC path — HOST or SCAN: show "TAP PHONES TOGETHER" screen.
+  if ((state === 'HOST_ADVERTISING' || state === 'SCANNING') && networkPath === 'nfc-webrtc') {
+    return (
+      <View style={styles.panel}>
+        <View style={styles.nfcContainer}>
+          <Animated.Text style={[styles.nfcPrompt, { opacity: pulseAnim }]}>
+            {t('ble.tapPhonesPrompt')}
+          </Animated.Text>
+          <Text style={styles.nfcHint}>{t('ble.tapPhonesHint')}</Text>
+          <View style={styles.cancelRow}>
+            <HapticPressable
+              onPress={handleCancel}
+              style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}>
+              <Text style={styles.buttonText}>{t('ble.cancel')}</Text>
+            </HapticPressable>
+          </View>
+        </View>
+      </View>
+    );
+  }
+
+  // LAN path — HOST: show "WAITING FOR PLAYERS…" with the game room name.
   if (state === 'HOST_ADVERTISING') {
     return (
       <View style={styles.panel}>
         <View style={styles.advertisingContainer}>
-          <Animated.Text
-            style={[
-              styles.advertisingTitle,
-              {
-                opacity: pulseAnim,
-              },
-            ]}>
+          <Animated.Text style={[styles.advertisingTitle, { opacity: pulseAnim }]}>
             {t('ble.awaitingChallenger')}
           </Animated.Text>
           <Text style={styles.callsignLabel}>
@@ -214,6 +275,7 @@ export function BLEMultiplayerPanel({ onHostPress, onJoinPress }: BLEMultiplayer
     );
   }
 
+  // LAN path — SCAN: show scrollable list of discovered nearby games.
   if (state === 'SCANNING') {
     return (
       <View style={styles.panel}>
@@ -227,9 +289,7 @@ export function BLEMultiplayerPanel({ onHostPress, onJoinPress }: BLEMultiplayer
                 <PlayerListItem
                   key={peer.id}
                   name={peer.name}
-                  onPress={() => {
-                    handleConnectToDevice(peer.id, peer.name);
-                  }}
+                  onPress={() => handleConnectToDevice(peer.id, peer.name)}
                 />
               ))
             )}
@@ -331,6 +391,29 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '900',
     letterSpacing: 3,
+  },
+  nfcContainer: {
+    borderWidth: 1,
+    borderColor: GameColors.blueBorder,
+    borderRadius: 4,
+    backgroundColor: GameColors.navyBg,
+    paddingHorizontal: 12,
+    paddingVertical: 16,
+    gap: 8,
+    alignItems: 'center',
+  },
+  nfcPrompt: {
+    color: GameColors.gold,
+    fontSize: 16,
+    fontFamily: 'BlackOpsOne',
+    letterSpacing: 3,
+    textAlign: 'center',
+  },
+  nfcHint: {
+    color: GameColors.labelDim,
+    fontSize: 12,
+    fontFamily: Fonts.rounded,
+    textAlign: 'center',
   },
   advertisingContainer: {
     borderWidth: 1,

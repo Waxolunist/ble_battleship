@@ -119,9 +119,12 @@ class MultiplayerService {
    *               then call connect(NFC_PEER_ID, captainName) to write the
    *               answer and complete the WebRTC handshake.
    */
-  async startScanning(onDeviceFound: (id: string, name: string) => void): Promise<void> {
+  async startScanning(
+    onDeviceFound: (id: string, name: string) => void,
+    opts?: { pathOverride?: NetworkPath },
+  ): Promise<void> {
     this.role = 'joiner';
-    this.path = await getNetworkPath();
+    this.path = opts?.pathOverride ?? (await getNetworkPath());
     multiplayerDebugLog.push('event', 'startScanning →', `path=${this.path}`);
 
     if (this.path === 'lan') {

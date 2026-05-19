@@ -56,6 +56,8 @@
     "connecting": "CONNECTING...",
     "connected": "CONNECTED",
     "waitingPlacement": "WAITING FOR OPPONENT\nTO FINISH PLACEMENT...",
-    "rematchRequested": "REMATCH REQUESTED\nAWAITING OPPONENT..."
+    "rematchRequested": "REMATCH REQUESTED\nAWAITING OPPONENT...",
+    "tapPhonesPrompt": "TAP PHONES TOGETHER",
+    "tapPhonesHint": "Hold phones back-to-back to connect"
   }
 }
