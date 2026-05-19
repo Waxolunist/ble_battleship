@@ -130,12 +130,12 @@ The current implementation uses `munim-bluetooth` (BLE/GATT) for peer discovery 
 
 ### 4 — Services
 
-- [ ] Delete `services/ble.ts` and `services/ble-debug-log.ts`
-- [ ] Create `services/network-detector.ts` — wraps `@react-native-community/netinfo`; exports `getNetworkPath()` → `'lan' | 'nfc-webrtc'` and an `onNetworkChange` subscriber
-- [ ] Create `services/lan.ts` — mDNS advertising and discovery via `react-native-zeroconf`; TCP socket creation and message framing via `react-native-tcp-socket`; exposes the same public surface as the old `ble.ts` (startAdvertising / stopAdvertising / startScanning / stopScanning / connect / disconnect / sendMessage / onMessage)
-- [ ] Create `services/nfc.ts` — writes a compressed (pako) WebRTC offer/answer to the NFC tag on the first tap and reads the peer's payload on the second tap; exposes `writeOffer(sdp)`, `readAnswer()` → Promise, `readOffer()` → Promise, `writeAnswer(sdp)`
-- [ ] Create `services/webrtc.ts` — creates a `RTCPeerConnection` with the STUN config; exposes `createOffer()`, `setRemoteOffer(sdp)`, `createAnswer()`, `setRemoteAnswer(sdp)`, `sendMessage()`, `onMessage()`; uses the data-channel for game messages
-- [ ] Create `services/multiplayer.ts` — unified transport façade; on `startAdvertising()` / `startScanning()` calls `network-detector` to pick a path, then delegates to `lan.ts` (WiFi) or `nfc.ts` + `webrtc.ts` (cellular); all callers only touch this file
+- [x] Delete `services/ble.ts` and `services/ble-debug-log.ts`
+- [x] Create `services/network-detector.ts` — wraps `@react-native-community/netinfo`; exports `getNetworkPath()` → `'lan' | 'nfc-webrtc'` and an `onNetworkChange` subscriber
+- [x] Create `services/lan.ts` — mDNS advertising and discovery via `react-native-zeroconf`; TCP socket creation and message framing via `react-native-tcp-socket`; exposes the same public surface as the old `ble.ts` (startAdvertising / stopAdvertising / startScanning / stopScanning / connect / disconnect / sendMessage / onMessage)
+- [x] Create `services/nfc.ts` — writes a compressed (pako) WebRTC offer/answer to the NFC tag on the first tap and reads the peer's payload on the second tap; exposes `writeOffer(sdp)`, `readAnswer()` → Promise, `readOffer()` → Promise, `writeAnswer(sdp)`
+- [x] Create `services/webrtc.ts` — creates a `RTCPeerConnection` with the STUN config; exposes `createOffer()`, `setRemoteOffer(sdp)`, `createAnswer()`, `setRemoteAnswer(sdp)`, `sendRaw()`, `onRawMessage()`; uses the data-channel for game messages
+- [x] Create `services/multiplayer.ts` — unified transport façade; on `startAdvertising()` / `startScanning()` calls `network-detector` to pick a path, then delegates to `lan.ts` (WiFi) or `nfc.ts` + `webrtc.ts` (cellular); all callers only touch this file
 
 ---
 

@@ -1,33 +1,33 @@
 /**
- * In-app BLE event log. The radio layer (services/ble.ts) and the UI layer
- * (BLEMultiplayerPanel) both push entries here; the debug overlay subscribes
- * and renders them. Lets us watch advertising/scan/connect/TX/RX on a single
- * device without USB-tailing logcat or Metro.
+ * In-app multiplayer event log. Transport services and the UI layer both push
+ * entries here; the debug overlay subscribes and renders them. Lets us watch
+ * advertising/scan/connect/TX/RX on a single device without USB-tailing logcat
+ * or Metro.
  */
 
-export type BLEDebugLevel = 'info' | 'tx' | 'rx' | 'event' | 'warn' | 'error';
+export type MultiplayerDebugLevel = 'info' | 'tx' | 'rx' | 'event' | 'warn' | 'error';
 
-export interface BLEDebugEntry {
+export interface MultiplayerDebugEntry {
   id: number;
   ts: number;
-  level: BLEDebugLevel;
+  level: MultiplayerDebugLevel;
   event: string;
   detail?: string;
 }
 
 const MAX_ENTRIES = 200;
 
-type Listener = (entries: BLEDebugEntry[]) => void;
+type Listener = (entries: MultiplayerDebugEntry[]) => void;
 
-class BLEDebugLog {
-  private entries: BLEDebugEntry[] = [];
+class MultiplayerDebugLog {
+  private entries: MultiplayerDebugEntry[] = [];
   private listeners: Set<Listener> = new Set();
   private nextId = 1;
 
-  push(level: BLEDebugLevel, event: string, detail?: string | object): void {
+  push(level: MultiplayerDebugLevel, event: string, detail?: string | object): void {
     const detailStr =
       typeof detail === 'object' && detail !== null ? this.safeStringify(detail) : detail;
-    const entry: BLEDebugEntry = {
+    const entry: MultiplayerDebugEntry = {
       id: this.nextId++,
       ts: Date.now(),
       level,
@@ -43,7 +43,7 @@ class BLEDebugLog {
     this.emit();
   }
 
-  getAll(): BLEDebugEntry[] {
+  getAll(): MultiplayerDebugEntry[] {
     return this.entries;
   }
 
@@ -68,4 +68,4 @@ class BLEDebugLog {
   }
 }
 
-export const bleDebugLog = new BLEDebugLog();
+export const multiplayerDebugLog = new MultiplayerDebugLog();
