@@ -1,6 +1,6 @@
 import { HapticPressable } from '@/components/haptic-pressable';
 import { Fonts, GameColors } from '@/constants/theme';
-import { useBLEPermissions } from '@/hooks/useBLEPermissions';
+import { useMultiplayerPermissions } from '@/hooks/useMultiplayerPermissions';
 import { useMultiplayerStore } from '@/store/useMultiplayerStore';
 import { useCaptainStore } from '@/store/useCaptainStore';
 import { useTranslation } from 'react-i18next';
@@ -17,7 +17,7 @@ interface BLEMultiplayerPanelProps {
 
 export function BLEMultiplayerPanel({ onHostPress, onJoinPress }: BLEMultiplayerPanelProps) {
   const { t } = useTranslation('common');
-  const { available, isChecking, requestPermissions } = useBLEPermissions();
+  const { available, isChecking, requestPermissions } = useMultiplayerPermissions();
   const { state, discoveredPeers, setState, connectedPeer, addDiscoveredPeer, setConnectedPeer } =
     useMultiplayerStore();
   const { captainName } = useCaptainStore();
