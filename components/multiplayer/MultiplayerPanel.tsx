@@ -41,7 +41,7 @@ export function MultiplayerPanel({ onHostPress, onJoinPress }: MultiplayerPanelP
   useEffect(() => {
     multiplayerService.setOnDisconnect(() => {
       multiplayerDebugLog.push('event', 'UI: connection lost → IDLE');
-      Alert.alert(t('ble.connectionLost'), t('ble.connectionLostMessage'));
+      Alert.alert(t('multiplayer.connectionLost'), t('multiplayer.connectionLostMessage'));
       setConnectedPeer(null);
       setState('IDLE');
     });
@@ -54,7 +54,7 @@ export function MultiplayerPanel({ onHostPress, onJoinPress }: MultiplayerPanelP
       multiplayerDebugLog.push('event', 'UI: host → LOBBY (HELLO accepted)', peerName);
       setConnectedPeer({
         id: 'remote',
-        name: peerName || t('ble.opponent'),
+        name: peerName || t('multiplayer.opponent'),
         version: '1',
       });
       setState('LOBBY');
@@ -122,7 +122,7 @@ export function MultiplayerPanel({ onHostPress, onJoinPress }: MultiplayerPanelP
         const peerName = await multiplayerService.connect(deviceId, captainName);
         setConnectedPeer({
           id: deviceId,
-          name: peerName || deviceName || t('ble.opponent'),
+          name: peerName || deviceName || t('multiplayer.opponent'),
           version: '1',
         });
         setState('LOBBY');
@@ -213,7 +213,7 @@ export function MultiplayerPanel({ onHostPress, onJoinPress }: MultiplayerPanelP
                 pressed && styles.buttonPressed,
                 isChecking && styles.buttonDisabled,
               ]}>
-              <Text style={styles.buttonText}>{t('ble.host')}</Text>
+              <Text style={styles.buttonText}>{t('multiplayer.host')}</Text>
             </HapticPressable>
             <HapticPressable
               disabled={isChecking}
@@ -223,7 +223,7 @@ export function MultiplayerPanel({ onHostPress, onJoinPress }: MultiplayerPanelP
                 pressed && styles.buttonPressed,
                 isChecking && styles.buttonDisabled,
               ]}>
-              <Text style={styles.buttonText}>{t('ble.join')}</Text>
+              <Text style={styles.buttonText}>{t('multiplayer.join')}</Text>
             </HapticPressable>
           </View>
         </View>
@@ -237,14 +237,14 @@ export function MultiplayerPanel({ onHostPress, onJoinPress }: MultiplayerPanelP
       <View style={styles.panel}>
         <View style={styles.nfcContainer}>
           <Animated.Text style={[styles.nfcPrompt, { opacity: pulseAnim }]}>
-            {t('ble.tapPhonesPrompt')}
+            {t('multiplayer.tapPhonesPrompt')}
           </Animated.Text>
-          <Text style={styles.nfcHint}>{t('ble.tapPhonesHint')}</Text>
+          <Text style={styles.nfcHint}>{t('multiplayer.tapPhonesHint')}</Text>
           <View style={styles.cancelRow}>
             <HapticPressable
               onPress={handleCancel}
               style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}>
-              <Text style={styles.buttonText}>{t('ble.cancel')}</Text>
+              <Text style={styles.buttonText}>{t('multiplayer.cancel')}</Text>
             </HapticPressable>
           </View>
         </View>
@@ -258,16 +258,16 @@ export function MultiplayerPanel({ onHostPress, onJoinPress }: MultiplayerPanelP
       <View style={styles.panel}>
         <View style={styles.advertisingContainer}>
           <Animated.Text style={[styles.advertisingTitle, { opacity: pulseAnim }]}>
-            {t('ble.awaitingChallenger')}
+            {t('multiplayer.awaitingChallenger')}
           </Animated.Text>
           <Text style={styles.callsignLabel}>
-            {t('ble.yourCallsign')} {captainName}
+            {t('multiplayer.yourCallsign')} {captainName}
           </Text>
           <View style={styles.cancelRow}>
             <HapticPressable
               onPress={handleCancel}
               style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}>
-              <Text style={styles.buttonText}>{t('ble.cancel')}</Text>
+              <Text style={styles.buttonText}>{t('multiplayer.cancel')}</Text>
             </HapticPressable>
           </View>
         </View>
@@ -280,10 +280,10 @@ export function MultiplayerPanel({ onHostPress, onJoinPress }: MultiplayerPanelP
     return (
       <View style={styles.panel}>
         <View style={styles.scanningContainer}>
-          <Text style={styles.scanningTitle}>{t('ble.scanning')}</Text>
+          <Text style={styles.scanningTitle}>{t('multiplayer.scanning')}</Text>
           <View style={styles.peerList}>
             {discoveredPeers.length === 0 ? (
-              <Text style={styles.nopeersText}>{t('ble.noDevicesFound')}</Text>
+              <Text style={styles.nopeersText}>{t('multiplayer.noDevicesFound')}</Text>
             ) : (
               discoveredPeers.map(peer => (
                 <PlayerListItem
@@ -298,7 +298,7 @@ export function MultiplayerPanel({ onHostPress, onJoinPress }: MultiplayerPanelP
             <HapticPressable
               onPress={handleCancel}
               style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}>
-              <Text style={styles.buttonText}>{t('ble.cancel')}</Text>
+              <Text style={styles.buttonText}>{t('multiplayer.cancel')}</Text>
             </HapticPressable>
           </View>
         </View>
@@ -310,12 +310,12 @@ export function MultiplayerPanel({ onHostPress, onJoinPress }: MultiplayerPanelP
     return (
       <View style={styles.panel}>
         <View style={styles.handshakingContainer}>
-          <Text style={styles.handshakingTitle}>{t('ble.connecting')}</Text>
+          <Text style={styles.handshakingTitle}>{t('multiplayer.connecting')}</Text>
           <View style={styles.cancelRow}>
             <HapticPressable
               onPress={handleCancel}
               style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}>
-              <Text style={styles.buttonText}>{t('ble.cancel')}</Text>
+              <Text style={styles.buttonText}>{t('multiplayer.cancel')}</Text>
             </HapticPressable>
           </View>
         </View>
@@ -330,7 +330,7 @@ export function MultiplayerPanel({ onHostPress, onJoinPress }: MultiplayerPanelP
           <View style={styles.lobbyRow}>
             <Text style={styles.checkmark}>✓</Text>
             <Text style={styles.opponentName}>{connectedPeer.name}</Text>
-            <Text style={styles.statusText}>— {t('ble.connected')}</Text>
+            <Text style={styles.statusText}>— {t('multiplayer.connected')}</Text>
           </View>
         </View>
       </View>

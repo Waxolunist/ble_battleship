@@ -150,49 +150,50 @@ The current implementation uses `munim-bluetooth` (BLE/GATT) for peer discovery 
 
 ### 6 — Permissions hook
 
-- [ ] Delete `hooks/useBLEPermissions.ts`
-- [ ] Create `hooks/useMultiplayerPermissions.ts` — requests local-network permission (iOS prompt) and NFC permission; returns `{ available, permissionsGranted, requestPermissions }`
+- [x] Delete `hooks/useBLEPermissions.ts`
+- [x] Create `hooks/useMultiplayerPermissions.ts` — requests local-network permission (iOS prompt) and NFC permission; returns `{ available, permissionsGranted, requestPermissions }`
 
 ---
 
 ### 7 — Opponent hook
 
-- [ ] Rename `hooks/useBLEOpponent.ts` → `hooks/useMultiplayerOpponent.ts`; update all imports
-- [ ] Replace all `bleService` references with `multiplayerService` (from `services/multiplayer.ts`)
-- [ ] Replace all `useBLEStore` references with `useMultiplayerStore`
+- [x] Rename `hooks/useBLEOpponent.ts` → `hooks/useMultiplayerOpponent.ts`; update all imports
+- [x] Replace all `bleService` references with `multiplayerService` (from `services/multiplayer.ts`)
+- [x] Replace all `useBLEStore` references with `useMultiplayerStore`
 
 ---
 
 ### 8 — UI components
 
-- [ ] Rename `components/ble/` directory → `components/multiplayer/`
-- [ ] Rename `BLEMultiplayerPanel.tsx` → `MultiplayerPanel.tsx`; update all imports
-  - [ ] On mount, call `network-detector` and store the detected path in local state
-  - [ ] **WiFi / HOST state** — show "WAITING FOR PLAYERS…" with the game room name; no NFC prompt
-  - [ ] **WiFi / SCAN state** — show scrollable list of discovered nearby games (reuse `PlayerListItem`)
-  - [ ] **Cellular / HOST or JOIN state** — show "TAP PHONES TOGETHER" screen; arm NFC via `nfc.ts`
-  - [ ] **Scenario 3 fallback** — if WiFi scan finds nothing after a timeout, transition to the NFC screen automatically
-- [ ] Rename `BLEConnectionGuard.tsx` → `MultiplayerConnectionGuard.tsx`; update all imports and internal `useBLEStore` / `bleService` references
-- [ ] Rename `BLEDebugPanel.tsx` → `MultiplayerDebugPanel.tsx`; wire to the new multiplayer service log
-- [ ] Keep `PlayerListItem.tsx` as-is (used for the LAN game list)
+- [x] Rename `components/ble/` directory → `components/multiplayer/`
+- [x] Rename `BLEMultiplayerPanel.tsx` → `MultiplayerPanel.tsx`; update all imports
+  - [x] On mount, call `network-detector` and store the detected path in local state
+  - [x] **WiFi / HOST state** — show "WAITING FOR PLAYERS…" with the game room name; no NFC prompt
+  - [x] **WiFi / SCAN state** — show scrollable list of discovered nearby games (reuse `PlayerListItem`)
+  - [x] **Cellular / HOST or JOIN state** — show "TAP PHONES TOGETHER" screen; arm NFC via `nfc.ts`
+  - [x] **Scenario 3 fallback** — if WiFi scan finds nothing after a timeout, transition to the NFC screen automatically
+- [x] Rename `BLEConnectionGuard.tsx` → `MultiplayerConnectionGuard.tsx`; update all imports and internal `useBLEStore` / `bleService` references
+- [x] Rename `BLEDebugPanel.tsx` → `MultiplayerDebugPanel.tsx`; wire to the new multiplayer service log
+- [x] Keep `PlayerListItem.tsx` as-is (used for the LAN game list)
 
 ---
 
 ### 9 — Screen wiring
 
-- [ ] In `app/(tabs)/index.tsx` — replace `<BLEMultiplayerPanel>` with `<MultiplayerPanel>` and update the `bleState === 'LOBBY'` / `mode: 'ble'` guards to use the renamed store and mode value
-- [ ] In `app/battle.tsx` — replace `mode === 'ble'` checks with `mode === 'multiplayer'`; replace `<BLEConnectionGuard>` / `<BLEBattleContent>` with renamed counterparts; replace `useBLEOpponent` with `useMultiplayerOpponent`
+- [x] In `app/(tabs)/index.tsx` — replace `<BLEMultiplayerPanel>` with `<MultiplayerPanel>` and update the `bleState === 'LOBBY'` / `mode: 'ble'` guards to use the renamed store and mode value
+- [x] In `app/battle.tsx` — replace `mode === 'ble'` checks with `mode === 'multiplayer'`; replace `<BLEConnectionGuard>` / `<BLEBattleContent>` with renamed counterparts; replace `useBLEOpponent` with `useMultiplayerOpponent`
 
 ---
 
 ### 10 — Translations
 
-- [ ] Search `locales/en/` and `locales/de/` for any keys whose values mention Bluetooth; update copy to be transport-neutral (e.g. "AWAITING CHALLENGER…" is fine; anything that says "Bluetooth" is not)
+- [x] Search `locales/en/` and `locales/de/` for any keys whose values mention Bluetooth; update copy to be transport-neutral (e.g. "AWAITING CHALLENGER…" is fine; anything that says "Bluetooth" is not)
+- [x] Rename `ble` key section → `multiplayer` in both locale files; remove the four Bluetooth-specific keys (`bluetoothOff`, `bluetoothOffMessage`, `permissionDenied`, `permissionDeniedMessage`); update `noDevicesFound` to "No games found" / "Keine Spiele gefunden"
 
 ---
 
 ### 11 — Cleanup
 
-- [ ] Delete `constants/ble.ts` (covered in task 3, confirm removal)
-- [ ] Remove BLE-related entries from `package.json` native module lists / Podfile if present
-- [ ] Run `npm run lint` and `npm run format` after all changes
+- [x] Delete `constants/ble.ts` (covered in task 3, confirmed removed)
+- [x] Remove BLE-related entries from `package.json` native module lists / Podfile if present (none found)
+- [x] Run `npm run lint` and `npm run format` after all changes

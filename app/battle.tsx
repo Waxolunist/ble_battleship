@@ -66,9 +66,9 @@ function MultiplayerBattleContent() {
     <View style={StyleSheet.absoluteFill}>
       <BattleScreenBody opponent={opponent} onPlayAgain={requestRematch} />
       {localFleetReady && !remoteFleetReady && (
-        <MultiplayerWaitingOverlay message={t('ble.waitingPlacement')} />
+        <MultiplayerWaitingOverlay message={t('multiplayer.waitingPlacement')} />
       )}
-      {rematchPending && <MultiplayerWaitingOverlay message={t('ble.rematchRequested')} />}
+      {rematchPending && <MultiplayerWaitingOverlay message={t('multiplayer.rematchRequested')} />}
     </View>
   );
 }

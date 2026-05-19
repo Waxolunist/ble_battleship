@@ -54,7 +54,7 @@ export function MultiplayerConnectionGuard({ children }: { children: React.React
       setRematchPending(false);
       peerRequestedRef.current = false;
       localRequestedRef.current = false;
-      Alert.alert(t('ble.connectionLost'), t('ble.connectionLostMessage'));
+      Alert.alert(t('multiplayer.connectionLost'), t('multiplayer.connectionLostMessage'));
       reset();
       router.replace('/');
     });
