@@ -10,7 +10,7 @@ const config = getDefaultConfig(__dirname);
 // so we redirect them to an empty stub until expo ships a compatible codegen version.
 const originalResolveRequest = config.resolver.resolveRequest;
 config.resolver.resolveRequest = (context, moduleName, platform) => {
-  if (
+  /*if (
     moduleName.includes('VirtualViewNativeComponent') ||
     moduleName.includes('VirtualViewExperimentalNativeComponent')
   ) {
@@ -18,7 +18,7 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
       type: 'sourceFile',
       filePath: path.resolve(__dirname, 'scripts/empty-module.js'),
     };
-  }
+  }*/
   if (originalResolveRequest) {
     return originalResolveRequest(context, moduleName, platform);
   }
