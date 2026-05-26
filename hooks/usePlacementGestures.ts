@@ -4,11 +4,11 @@ import type { ShipType } from '@/models/types';
 import { useGameStore } from '@/store/useGameStore';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
-import { useSharedValue } from 'react-native-reanimated';
 import type { SharedValue } from 'react-native-reanimated';
+import { useSharedValue } from 'react-native-reanimated';
 
-const DRAG_OFFSET_X = 24;
-const DRAG_OFFSET_Y = 3 * 48;
+const DRAG_OFFSET_X = -48;
+const DRAG_OFFSET_Y = 96;
 
 export interface PlacementGestureHandlers {
   draggingShip: ShipType | null;

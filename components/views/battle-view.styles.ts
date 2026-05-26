@@ -9,7 +9,8 @@ export const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 48,
+    paddingTop: 24,
+    paddingBottom: 72,
     paddingHorizontal: 32,
   },
   fieldSection: {

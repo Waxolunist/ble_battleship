@@ -3,7 +3,7 @@
  * triggers the victory sequence without playing through a full game.
  * Set EXPO_PUBLIC_DEV_SHOW_FORCE_VICTORY=false in CI to disable for production builds.
  */
-export const DEV_SHOW_FORCE_VICTORY = process.env.EXPO_PUBLIC_DEV_SHOW_FORCE_VICTORY !== 'false';
+export const DEV_SHOW_FORCE_VICTORY = false;
 
 /**
  * DEV_FORCE_LANGUAGE — forces a specific language for i18n testing.
@@ -22,5 +22,4 @@ export const DEV_FORCE_LANGUAGE = process.env.EXPO_PUBLIC_DEV_FORCE_LANGUAGE as
  * see what's happening on a tethered device.
  * Set EXPO_PUBLIC_DEV_SHOW_MULTIPLAYER_DEBUG=false to hide.
  */
-export const DEV_SHOW_MULTIPLAYER_DEBUG =
-  __DEV__ && process.env.EXPO_PUBLIC_DEV_SHOW_MULTIPLAYER_DEBUG !== 'false';
+export const DEV_SHOW_MULTIPLAYER_DEBUG = false;

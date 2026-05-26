@@ -86,7 +86,7 @@ export function PlacementView({
       <Animated.View style={fireTopStyle}>
         <FadeIn translateY={-30}>
           <View ref={titleRef} style={[styles.topSection, { gap: s(8) }]}>
-            <Text style={[styles.title, { fontSize: fs(24) }]}>{t('placement.title')}</Text>
+            <Text style={[styles.title, { fontSize: fs(23) }]}>{t('placement.title')}</Text>
             <Text style={[styles.subtitle, { fontSize: fs(13) }]}>
               {t('placement.subtitle') + '\n' + address + ' ' + captainName}
             </Text>
@@ -138,11 +138,11 @@ export function PlacementView({
               onPress={onRetreat}
               style={({ pressed }) => [
                 styles.cancelButton,
-                { paddingHorizontal: s(4), paddingVertical: s(8) },
+                { paddingHorizontal: s(4), paddingVertical: s(6) },
                 pressed && styles.cancelButtonPressed,
               ]}>
               <Text
-                style={[styles.cancelButtonText, { fontSize: fs(16), lineHeight: s(26) }]}
+                style={[styles.cancelButtonText, { fontSize: fs(14), lineHeight: s(22) }]}
                 numberOfLines={2}>
                 ↩{'\n'}
                 {t('placement.retreat')}
@@ -153,14 +153,14 @@ export function PlacementView({
               onPress={onFireAtWill}
               style={({ pressed }) => [
                 styles.fireButton,
-                { paddingHorizontal: s(8), paddingVertical: s(8) },
+                { paddingHorizontal: s(8), paddingVertical: s(6) },
                 !allShipsPlaced && styles.fireButtonDisabled,
                 pressed && allShipsPlaced && styles.fireButtonPressed,
               ]}>
               <Text
                 style={[
                   styles.fireButtonText,
-                  { fontSize: fs(16), lineHeight: s(26) },
+                  { fontSize: fs(14), lineHeight: s(22) },
                   !allShipsPlaced && styles.fireButtonTextDisabled,
                 ]}
                 numberOfLines={2}>

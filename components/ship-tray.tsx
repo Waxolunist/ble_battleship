@@ -5,6 +5,7 @@ import { GameColors } from '@/constants/theme';
 import type { ShipType } from '@/models/types';
 import { SHIP_FLEET, SHIP_SIZES } from '@/models/types';
 import { forwardRef } from 'react';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { Image, ImageSourcePropType, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import type { SharedValue } from 'react-native-reanimated';
@@ -97,7 +98,11 @@ function ShipRow({
           onPress={isPlaced ? undefined : onOrientationToggle}
           style={[styles.rotateButton, isPlaced && styles.rotateButtonPlaced]}
           hitSlop={6}>
-          <Text style={styles.rotateIcon}>{orientation === 'horizontal' ? '↔' : '↕'}</Text>
+          <FontAwesome
+            name={orientation === 'horizontal' ? 'arrows-h' : 'arrows-v'}
+            size={12}
+            color={GameColors.labelBright}
+          />
         </Pressable>
 
         <Text numberOfLines={1} style={[styles.shipLabel, isPlaced && styles.shipLabelPlaced]}>
