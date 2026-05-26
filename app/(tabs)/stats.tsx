@@ -15,6 +15,7 @@ import type { ShipCounts } from '@/store/useStatsStore';
 import { useStatsStore } from '@/store/useStatsStore';
 import { resetTutorials } from '@/store/tutorialStorage';
 import { HapticPressable } from '@/components/haptic-pressable';
+import { useResponsive } from '@/hooks/useResponsive';
 import { ImageBackground, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -26,10 +27,11 @@ function pct(value: number, total: number): number {
 // ── Sub-components ────────────────────────────────────────────────────────────
 
 function SectionHeader({ label }: { label: string }) {
+  const { fs } = useResponsive();
   return (
     <View style={styles.sectionHeader}>
       <View style={styles.sectionLine} />
-      <Text style={styles.sectionLabel}>{label}</Text>
+      <Text style={[styles.sectionLabel, { fontSize: fs(9) }]}>{label}</Text>
       <View style={styles.sectionLine} />
     </View>
   );
@@ -57,12 +59,13 @@ function ShipRow({
   color: string;
   t: any;
 }) {
+  const { s, fs } = useResponsive();
   const size = SHIP_SIZES[shipType];
   const pips = Array.from({ length: size });
   return (
     <View style={styles.shipRow}>
-      <View style={styles.shipRowLeft}>
-        <Text style={styles.shipName}>{translateShipType(shipType, t)}</Text>
+      <View style={[styles.shipRowLeft, { width: s(100) }]}>
+        <Text style={[styles.shipName, { fontSize: fs(9) }]}>{translateShipType(shipType, t)}</Text>
         <View style={styles.shipPips}>
           {pips.map((_, i) => (
             <View key={i} style={[styles.pip, { backgroundColor: color, opacity: 0.7 }]} />
@@ -72,7 +75,7 @@ function ShipRow({
       <View style={styles.shipBarContainer}>
         <StatBar value={count} max={max} color={color} />
       </View>
-      <Text style={[styles.shipCount, { color }]}>{count}</Text>
+      <Text style={[styles.shipCount, { color, width: s(28), fontSize: fs(16) }]}>{count}</Text>
     </View>
   );
 }
@@ -86,36 +89,40 @@ function BigStat({
   label: string;
   color: string;
 }) {
+  const { fs } = useResponsive();
   return (
     <View style={styles.bigStatBox}>
-      <Text style={[styles.bigStatValue, { color }]}>{value}</Text>
-      <Text style={styles.bigStatLabel}>{label}</Text>
+      <Text style={[styles.bigStatValue, { color, fontSize: fs(32) }]}>{value}</Text>
+      <Text style={[styles.bigStatLabel, { fontSize: fs(8) }]}>{label}</Text>
     </View>
   );
 }
 
 function SmallDataPoint({ value, label }: { value: string | number; label: string }) {
+  const { s, fs } = useResponsive();
   return (
-    <View style={styles.smallDataPoint}>
-      <Text style={styles.smallDataValue}>{value}</Text>
-      <Text style={styles.smallDataLabel}>{label}</Text>
+    <View style={[styles.smallDataPoint, { paddingHorizontal: s(12) }]}>
+      <Text style={[styles.smallDataValue, { fontSize: fs(16) }]}>{value}</Text>
+      <Text style={[styles.smallDataLabel, { fontSize: fs(8) }]}>{label}</Text>
     </View>
   );
 }
 
 function NoDataState() {
   const { t } = useTranslation('stats');
+  const { fs } = useResponsive();
   return (
     <View style={styles.noDataContainer}>
-      <Text style={styles.noDataIcon}>⚓</Text>
-      <Text style={styles.noDataTitle}>{t('noData.title')}</Text>
-      <Text style={styles.noDataSub}>{t('noData.subtitle')}</Text>
+      <Text style={[styles.noDataIcon, { fontSize: fs(36) }]}>⚓</Text>
+      <Text style={[styles.noDataTitle, { fontSize: fs(18) }]}>{t('noData.title')}</Text>
+      <Text style={[styles.noDataSub, { fontSize: fs(10) }]}>{t('noData.subtitle')}</Text>
     </View>
   );
 }
 
 function RankProgressBar({ gamesPlayed, winRate }: { gamesPlayed: number; winRate: number }) {
   const { t } = useTranslation('stats');
+  const { s, fs } = useResponsive();
   let rankIndex = -1;
   let fillFraction = 0;
   let hint = '';
@@ -148,7 +155,7 @@ function RankProgressBar({ gamesPlayed, winRate }: { gamesPlayed: number; winRat
   const isMaxRank = rankIndex === RANK_TIERS.length - 1;
 
   return (
-    <View style={styles.rankProgress}>
+    <View style={[styles.rankProgress, { gap: s(8), marginTop: s(14) }]}>
       {/* Rank labels */}
       <View style={styles.rankLabelsRow}>
         {RANK_TIERS.map((tier, i) => (
@@ -156,6 +163,7 @@ function RankProgressBar({ gamesPlayed, winRate }: { gamesPlayed: number; winRat
             key={tier.title}
             style={[
               styles.rankLabel,
+              { fontSize: fs(8) },
               i < rankIndex && styles.rankLabelAchieved,
               i === rankIndex && styles.rankLabelCurrent,
             ]}>
@@ -165,7 +173,7 @@ function RankProgressBar({ gamesPlayed, winRate }: { gamesPlayed: number; winRat
       </View>
 
       {/* Bar with dot milestones */}
-      <View style={styles.rankTrackContainer}>
+      <View style={[styles.rankTrackContainer, { height: s(12) }]}>
         <View style={styles.rankBarTrack}>
           <View
             style={[
@@ -181,6 +189,7 @@ function RankProgressBar({ gamesPlayed, winRate }: { gamesPlayed: number; winRat
               key={tier.title}
               style={[
                 styles.rankDot,
+                { width: s(10), height: s(10), borderRadius: s(5) },
                 i <= rankIndex && styles.rankDotActive,
                 i === rankIndex && styles.rankDotCurrent,
               ]}
@@ -190,7 +199,9 @@ function RankProgressBar({ gamesPlayed, winRate }: { gamesPlayed: number; winRat
       </View>
 
       {/* Hint */}
-      <Text style={[styles.rankHint, isMaxRank && styles.rankHintMax]}>{hint}</Text>
+      <Text style={[styles.rankHint, { fontSize: fs(8) }, isMaxRank && styles.rankHintMax]}>
+        {hint}
+      </Text>
     </View>
   );
 }
@@ -199,18 +210,19 @@ function RankProgressBar({ gamesPlayed, winRate }: { gamesPlayed: number; winRat
 
 export default function StatsScreen() {
   const { t } = useTranslation('stats');
-  const captainName = useCaptainStore(s => s.captainName);
-  const gamesPlayed = useStatsStore(s => s.gamesPlayed);
-  const wins = useStatsStore(s => s.wins);
-  const losses = useStatsStore(s => s.losses);
-  const currentStreak = useStatsStore(s => s.currentStreak);
-  const bestWinStreak = useStatsStore(s => s.bestWinStreak);
-  const totalShots = useStatsStore(s => s.totalShots);
-  const totalHits = useStatsStore(s => s.totalHits);
-  const totalMisses = useStatsStore(s => s.totalMisses);
-  const enemyShipsSunkByType = useStatsStore(s => s.enemyShipsSunkByType);
-  const playerShipsLostByType = useStatsStore(s => s.playerShipsLostByType);
-  const resetStats = useStatsStore(s => s.resetStats);
+  const { s, fs } = useResponsive();
+  const captainName = useCaptainStore(s_ => s_.captainName);
+  const gamesPlayed = useStatsStore(s_ => s_.gamesPlayed);
+  const wins = useStatsStore(s_ => s_.wins);
+  const losses = useStatsStore(s_ => s_.losses);
+  const currentStreak = useStatsStore(s_ => s_.currentStreak);
+  const bestWinStreak = useStatsStore(s_ => s_.bestWinStreak);
+  const totalShots = useStatsStore(s_ => s_.totalShots);
+  const totalHits = useStatsStore(s_ => s_.totalHits);
+  const totalMisses = useStatsStore(s_ => s_.totalMisses);
+  const enemyShipsSunkByType = useStatsStore(s_ => s_.enemyShipsSunkByType);
+  const playerShipsLostByType = useStatsStore(s_ => s_.playerShipsLostByType);
+  const resetStats = useStatsStore(s_ => s_.resetStats);
 
   const winRate = Math.round(pct(wins, gamesPlayed) * 100);
   const accuracy = Math.round(pct(totalHits, totalShots) * 100);
@@ -220,19 +232,35 @@ export default function StatsScreen() {
   const maxKills = Math.max(...SHIP_FLEET.map(t => (enemyShipsSunkByType as ShipCounts)[t]), 1);
   const maxLost = Math.max(...SHIP_FLEET.map(t => (playerShipsLostByType as ShipCounts)[t]), 1);
 
+  const scaledSection = {
+    paddingVertical: s(16),
+    paddingHorizontal: s(16),
+    gap: s(12),
+  };
+
   return (
     <ImageBackground source={IMAGES.bg} style={styles.background} resizeMode="cover">
       <View style={[StyleSheet.absoluteFill, styles.overlay]} />
 
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[
+          styles.content,
+          {
+            paddingTop: s(72),
+            paddingBottom: s(48),
+            paddingHorizontal: s(20),
+            gap: s(12),
+          },
+        ]}
         showsVerticalScrollIndicator={false}>
         {/* ── Captain Banner ──────────────────────────────────────────── */}
-        <View style={styles.captainBanner}>
-          <Text style={styles.rankBadge}>{rank}</Text>
-          <Text style={styles.captainName}>{captainName || t('captain.unknown')}</Text>
-          <Text style={styles.battlesLine}>
+        <View style={[styles.captainBanner, { paddingVertical: s(20), marginBottom: s(8) }]}>
+          <Text style={[styles.rankBadge, { fontSize: fs(10) }]}>{rank}</Text>
+          <Text style={[styles.captainName, { fontSize: fs(34) }]}>
+            {captainName || t('captain.unknown')}
+          </Text>
+          <Text style={[styles.battlesLine, { fontSize: fs(10) }]}>
             {noData
               ? t('captain.awaitingFirstEngagement')
               : t('captain.engagement_other', { count: gamesPlayed })}
@@ -245,13 +273,13 @@ export default function StatsScreen() {
         ) : (
           <>
             {/* ── Combat Record ─────────────────────────────────────────── */}
-            <View style={styles.section}>
+            <View style={[styles.section, scaledSection]}>
               <SectionHeader label={t('combatRecord.title')} />
               <View style={styles.recordRow}>
                 <BigStat value={wins} label={t('combatRecord.victories')} color={GameColors.gold} />
-                <View style={styles.recordDivider} />
+                <View style={[styles.recordDivider, { height: s(40) }]} />
                 <BigStat value={losses} label={t('combatRecord.defeats')} color={GameColors.red} />
-                <View style={styles.recordDivider} />
+                <View style={[styles.recordDivider, { height: s(40) }]} />
                 <BigStat
                   value={`${winRate}%`}
                   label={t('combatRecord.winRate')}
@@ -287,28 +315,34 @@ export default function StatsScreen() {
               {/* Streaks */}
               <View style={styles.streakRow}>
                 <View style={styles.streakItem}>
-                  <Text style={styles.streakValue}>
+                  <Text style={[styles.streakValue, { fontSize: fs(20) }]}>
                     {currentStreak > 0 ? `▲ ${currentStreak}` : '—'}
                   </Text>
-                  <Text style={styles.streakLabel}>{t('combatRecord.currentStreak')}</Text>
+                  <Text style={[styles.streakLabel, { fontSize: fs(8) }]}>
+                    {t('combatRecord.currentStreak')}
+                  </Text>
                 </View>
                 <View style={styles.streakSep} />
                 <View style={styles.streakItem}>
-                  <Text style={[styles.streakValue, { color: GameColors.gold }]}>
+                  <Text style={[styles.streakValue, { color: GameColors.gold, fontSize: fs(20) }]}>
                     ▲ {bestWinStreak}
                   </Text>
-                  <Text style={styles.streakLabel}>{t('combatRecord.bestStreak')}</Text>
+                  <Text style={[styles.streakLabel, { fontSize: fs(8) }]}>
+                    {t('combatRecord.bestStreak')}
+                  </Text>
                 </View>
               </View>
             </View>
 
             {/* ── Combat Accuracy ───────────────────────────────────────── */}
-            <View style={styles.section}>
+            <View style={[styles.section, scaledSection]}>
               <SectionHeader label={t('accuracy.title')} />
 
               <View style={styles.accuracyMain}>
-                <Text style={styles.accuracyPct}>{accuracy}%</Text>
-                <Text style={styles.accuracySubLabel}>{t('accuracy.label')}</Text>
+                <Text style={[styles.accuracyPct, { fontSize: fs(52) }]}>{accuracy}%</Text>
+                <Text style={[styles.accuracySubLabel, { fontSize: fs(9) }]}>
+                  {t('accuracy.label')}
+                </Text>
               </View>
 
               <View style={styles.accuracyBarWrapper}>
@@ -318,18 +352,18 @@ export default function StatsScreen() {
               <View style={styles.shotDataRow}>
                 <SmallDataPoint value={totalHits} label={t('accuracy.hits')} />
                 <View style={styles.dotSep}>
-                  <Text style={styles.dot}>·</Text>
+                  <Text style={[styles.dot, { fontSize: fs(14) }]}>·</Text>
                 </View>
                 <SmallDataPoint value={totalMisses} label={t('accuracy.misses')} />
                 <View style={styles.dotSep}>
-                  <Text style={styles.dot}>·</Text>
+                  <Text style={[styles.dot, { fontSize: fs(14) }]}>·</Text>
                 </View>
                 <SmallDataPoint value={totalShots} label={t('accuracy.shotsFired')} />
               </View>
             </View>
 
             {/* ── Fleet Kills ───────────────────────────────────────────── */}
-            <View style={styles.section}>
+            <View style={[styles.section, scaledSection]}>
               <SectionHeader label={t('fleetKills.title')} />
               <View style={styles.shipList}>
                 {SHIP_FLEET.map(shipType => (
@@ -344,15 +378,21 @@ export default function StatsScreen() {
                 ))}
               </View>
               <View style={styles.totalKillsRow}>
-                <Text style={styles.totalKillsLabel}>{t('fleetKills.total')}</Text>
-                <Text style={[styles.totalKillsValue, { color: GameColors.statBarKill }]}>
+                <Text style={[styles.totalKillsLabel, { fontSize: fs(8) }]}>
+                  {t('fleetKills.total')}
+                </Text>
+                <Text
+                  style={[
+                    styles.totalKillsValue,
+                    { color: GameColors.statBarKill, fontSize: fs(16) },
+                  ]}>
                   {SHIP_FLEET.reduce((acc, t) => acc + (enemyShipsSunkByType as ShipCounts)[t], 0)}
                 </Text>
               </View>
             </View>
 
             {/* ── Ships Lost ────────────────────────────────────────────── */}
-            <View style={[styles.section, styles.sectionLast]}>
+            <View style={[styles.section, styles.sectionLast, scaledSection]}>
               <SectionHeader label={t('shipsLost.title')} />
               <View style={styles.shipList}>
                 {SHIP_FLEET.map(shipType => (
@@ -367,8 +407,14 @@ export default function StatsScreen() {
                 ))}
               </View>
               <View style={styles.totalKillsRow}>
-                <Text style={styles.totalKillsLabel}>{t('shipsLost.total')}</Text>
-                <Text style={[styles.totalKillsValue, { color: GameColors.statBarLoss }]}>
+                <Text style={[styles.totalKillsLabel, { fontSize: fs(8) }]}>
+                  {t('shipsLost.total')}
+                </Text>
+                <Text
+                  style={[
+                    styles.totalKillsValue,
+                    { color: GameColors.statBarLoss, fontSize: fs(16) },
+                  ]}>
                   {SHIP_FLEET.reduce((acc, t) => acc + (playerShipsLostByType as ShipCounts)[t], 0)}
                 </Text>
               </View>
@@ -381,7 +427,7 @@ export default function StatsScreen() {
             resetTutorials();
           }}
           style={({ pressed }) => [styles.resetButton, pressed && styles.resetButtonPressed]}>
-          <Text style={styles.resetButtonText}>{t('resetStats')}</Text>
+          <Text style={[styles.resetButtonText, { fontSize: fs(13) }]}>{t('resetStats')}</Text>
         </HapticPressable>
       </ScrollView>
     </ImageBackground>

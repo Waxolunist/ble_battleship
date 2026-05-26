@@ -23,7 +23,8 @@ import { useStatsStore, computeFieldShotStats, computeSunkShipTypes } from '@/st
 import { usePlacementTour } from '@/hooks/usePlacementTour';
 import { useBattleTour } from '@/hooks/useBattleTour';
 import { useRouter } from 'expo-router';
-import { Image, ImageBackground, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { useResponsive } from '@/hooks/useResponsive';
+import { Image, ImageBackground, StyleSheet, View } from 'react-native';
 import { useEffect, useRef } from 'react';
 import Animated, {
   Easing,
@@ -33,8 +34,6 @@ import Animated, {
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
-
-const GRID_PADDING = 32;
 
 // Each branch mounts a sibling component so the opponent hook is called unconditionally.
 export default function BattleScreen() {
@@ -105,8 +104,8 @@ function BattleScreenBody({
 }) {
   const { i18n, t } = useTranslation();
   const locale = (i18n.language === 'de' ? 'de' : 'en') as keyof typeof LOCALE_IMAGES;
-  const { width } = useWindowDimensions();
-  const cellSize = Math.floor((width - GRID_PADDING * 2 - LABEL_SIZE) / 10);
+  const { width, s } = useResponsive();
+  const cellSize = Math.floor((width - s(32) * 2 - LABEL_SIZE) / 10);
 
   const router = useRouter();
 

@@ -5,6 +5,7 @@ import { GameColors } from '@/constants/theme';
 import { HapticPressable } from '@/components/haptic-pressable';
 import { ShipTray } from '@/components/ship-tray';
 import { TutorialHelpButton } from '@/components/tutorial-help-button';
+import { useResponsive } from '@/hooks/useResponsive';
 import type { Field, Orientation, ShipType } from '@/models/types';
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
@@ -74,14 +75,19 @@ export function PlacementView({
   address,
 }: PlacementViewProps) {
   const { t } = useTranslation('common');
+  const { s, fs } = useResponsive();
   return (
-    <View style={styles.content}>
+    <View
+      style={[
+        styles.content,
+        { paddingTop: s(64), paddingBottom: s(48), paddingHorizontal: s(32) },
+      ]}>
       {/* Top: Title & subtitle */}
       <Animated.View style={fireTopStyle}>
         <FadeIn translateY={-30}>
-          <View ref={titleRef} style={styles.topSection}>
-            <Text style={styles.title}>{t('placement.title')}</Text>
-            <Text style={styles.subtitle}>
+          <View ref={titleRef} style={[styles.topSection, { gap: s(8) }]}>
+            <Text style={[styles.title, { fontSize: fs(24) }]}>{t('placement.title')}</Text>
+            <Text style={[styles.subtitle, { fontSize: fs(13) }]}>
               {t('placement.subtitle') + '\n' + address + ' ' + captainName}
             </Text>
           </View>
@@ -90,7 +96,7 @@ export function PlacementView({
 
       {/* Center: Player grid + ship tray */}
       <FadeIn delay={250} scale={0.9}>
-        <View style={styles.fieldSection}>
+        <View style={[styles.fieldSection, { gap: s(16) }]}>
           <Animated.View style={playerFieldAnimStyle}>
             <GameField
               ref={gridBodyRef}
@@ -127,11 +133,17 @@ export function PlacementView({
       {/* Bottom: Retreat + Fire at Will buttons */}
       <Animated.View style={[{ alignSelf: 'stretch' }, fireBottomStyle]}>
         <FadeIn delay={500} translateY={30} style={{ alignSelf: 'stretch' }}>
-          <View style={styles.bottomButtons}>
+          <View style={[styles.bottomButtons, { gap: s(12) }]}>
             <HapticPressable
               onPress={onRetreat}
-              style={({ pressed }) => [styles.cancelButton, pressed && styles.cancelButtonPressed]}>
-              <Text style={styles.cancelButtonText} numberOfLines={2}>
+              style={({ pressed }) => [
+                styles.cancelButton,
+                { paddingHorizontal: s(4), paddingVertical: s(8) },
+                pressed && styles.cancelButtonPressed,
+              ]}>
+              <Text
+                style={[styles.cancelButtonText, { fontSize: fs(16), lineHeight: s(26) }]}
+                numberOfLines={2}>
                 ↩{'\n'}
                 {t('placement.retreat')}
               </Text>
@@ -141,11 +153,16 @@ export function PlacementView({
               onPress={onFireAtWill}
               style={({ pressed }) => [
                 styles.fireButton,
+                { paddingHorizontal: s(8), paddingVertical: s(8) },
                 !allShipsPlaced && styles.fireButtonDisabled,
                 pressed && allShipsPlaced && styles.fireButtonPressed,
               ]}>
               <Text
-                style={[styles.fireButtonText, !allShipsPlaced && styles.fireButtonTextDisabled]}
+                style={[
+                  styles.fireButtonText,
+                  { fontSize: fs(16), lineHeight: s(26) },
+                  !allShipsPlaced && styles.fireButtonTextDisabled,
+                ]}
                 numberOfLines={2}>
                 ⚡{'\n'}
                 {t('placement.fireAtWill')}
@@ -156,7 +173,7 @@ export function PlacementView({
       </Animated.View>
 
       {/* Tutorial replay button — rendered last so it sits above all other children */}
-      <TutorialHelpButton onPress={onReplayTutorial} top={112} right={18} />
+      <TutorialHelpButton onPress={onReplayTutorial} top={s(112)} right={s(18)} />
     </View>
   );
 }
