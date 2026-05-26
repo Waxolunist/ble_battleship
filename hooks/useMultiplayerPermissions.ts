@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Linking, Platform } from 'react-native';
 import NfcManager from 'react-native-nfc-manager';
+import { getNetworkPath } from '@/services/network-detector';
 
 export interface MultiplayerPermissionStatus {
   /** False only on web — both LAN and NFC paths require native. */
@@ -27,41 +28,37 @@ export function useMultiplayerPermissions() {
   }, []);
 
   const checkPermissions = useCallback(async () => {
-    setStatus(s => ({ ...s, isChecking: true }));
-    try {
-      if (Platform.OS === 'web') {
-        setStatus({ available: false, permissionsGranted: false, isChecking: false });
-        return;
-      }
+    if (Platform.OS === 'web') {
+      setStatus({ available: false, permissionsGranted: false, isChecking: false });
+      return;
+    }
 
+    // Buttons are usable immediately — don't block on the NFC probe.
+    setStatus({ available: true, permissionsGranted: false, isChecking: false });
+
+    // Update permissionsGranted in the background (used for display only).
+    try {
       let nfcSupported = false;
       let nfcEnabled = false;
-      try {
-        nfcSupported = await NfcManager.isSupported();
-        if (nfcSupported) {
-          nfcEnabled = await NfcManager.isEnabled();
-        }
-      } catch {
-        // NFC bridge not available (simulator / dev build without NFC module)
-      }
-
-      // LAN (WiFi) path never requires a runtime permission grant — the iOS
-      // local-network prompt fires automatically on first mDNS use. We count
-      // multiplayer as available as long as we are on a native platform.
-      // permissionsGranted reflects whether the NFC path is usable; the LAN
-      // path is always usable on native.
+      nfcSupported = await NfcManager.isSupported();
+      if (nfcSupported) nfcEnabled = await NfcManager.isEnabled();
       const permissionsGranted = Platform.OS === 'ios' ? nfcSupported : nfcEnabled;
-
-      setStatus({ available: true, permissionsGranted, isChecking: false });
+      setStatus(s => ({ ...s, permissionsGranted }));
     } catch {
-      setStatus({ available: true, permissionsGranted: false, isChecking: false });
+      // NFC bridge not available (simulator / dev build without NFC module)
     }
   }, []);
 
   const requestPermissions = useCallback(async (): Promise<boolean> => {
-    if (Platform.OS === 'android') {
-      // On Android, NFC is enabled/disabled in system settings — there is no
-      // runtime permission dialog. Guide the user there if NFC is off.
+    if (Platform.OS === 'web') return false;
+
+    // iOS: no runtime permissions needed. LAN fires a system prompt automatically
+    // on first mDNS use; NFC capability is granted via entitlement at build time.
+    if (Platform.OS === 'ios') return true;
+
+    // Android: if we'll take the NFC+WebRTC path, NFC must be enabled in settings.
+    const path = await getNetworkPath();
+    if (path === 'nfc-webrtc') {
       let enabled = false;
       try {
         enabled = await NfcManager.isEnabled();
@@ -74,20 +71,7 @@ export function useMultiplayerPermissions() {
       }
     }
 
-    // Re-check NFC state and return the fresh result directly rather than
-    // reading from the (stale) React state closure.
-    if (Platform.OS === 'web') return false;
-    let nfcSupported = false;
-    let nfcEnabled = false;
-    try {
-      nfcSupported = await NfcManager.isSupported();
-      if (nfcSupported) nfcEnabled = await NfcManager.isEnabled();
-    } catch {
-      // ignore
-    }
-    const granted = Platform.OS === 'ios' ? nfcSupported : nfcEnabled;
-    setStatus({ available: true, permissionsGranted: granted, isChecking: false });
-    return granted;
+    return true;
   }, []);
 
   return {

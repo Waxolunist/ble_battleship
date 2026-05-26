@@ -109,7 +109,7 @@ class LanService {
       },
     );
 
-    this.zeroconf.publish(
+    this.zeroconf.publishService(
       ZEROCONF_TYPE,
       ZEROCONF_PROTOCOL,
       ZEROCONF_DOMAIN,
@@ -124,7 +124,7 @@ class LanService {
 
   async stopAdvertising(): Promise<void> {
     if (!this.isAdvertising) return;
-    this.zeroconf.unpublish(this.localCaptainName);
+    this.zeroconf.unpublishService(this.localCaptainName);
     this.server?.close();
     this.server = null;
     this.isAdvertising = false;

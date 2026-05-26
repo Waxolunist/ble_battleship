@@ -88,7 +88,10 @@ class MultiplayerService {
         this._emitMessage(msg as MultiplayerMessage),
       );
       lanService.setOnDisconnect(this.onDisconnectCb);
-      lanService.setOnCentralConnected(this.onCentralConnectedCb);
+      lanService.setOnCentralConnected((peerName: string) => {
+        this._flushQueue();
+        this.onCentralConnectedCb?.(peerName);
+      });
       await lanService.startAdvertising(captainName);
     } else {
       // NFC+WebRTC host flow — runs in the background; UI shows "TAP PHONES".
@@ -168,6 +171,7 @@ class MultiplayerService {
     if (this.path === 'lan') {
       const peerName = await lanService.connect(peerId, captainName);
       this.isConnected = true;
+      this._flushQueue();
       return peerName;
     }
 
@@ -195,7 +199,8 @@ class MultiplayerService {
   }
 
   async sendMessage(message: MultiplayerMessage): Promise<void> {
-    if (!this.isConnected) {
+    const connected = this.path === 'lan' ? lanService.isConnectedToLAN() : this.isConnected;
+    if (!connected) {
       this.messageQueue.push(message);
       multiplayerDebugLog.push('warn', 'TX queued (not connected)', message.type);
       return;
