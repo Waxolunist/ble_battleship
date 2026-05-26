@@ -1,8 +1,8 @@
 import { placeFleet } from '@/engine/fleet-conversion';
 import type { GameOutcome, Opponent, PreparedBattle, ShotResult } from '@/models/opponent';
 import { GRID_SIZE, SHIP_FLEET, type ShipType } from '@/models/types';
-import { bleService } from '@/services/ble';
-import { useBLEStore, type FleetPlacement } from '@/store/useBLEStore';
+import { multiplayerService } from '@/services/multiplayer';
+import { useMultiplayerStore, type FleetPlacement } from '@/store/useMultiplayerStore';
 import { useGameStore } from '@/store/useGameStore';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 
@@ -52,11 +52,11 @@ function computeLocalShotResult(x: number, y: number): ShotResult {
   return field.status === 'sunk' ? 'sunk' : field.status === 'hit' ? 'hit' : 'miss';
 }
 
-export function useBLEOpponent(): Opponent {
-  const setOpponentFleet = useBLEStore(s => s.setOpponentFleet);
-  const setLocalFleetReady = useBLEStore(s => s.setLocalFleetReady);
-  const setRemoteFleetReady = useBLEStore(s => s.setRemoteFleetReady);
-  const setBLEState = useBLEStore(s => s.setState);
+export function useMultiplayerOpponent(): Opponent {
+  const setOpponentFleet = useMultiplayerStore(s => s.setOpponentFleet);
+  const setLocalFleetReady = useMultiplayerStore(s => s.setLocalFleetReady);
+  const setRemoteFleetReady = useMultiplayerStore(s => s.setRemoteFleetReady);
+  const setState = useMultiplayerStore(s => s.setState);
 
   const pendingShotRef = useRef<PendingShot | null>(null);
   const enemyShotHandlerRef = useRef<((x: number, y: number) => void) | null>(null);
@@ -64,12 +64,12 @@ export function useBLEOpponent(): Opponent {
   const fleetReadyResolverRef = useRef<((fleet: FleetPlacement[]) => void) | null>(null);
 
   useEffect(() => {
-    const unsubscribe = bleService.onMessage(message => {
+    const unsubscribe = multiplayerService.onMessage(message => {
       switch (message.type) {
         case 'FLEET_READY': {
           const fleet = parseFleetPayload(message.data?.fleet);
           if (!fleet) {
-            console.warn('[useBLEOpponent] dropped malformed FLEET_READY');
+            console.warn('[useMultiplayerOpponent] dropped malformed FLEET_READY');
             break;
           }
           setOpponentFleet(fleet);
@@ -82,7 +82,7 @@ export function useBLEOpponent(): Opponent {
           const x = message.data?.x;
           const y = message.data?.y;
           if (!isCoord(x) || !isCoord(y)) {
-            console.warn('[useBLEOpponent] dropped malformed FIRE');
+            console.warn('[useMultiplayerOpponent] dropped malformed FIRE');
             break;
           }
           enemyShotHandlerRef.current?.(x, y);
@@ -93,7 +93,7 @@ export function useBLEOpponent(): Opponent {
           const y = message.data?.y;
           const result = message.data?.result;
           if (!isCoord(x) || !isCoord(y) || !isShotResult(result)) {
-            console.warn('[useBLEOpponent] dropped malformed SHOT_RESULT');
+            console.warn('[useMultiplayerOpponent] dropped malformed SHOT_RESULT');
             break;
           }
           const pending = pendingShotRef.current;
@@ -105,7 +105,7 @@ export function useBLEOpponent(): Opponent {
           const localResult = computeLocalShotResult(x, y);
           if (localResult !== result) {
             console.warn(
-              `[useBLEOpponent] SHOT_RESULT divergence at (${x},${y}): local=${localResult} peer=${result}`,
+              `[useMultiplayerOpponent] SHOT_RESULT divergence at (${x},${y}): local=${localResult} peer=${result}`,
             );
           }
           pendingShotRef.current = null;
@@ -113,12 +113,12 @@ export function useBLEOpponent(): Opponent {
           break;
         }
         case 'GAME_OVER': {
-          setBLEState('GAME_OVER');
+          setState('GAME_OVER');
           gameOverHandlerRef.current?.('defeat');
           break;
         }
         case 'REMATCH': {
-          // Phase 3: BLEConnectionGuard owns the rematch UI/state.
+          // Phase 3: MultiplayerConnectionGuard owns the rematch UI/state.
           break;
         }
         case 'BYE': {
@@ -128,20 +128,20 @@ export function useBLEOpponent(): Opponent {
             pendingShotRef.current = null;
           }
           fleetReadyResolverRef.current = null;
-          setBLEState('IDLE');
+          setState('IDLE');
           break;
         }
       }
     });
     return unsubscribe;
-  }, [setOpponentFleet, setRemoteFleetReady, setBLEState]);
+  }, [setOpponentFleet, setRemoteFleetReady, setState]);
 
   const resolvePlayerShot = useCallback((x: number, y: number): Promise<ShotResult> => {
     return new Promise<ShotResult>((resolve, reject) => {
       const timeoutId = setTimeout(() => {
         if (pendingShotRef.current?.timeoutId !== timeoutId) return;
         console.warn(
-          `[useBLEOpponent] SHOT_RESULT timeout at (${x},${y}); falling back to local verdict`,
+          `[useMultiplayerOpponent] SHOT_RESULT timeout at (${x},${y}); falling back to local verdict`,
         );
         pendingShotRef.current = null;
         resolve(computeLocalShotResult(x, y));
@@ -149,7 +149,7 @@ export function useBLEOpponent(): Opponent {
 
       pendingShotRef.current = { x, y, resolve, reject, timeoutId };
 
-      bleService.sendMessage({ type: 'FIRE', data: { x, y } }).catch(err => {
+      multiplayerService.sendMessage({ type: 'FIRE', data: { x, y } }).catch(err => {
         if (pendingShotRef.current?.timeoutId !== timeoutId) return;
         clearTimeout(timeoutId);
         pendingShotRef.current = null;
@@ -174,19 +174,19 @@ export function useBLEOpponent(): Opponent {
       const ship = fields[y][x].shipPart?.ship;
       shipType = ship?.type as ShipType | undefined;
     }
-    bleService
+    multiplayerService
       .sendMessage({ type: 'SHOT_RESULT', data: { x, y, result, shipType } })
-      .catch(err => console.error('[useBLEOpponent] Failed to send SHOT_RESULT:', err));
+      .catch(err => console.error('[useMultiplayerOpponent] Failed to send SHOT_RESULT:', err));
   }, []);
 
   const prepareBattle = useCallback(
     async (localFleet: FleetPlacement[]): Promise<PreparedBattle> => {
-      setBLEState('PLACEMENT');
+      setState('PLACEMENT');
       setLocalFleetReady(true);
-      await bleService.sendMessage({ type: 'FLEET_READY', data: { fleet: localFleet } });
+      await multiplayerService.sendMessage({ type: 'FLEET_READY', data: { fleet: localFleet } });
 
       // Peer may have already sent FLEET_READY before our prepare started.
-      const existing = useBLEStore.getState().opponentFleet;
+      const existing = useMultiplayerStore.getState().opponentFleet;
       const opponentFleet =
         existing ??
         (await new Promise<FleetPlacement[]>(resolve => {
@@ -194,23 +194,23 @@ export function useBLEOpponent(): Opponent {
         }));
 
       const opponentFields = placeFleet(opponentFleet);
-      const firstTurn = bleService.getRole() === 'host' ? 'player' : 'enemy';
-      setBLEState('BATTLE');
+      const firstTurn = multiplayerService.getRole() === 'host' ? 'player' : 'enemy';
+      setState('BATTLE');
       return { opponentFields, firstTurn };
     },
-    [setBLEState, setLocalFleetReady],
+    [setState, setLocalFleetReady],
   );
 
   const notifyGameOver = useCallback(
     (outcome: GameOutcome) => {
-      setBLEState('GAME_OVER');
+      setState('GAME_OVER');
       if (outcome === 'victory') {
-        bleService
+        multiplayerService
           .sendMessage({ type: 'GAME_OVER' })
-          .catch(err => console.error('[useBLEOpponent] Failed to send GAME_OVER:', err));
+          .catch(err => console.error('[useMultiplayerOpponent] Failed to send GAME_OVER:', err));
       }
     },
-    [setBLEState],
+    [setState],
   );
 
   const onGameOver = useCallback((handler: (outcome: GameOutcome) => void) => {

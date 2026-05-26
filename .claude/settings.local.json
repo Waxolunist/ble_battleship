@@ -36,7 +36,24 @@
       "Bash(node -e \"const p = require\\('./node_modules/eslint-config-expo/node_modules/eslint-plugin-import'\\); console.log\\(Object.keys\\(p.flatConfigs || {}\\)\\); const tc = p.flatConfigs && p.flatConfigs.typescript; console.log\\(JSON.stringify\\(tc && tc.settings, null, 2\\)\\)\")",
       "Bash(node -e \"const p = require\\('./node_modules/eslint-plugin-import'\\); console.log\\('version:', p && p.meta && p.meta.version\\); console.log\\(Object.keys\\(p.flatConfigs || {}\\)\\)\")",
       "Bash(node -e \"const p = require\\('./node_modules/eslint-config-expo/node_modules/eslint-plugin-import'\\); const tc = p.flatConfigs && p.flatConfigs.typescript; console.log\\(JSON.stringify\\(tc, null, 2\\)\\)\")",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(git commit -m ':*)",
+      "Bash(git reset:*)",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d.get\\('ble', {}\\), indent=2\\)\\)\")",
+      "Bash(git remote:*)",
+      "Bash(git config:*)",
+      "Bash(ssh -T git@github.com)",
+      "Bash(ssh-keygen -l -f /config/.ssh/id_rsa)",
+      "Bash(ssh-keygen -p -m OpenSSH -f /config/.ssh/id_rsa -N \"\")",
+      "Bash(openssl version:*)",
+      "Bash(ssh -V)",
+      "Bash(ssh -vT git@github.com)",
+      "Bash(ssh-keygen -y -f /config/.ssh/id_rsa)",
+      "Bash(node -e \"const l = require\\('./package-lock.json'\\); console.log\\(l.packages['node_modules/typescript']?.version\\)\")",
+      "Bash(node -e \"const l = require\\('./package-lock.json'\\); console.log\\('lockfileVersion:', l.lockfileVersion, 'npm version that created it:', l.packages?.['']?.engines?.npm\\)\")",
+      "Bash(npm --version)",
+      "Bash(node -e \"const l=JSON.parse\\(require\\('fs'\\).readFileSync\\('/dev/stdin','utf8'\\)\\); console.log\\(l.packages['node_modules/typescript']?.version\\)\")",
+      "Bash(node -e \"const p=JSON.parse\\(require\\('fs'\\).readFileSync\\('/dev/stdin','utf8'\\)\\); console.log\\('typescript:', p.devDependencies?.typescript || p.dependencies?.typescript\\)\")"
     ]
   }
 }

@@ -16,15 +16,11 @@ export const DEV_FORCE_LANGUAGE = process.env.EXPO_PUBLIC_DEV_FORCE_LANGUAGE as
   | undefined;
 
 /**
- * DEV_SHOW_BLE_DEBUG — renders a collapsible overlay that streams BLE
- * advertising/scanning/connection events plus every TX/RX message. Defaults
- * on in __DEV__ so you don't need adb/Xcode log tail to see what's happening
- * on a tethered device. Set EXPO_PUBLIC_DEV_SHOW_BLE_DEBUG=false to hide.
- *
- * Also enabled when EXPO_PUBLIC_REACT_NATIVE_BLUETOOTH_DEBUG=1, which mirrors
- * the REACT_NATIVE_BLUETOOTH_DEBUG=1 convention — prefix with EXPO_PUBLIC_ so
- * Expo Metro bundles the value at build time.
+ * DEV_SHOW_MULTIPLAYER_DEBUG — renders a collapsible overlay that streams
+ * multiplayer connection events (mDNS, TCP, NFC, WebRTC) plus every TX/RX
+ * message. Defaults on in __DEV__ so you don't need adb/Xcode log tail to
+ * see what's happening on a tethered device.
+ * Set EXPO_PUBLIC_DEV_SHOW_MULTIPLAYER_DEBUG=false to hide.
  */
-export const DEV_SHOW_BLE_DEBUG =
-  process.env.EXPO_PUBLIC_REACT_NATIVE_BLUETOOTH_DEBUG === '1' ||
-  (__DEV__ && process.env.EXPO_PUBLIC_DEV_SHOW_BLE_DEBUG !== 'false');
+export const DEV_SHOW_MULTIPLAYER_DEBUG =
+  __DEV__ && process.env.EXPO_PUBLIC_DEV_SHOW_MULTIPLAYER_DEBUG !== 'false';

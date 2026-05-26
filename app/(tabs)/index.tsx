@@ -3,11 +3,11 @@ import { useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FadeIn } from '@/components/fade-in';
-import { BLEMultiplayerPanel } from '@/components/ble/BLEMultiplayerPanel';
+import { MultiplayerPanel } from '@/components/multiplayer/MultiplayerPanel';
 import { useGameStore } from '@/store/useGameStore';
 import { useCaptainStore } from '@/store/useCaptainStore';
 import { useStatsStore } from '@/store/useStatsStore';
-import { useBLEStore } from '@/store/useBLEStore';
+import { useMultiplayerStore } from '@/store/useMultiplayerStore';
 import { GameColors } from '@/constants/theme';
 import { getRankTitle, translateRankTitle } from '@/models/types';
 import {
@@ -29,7 +29,7 @@ export default function HomeScreen() {
   const router = useRouter();
   const resetGame = useGameStore(s => s.resetGame);
   const { captainName, setCaptainName, clearCaptainName } = useCaptainStore();
-  const { state: bleState, setMode } = useBLEStore();
+  const { state: mpState, setMode } = useMultiplayerStore();
   const [inputName, setInputName] = useState('');
   const inputRef = useRef<TextInput>(null);
   const { s, fs } = useResponsive();
@@ -51,7 +51,7 @@ export default function HomeScreen() {
   };
 
   const handleBattle = () => {
-    setMode(bleState === 'LOBBY' ? 'ble' : 'ai');
+    setMode(mpState === 'LOBBY' ? 'multiplayer' : 'ai');
     resetGame();
     router.push('/battle');
   };
@@ -234,7 +234,7 @@ export default function HomeScreen() {
           )}
         </View>
       </KeyboardAvoidingView>
-      <BLEMultiplayerPanel />
+      <MultiplayerPanel />
       {confirmed && (
         <HapticPressable
           onPress={() => {

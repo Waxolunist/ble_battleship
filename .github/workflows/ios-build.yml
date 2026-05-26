@@ -17,7 +17,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
           cache: 'npm'
 
       - run: npm ci
@@ -27,10 +27,6 @@ jobs:
       - uses: maxim-lobanov/setup-xcode@v1
         with:
           xcode-version: latest
-
-      - name: Generate Nitro native bindings
-        working-directory: node_modules/munim-bluetooth
-        run: npx nitrogen
 
       - name: Prebuild iOS
         run: npx expo prebuild --platform ios --no-install

@@ -1,7 +1,8 @@
+import type { NetworkPath } from '@/services/network-detector';
 import type { ShipType } from '@/models/types';
 import { create } from 'zustand';
 
-export type BLEState =
+export type MultiplayerState =
   | 'IDLE'
   | 'HOST_ADVERTISING'
   | 'SCANNING'
@@ -12,7 +13,7 @@ export type BLEState =
   | 'BATTLE'
   | 'GAME_OVER';
 
-export type GameMode = 'ai' | 'ble';
+export type GameMode = 'ai' | 'multiplayer';
 
 export type FleetPlacement = {
   shipType: ShipType;
@@ -32,9 +33,11 @@ export interface DiscoveredPeer {
   name: string;
 }
 
-interface BLEStoreState {
-  state: BLEState;
+interface MultiplayerStoreState {
+  state: MultiplayerState;
   mode: GameMode;
+  /** The transport path chosen for the current session, or null when idle. */
+  connectionPath: NetworkPath | null;
   connectedPeer: PeerInfo | null;
   discoveredPeers: DiscoveredPeer[];
   opponentFleet: FleetPlacement[] | null;
@@ -42,9 +45,10 @@ interface BLEStoreState {
   remoteFleetReady: boolean;
 }
 
-interface BLEStoreActions {
-  setState: (state: BLEState) => void;
+interface MultiplayerStoreActions {
+  setState: (state: MultiplayerState) => void;
   setMode: (mode: GameMode) => void;
+  setConnectionPath: (path: NetworkPath | null) => void;
   setConnectedPeer: (peer: PeerInfo | null) => void;
   setDiscoveredPeers: (peers: DiscoveredPeer[]) => void;
   addDiscoveredPeer: (peer: DiscoveredPeer) => void;
@@ -55,18 +59,21 @@ interface BLEStoreActions {
   reset: () => void;
 }
 
-export const useBLEStore = create<BLEStoreState & BLEStoreActions>(set => ({
+export const useMultiplayerStore = create<MultiplayerStoreState & MultiplayerStoreActions>(set => ({
   state: 'IDLE',
   mode: 'ai',
+  connectionPath: null,
   connectedPeer: null,
   discoveredPeers: [],
   opponentFleet: null,
   localFleetReady: false,
   remoteFleetReady: false,
 
-  setState: (state: BLEState) => set({ state }),
+  setState: (state: MultiplayerState) => set({ state }),
 
   setMode: (mode: GameMode) => set({ mode }),
+
+  setConnectionPath: (connectionPath: NetworkPath | null) => set({ connectionPath }),
 
   setConnectedPeer: (peer: PeerInfo | null) => set({ connectedPeer: peer }),
 
@@ -96,6 +103,7 @@ export const useBLEStore = create<BLEStoreState & BLEStoreActions>(set => ({
     set({
       state: 'IDLE',
       mode: 'ai',
+      connectionPath: null,
       connectedPeer: null,
       discoveredPeers: [],
       opponentFleet: null,

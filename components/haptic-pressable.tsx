@@ -4,8 +4,12 @@ import { Platform, Pressable, PressableProps, View } from 'react-native';
 export function HapticPressable({ onPress, ref, ...props }: PressableProps & { ref?: Ref<View> }) {
   const handlePress: PressableProps['onPress'] = async event => {
     if (Platform.OS !== 'web') {
-      const { impactAsync, ImpactFeedbackStyle } = await import('expo-haptics');
-      impactAsync(ImpactFeedbackStyle.Medium);
+      try {
+        const { impactAsync, ImpactFeedbackStyle } = await import('expo-haptics');
+        impactAsync(ImpactFeedbackStyle.Medium).catch(() => {});
+      } catch {
+        // haptics unavailable
+      }
     }
     onPress?.(event);
   };

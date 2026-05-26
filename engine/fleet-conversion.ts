@@ -1,7 +1,7 @@
 import { buildPreviewCells, isValidPlacement, placeShip } from '@/engine/placement';
 import { createGameField } from '@/models/game-factory';
 import type { Field, ShipType } from '@/models/types';
-import type { FleetPlacement } from '@/store/useBLEStore';
+import type { FleetPlacement } from '@/store/useMultiplayerStore';
 
 const REMOTE_PLAYER = { id: 'remote', name: 'OPPONENT', isAI: false };
 

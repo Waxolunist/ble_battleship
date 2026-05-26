@@ -37,13 +37,9 @@
       "RECRUIT": "REKRUT"
     }
   },
-  "ble": {
+  "multiplayer": {
     "host": "HOST",
     "join": "BEITRETEN",
-    "bluetoothOff": "Bluetooth aus",
-    "bluetoothOffMessage": "Bluetooth ist ausgeschaltet — schalten Sie es in den Einstellungen ein, um Mehrspielerkämpfe zu spielen.",
-    "permissionDenied": "Bluetooth-Berechtigung erforderlich",
-    "permissionDeniedMessage": "Hulls & Hellfire benötigt die Bluetooth-Berechtigung, um Spieler in der Nähe zu finden. Aktivieren Sie sie in den Einstellungen.",
     "connectionLost": "Verbindung verloren",
     "connectionLostMessage": "Verbindung verloren — Gegner getrennt.",
     "opponent": "GEGNER",
@@ -52,10 +48,12 @@
     "awaitingChallenger": "WARTE AUF GEGNER...",
     "yourCallsign": "Ihr Ruf:",
     "scanning": "SCANNE...",
-    "noDevicesFound": "Keine Geräte gefunden",
+    "noDevicesFound": "Keine Spiele gefunden",
     "connecting": "VERBINDUNG...",
     "connected": "VERBUNDEN",
     "waitingPlacement": "WARTE AUF GEGNER\nBEIM PLATZIEREN...",
-    "rematchRequested": "REVANCHE ANGEFORDERT\nWARTE AUF GEGNER..."
+    "rematchRequested": "REVANCHE ANGEFORDERT\nWARTE AUF GEGNER...",
+    "tapPhonesPrompt": "HANDYS ZUSAMMENHALTEN",
+    "tapPhonesHint": "Handys Rücken an Rücken halten"
   }
 }

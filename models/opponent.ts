@@ -1,4 +1,4 @@
-import type { FleetPlacement } from '@/store/useBLEStore';
+import type { FleetPlacement } from '@/store/useMultiplayerStore';
 import type { Field } from './types';
 
 export type ShotResult = 'hit' | 'miss' | 'sunk';
