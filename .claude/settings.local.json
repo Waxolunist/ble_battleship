@@ -53,7 +53,15 @@
       "Bash(node -e \"const l = require\\('./package-lock.json'\\); console.log\\('lockfileVersion:', l.lockfileVersion, 'npm version that created it:', l.packages?.['']?.engines?.npm\\)\")",
       "Bash(npm --version)",
       "Bash(node -e \"const l=JSON.parse\\(require\\('fs'\\).readFileSync\\('/dev/stdin','utf8'\\)\\); console.log\\(l.packages['node_modules/typescript']?.version\\)\")",
-      "Bash(node -e \"const p=JSON.parse\\(require\\('fs'\\).readFileSync\\('/dev/stdin','utf8'\\)\\); console.log\\('typescript:', p.devDependencies?.typescript || p.dependencies?.typescript\\)\")"
+      "Bash(node -e \"const p=JSON.parse\\(require\\('fs'\\).readFileSync\\('/dev/stdin','utf8'\\)\\); console.log\\('typescript:', p.devDependencies?.typescript || p.dependencies?.typescript\\)\")",
+      "Bash(./gradlew app:assembleDebug -x lint -x test --configure-on-demand --build-cache -PreactNativeDevServerPort=8081 -PreactNativeArchitectures=arm64-v8a)",
+      "Bash(java -version)",
+      "Read(//Library/Java/JavaVirtualMachines/**)",
+      "Read(//opt/homebrew/opt/**)",
+      "Read(//Users/csterzl/.sdkman/candidates/**)",
+      "Bash(brew list *)",
+      "Bash(curl -s \"https://services.gradle.org/distributions/\")",
+      "Bash(./gradlew app:assembleDebug -x lint -x test -PreactNativeArchitectures=arm64-v8a --stacktrace)"
     ]
   }
 }
