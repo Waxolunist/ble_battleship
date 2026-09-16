@@ -15,6 +15,7 @@ import { useBattleAnimations } from '@/hooks/useBattleAnimations';
 import { useCombat } from '@/hooks/useCombat';
 import { usePlacementGestures } from '@/hooks/usePlacementGestures';
 import type { Opponent } from '@/models/opponent';
+import { leaveMultiplayerSession } from '@/services/multiplayer';
 import { getRankTitle, translateRankTitle, SHIP_FLEET } from '@/models/types';
 import { useMultiplayerStore } from '@/store/useMultiplayerStore';
 import { useGameStore } from '@/store/useGameStore';
@@ -25,7 +26,7 @@ import { useBattleTour } from '@/hooks/useBattleTour';
 import { useRouter } from 'expo-router';
 import { useResponsive } from '@/hooks/useResponsive';
 import { Image, ImageBackground, StyleSheet, View } from 'react-native';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -37,7 +38,11 @@ import Animated, {
 
 // Each branch mounts a sibling component so the opponent hook is called unconditionally.
 export default function BattleScreen() {
-  const mode = useMultiplayerStore(s => s.mode);
+  // Latched on mount rather than subscribed: tearing a multiplayer session
+  // down resets `mode` to 'ai', and re-rendering this route as an AI battle
+  // would remount the entire battle UI on the way out — including the tutorial,
+  // which then leaves a full-screen modal over the app swallowing every touch.
+  const [mode] = useState(() => useMultiplayerStore.getState().mode);
   return mode === 'multiplayer' ? <MultiplayerBattleScreen /> : <AIBattleScreen />;
 }
 
@@ -175,6 +180,18 @@ function BattleScreenBody({
     opponent.notifyGameOver(outcome);
   };
 
+  // Peer-initiated end of game (their retreat, or their fleet going down):
+  // replay the matching local animation, which records stats via onGameEnd.
+  useEffect(() => {
+    return opponent.onGameOver(outcome => {
+      if (outcome === 'victory') {
+        sinkAllOpponentShips();
+      } else {
+        sinkAllPlayerShips();
+      }
+    });
+  }, [opponent, sinkAllOpponentShips, sinkAllPlayerShips]);
+
   const handlePlayAgain =
     onPlayAgainProp ??
     (() => {
@@ -183,8 +200,17 @@ function BattleScreenBody({
     });
 
   const handleMakePort = () => {
+    // Leaving for good: drop the peer and clear the multiplayer state, or the
+    // home screen keeps hiding its HOST/JOIN panel (shown only when IDLE).
+    const mp = useMultiplayerStore.getState();
     resetGame();
     router.replace('/');
+    if (mp.mode === 'multiplayer') {
+      leaveMultiplayerSession().catch(err =>
+        console.error('[BattleScreen] leaving session failed:', err),
+      );
+      mp.reset();
+    }
   };
 
   return (

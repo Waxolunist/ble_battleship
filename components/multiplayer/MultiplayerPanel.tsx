@@ -9,10 +9,13 @@ import { Alert, Animated, StyleSheet, Text, View } from 'react-native';
 import { PlayerListItem } from './PlayerListItem';
 import { multiplayerService, NFC_PEER_ID } from '@/services/multiplayer';
 import { multiplayerDebugLog } from '@/services/multiplayer-debug-log';
-import { getNetworkPath, type NetworkPath } from '@/services/network-detector';
+import { getNetworkPath, onNetworkChange, type NetworkPath } from '@/services/network-detector';
 
 // How long to scan on LAN before falling back to the NFC path (Scenario 3).
-const LAN_SCAN_FALLBACK_MS = 8_000;
+// Android mDNS routinely takes 5–7s to resolve a service on a healthy network,
+// so anything tighter drops players onto the NFC screen while discovery is
+// still working.
+const LAN_SCAN_FALLBACK_MS = 20_000;
 
 interface MultiplayerPanelProps {
   onHostPress?: () => void;
@@ -29,17 +32,23 @@ export function MultiplayerPanel({ onHostPress, onJoinPress }: MultiplayerPanelP
 
   const [networkPath, setNetworkPath] = useState<NetworkPath | null>(null);
 
-  // Detect the preferred path once on mount so the UI can show the right screen
-  // before the user presses HOST or JOIN.
+  // Track the preferred path so the UI shows the right screen before the user
+  // presses HOST or JOIN. Following network changes keeps the NFC fallback
+  // below from latching: re-joining Wi-Fi puts us back on the LAN path.
   useEffect(() => {
-    getNetworkPath()
-      .then(setNetworkPath)
-      .catch(() => setNetworkPath('nfc-webrtc'));
+    return onNetworkChange(setNetworkPath);
   }, []);
 
   // Surface disconnects as an alert and reset.
   useEffect(() => {
     multiplayerService.setOnDisconnect(() => {
+      // Already back to IDLE means the session was ended deliberately and the
+      // battle screen has explained why — the socket closing behind it is not
+      // news, and a second "connection lost" alert would be misleading.
+      if (useMultiplayerStore.getState().state === 'IDLE') {
+        multiplayerDebugLog.push('event', 'UI: disconnect after leaving — ignored');
+        return;
+      }
       multiplayerDebugLog.push('event', 'UI: connection lost → IDLE');
       Alert.alert(t('multiplayer.connectionLost'), t('multiplayer.connectionLostMessage'));
       setConnectedPeer(null);
@@ -148,6 +157,9 @@ export function MultiplayerPanel({ onHostPress, onJoinPress }: MultiplayerPanelP
     multiplayerDebugLog.push('info', `UI: permissions ${permitted ? 'granted' : 'denied'}`);
     if (permitted) {
       try {
+        // Re-checked per attempt: a stale path from a previous attempt would
+        // show the wrong waiting screen.
+        setNetworkPath(await getNetworkPath());
         setState('HOST_ADVERTISING');
         await multiplayerService.startAdvertising(captainName);
         onHostPress?.();
@@ -165,10 +177,15 @@ export function MultiplayerPanel({ onHostPress, onJoinPress }: MultiplayerPanelP
     multiplayerDebugLog.push('info', `UI: permissions ${permitted ? 'granted' : 'denied'}`);
     if (permitted) {
       try {
+        const path = await getNetworkPath();
+        setNetworkPath(path);
         setState('SCANNING');
-        await multiplayerService.startScanning((id: string, name: string) => {
-          addDiscoveredPeer({ id, name });
-        });
+        await multiplayerService.startScanning(
+          (id: string, name: string) => {
+            addDiscoveredPeer({ id, name });
+          },
+          { pathOverride: path },
+        );
         onJoinPress?.();
       } catch (error) {
         console.error('[UI] Failed to start scanning:', error);

@@ -48,18 +48,41 @@ export function MultiplayerConnectionGuard({ children }: { children: React.React
     router.replace('/battle');
   }, [resetGame, router, setState, setLocalFleetReady, setRemoteFleetReady, setOpponentFleet]);
 
-  // Disconnect / out-of-range: alert then home.
-  useEffect(() => {
-    multiplayerService.setOnDisconnect(() => {
+  // Peer is gone — either deliberately (BYE) or by losing the link. Alert once
+  // and head home; the ref keeps the socket close that follows a BYE from
+  // raising a second, misleading "connection lost".
+  const peerGoneRef = useRef(false);
+
+  const leaveMatch = useCallback(
+    (title: string, message: string) => {
+      if (peerGoneRef.current) return;
+      peerGoneRef.current = true;
       setRematchPending(false);
       peerRequestedRef.current = false;
       localRequestedRef.current = false;
-      Alert.alert(t('multiplayer.connectionLost'), t('multiplayer.connectionLostMessage'));
+      Alert.alert(title, message);
       reset();
       router.replace('/');
+    },
+    [reset, router],
+  );
+
+  // Disconnect / out-of-range: alert then home.
+  useEffect(() => {
+    multiplayerService.setOnDisconnect(() => {
+      leaveMatch(t('multiplayer.connectionLost'), t('multiplayer.connectionLostMessage'));
     });
     return () => multiplayerService.setOnDisconnect(null);
-  }, [t, reset, router]);
+  }, [t, leaveMatch]);
+
+  // Peer left deliberately — retreated during placement, or made port after
+  // the game ended.
+  useEffect(() => {
+    return multiplayerService.onMessage(message => {
+      if (message.type !== 'BYE') return;
+      leaveMatch(t('multiplayer.opponentLeft'), t('multiplayer.opponentLeftMessage'));
+    });
+  }, [t, leaveMatch]);
 
   // REMATCH from peer: if we already sent ours, kick off the new battle.
   useEffect(() => {

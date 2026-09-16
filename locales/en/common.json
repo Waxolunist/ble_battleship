@@ -42,6 +42,8 @@
     "join": "JOIN",
     "connectionLost": "Connection Lost",
     "connectionLostMessage": "Connection lost — opponent disconnected.",
+    "opponentLeft": "Opponent Left",
+    "opponentLeftMessage": "Your opponent left the match.",
     "opponent": "OPPONENT",
     "openSettings": "Open Settings",
     "cancel": "CANCEL",

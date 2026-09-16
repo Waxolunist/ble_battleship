@@ -28,6 +28,10 @@ function isShotResult(value: unknown): value is ShotResult {
   return value === 'hit' || value === 'miss' || value === 'sunk';
 }
 
+function isOutcome(value: unknown): value is GameOutcome {
+  return value === 'victory' || value === 'defeat';
+}
+
 function isShipType(value: unknown): value is ShipType {
   return typeof value === 'string' && SHIP_TYPES.has(value);
 }
@@ -62,6 +66,7 @@ export function useMultiplayerOpponent(): Opponent {
   const enemyShotHandlerRef = useRef<((x: number, y: number) => void) | null>(null);
   const gameOverHandlerRef = useRef<((outcome: GameOutcome) => void) | null>(null);
   const fleetReadyResolverRef = useRef<((fleet: FleetPlacement[]) => void) | null>(null);
+  const gameOverSentRef = useRef(false);
 
   useEffect(() => {
     const unsubscribe = multiplayerService.onMessage(message => {
@@ -113,8 +118,12 @@ export function useMultiplayerOpponent(): Opponent {
           break;
         }
         case 'GAME_OVER': {
+          // The payload carries the *sender's* outcome, so ours is the mirror
+          // image. Older builds sent no payload and only on victory.
+          const peerOutcome = isOutcome(message.data?.outcome) ? message.data.outcome : 'victory';
           setState('GAME_OVER');
-          gameOverHandlerRef.current?.('defeat');
+          gameOverSentRef.current = true;
+          gameOverHandlerRef.current?.(peerOutcome === 'victory' ? 'defeat' : 'victory');
           break;
         }
         case 'REMATCH': {
@@ -182,6 +191,7 @@ export function useMultiplayerOpponent(): Opponent {
   const prepareBattle = useCallback(
     async (localFleet: FleetPlacement[]): Promise<PreparedBattle> => {
       setState('PLACEMENT');
+      gameOverSentRef.current = false;
       setLocalFleetReady(true);
       await multiplayerService.sendMessage({ type: 'FLEET_READY', data: { fleet: localFleet } });
 
@@ -204,11 +214,14 @@ export function useMultiplayerOpponent(): Opponent {
   const notifyGameOver = useCallback(
     (outcome: GameOutcome) => {
       setState('GAME_OVER');
-      if (outcome === 'victory') {
-        multiplayerService
-          .sendMessage({ type: 'GAME_OVER' })
-          .catch(err => console.error('[useMultiplayerOpponent] Failed to send GAME_OVER:', err));
-      }
+      // A retreat is a defeat the peer can't observe from shot results alone,
+      // so both outcomes are announced. The ref stops us echoing a GAME_OVER
+      // back at the peer whose message ended our game in the first place.
+      if (gameOverSentRef.current) return;
+      gameOverSentRef.current = true;
+      multiplayerService
+        .sendMessage({ type: 'GAME_OVER', data: { outcome } })
+        .catch(err => console.error('[useMultiplayerOpponent] Failed to send GAME_OVER:', err));
     },
     [setState],
   );

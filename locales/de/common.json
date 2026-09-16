@@ -42,6 +42,8 @@
     "join": "BEITRETEN",
     "connectionLost": "Verbindung verloren",
     "connectionLostMessage": "Verbindung verloren — Gegner getrennt.",
+    "opponentLeft": "Gegner hat verlassen",
+    "opponentLeftMessage": "Ihr Gegner hat das Gefecht verlassen.",
     "opponent": "GEGNER",
     "openSettings": "Einstellungen öffnen",
     "cancel": "ABBRECHEN",

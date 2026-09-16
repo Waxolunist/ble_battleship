@@ -1,6 +1,8 @@
 import { serializeFleet } from '@/engine/fleet-conversion';
 import type { Opponent } from '@/models/opponent';
+import { leaveMultiplayerSession } from '@/services/multiplayer';
 import { useGameStore } from '@/store/useGameStore';
+import { useMultiplayerStore } from '@/store/useMultiplayerStore';
 import { useNavigation } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import {
@@ -103,13 +105,31 @@ export function useBattleAnimations(opponent: Opponent): BattleAnimations {
     }, 350);
   };
 
+  // Placement-phase retreat: there is no battle to lose yet, so a multiplayer
+  // retreat leaves the match outright — BYE tells the peer it was deliberate
+  // rather than a dropped connection.
   const onRetreat = () => {
     navigation.setOptions({ animation: 'none' });
+    const isMultiplayer = useMultiplayerStore.getState().mode === 'multiplayer';
+    if (isMultiplayer) {
+      leaveMultiplayerSession().catch(err =>
+        console.error('[useBattleAnimations] leaving session failed:', err),
+      );
+    }
     screenTranslateY.value = withTiming(-1000, {
       duration: 350,
       easing: Easing.in(Easing.cubic),
     });
-    setTimeout(() => router.back(), 350);
+    setTimeout(() => {
+      if (!isMultiplayer) {
+        router.back();
+        return;
+      }
+      // Navigate before resetting: clearing `mode` back to 'ai' would
+      // otherwise swap this screen to the AI battle for a frame.
+      router.replace('/');
+      useMultiplayerStore.getState().reset();
+    }, 350);
   };
 
   return {

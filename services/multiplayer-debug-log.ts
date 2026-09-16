@@ -35,6 +35,9 @@ class MultiplayerDebugLog {
       detail: detailStr,
     };
     this.entries = [...this.entries, entry].slice(-MAX_ENTRIES);
+    // Mirrored to the console so the same trace is readable over adb logcat
+    // during two-device testing, not just in the in-app overlay.
+    console.log(`[MP] ${level} ${event}${detailStr ? ` ${detailStr}` : ''}`);
     this.emit();
   }
 

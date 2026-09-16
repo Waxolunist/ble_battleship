@@ -477,3 +477,22 @@ class MultiplayerService {
 }
 
 export const multiplayerService = new MultiplayerService();
+
+// sendMessage resolves once the payload is handed to the socket, not once it
+// is on the wire, so give BYE a beat to flush before tearing the link down.
+const BYE_FLUSH_MS = 150;
+
+/**
+ * Leave a match deliberately: tell the peer with BYE so they see "opponent
+ * left" rather than a dropped connection, then close the transport. Callers
+ * reset the multiplayer store themselves.
+ */
+export async function leaveMultiplayerSession(): Promise<void> {
+  try {
+    await multiplayerService.sendMessage({ type: 'BYE' });
+    await new Promise(resolve => setTimeout(resolve, BYE_FLUSH_MS));
+  } catch (err) {
+    multiplayerDebugLog.push('warn', 'BYE send failed on leave', String(err));
+  }
+  await multiplayerService.disconnect();
+}

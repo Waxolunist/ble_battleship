@@ -52,6 +52,7 @@ class LanService {
   private messageQueue: Message[] = [];
   private messageHandlers: MessageHandler[] = [];
   private resolvedPeers = new Map<string, ResolvedPeer>();
+  private zeroconfListenersBound = false;
 
   private handshakeState: 'idle' | 'awaiting' | 'complete' = 'idle';
   private handshakeTimer: ReturnType<typeof setTimeout> | null = null;
@@ -138,23 +139,30 @@ class LanService {
     this.role = 'joiner';
     multiplayerDebugLog.push('event', 'LAN startScanning →', MDNS_SERVICE_TYPE);
 
-    this.zeroconf.on('resolved', (service: Record<string, unknown>) => {
-      const name = String(service.name ?? '');
-      const host = String((service.addresses as string[] | undefined)?.[0] ?? service.host ?? '');
-      const port = Number(service.port ?? TCP_PORT);
-      multiplayerDebugLog.push('event', 'mDNS resolved', `${name} @ ${host}:${port}`);
-      this.resolvedPeers.set(name, { host, port });
-      this.onDeviceFoundCb?.(name, name);
-    });
+    // Bound once for the life of the instance: the handlers read
+    // onDeviceFoundCb at call time, and re-registering per scan would stack
+    // duplicates (nothing removes them — see stopScanning).
+    if (!this.zeroconfListenersBound) {
+      this.zeroconfListenersBound = true;
 
-    this.zeroconf.on('remove', (name: string) => {
-      multiplayerDebugLog.push('event', 'mDNS removed', name);
-      this.resolvedPeers.delete(name);
-    });
+      this.zeroconf.on('resolved', (service: Record<string, unknown>) => {
+        const name = String(service.name ?? '');
+        const host = String((service.addresses as string[] | undefined)?.[0] ?? service.host ?? '');
+        const port = Number(service.port ?? TCP_PORT);
+        multiplayerDebugLog.push('event', 'mDNS resolved', `${name} @ ${host}:${port}`);
+        this.resolvedPeers.set(name, { host, port });
+        this.onDeviceFoundCb?.(name, name);
+      });
 
-    this.zeroconf.on('error', (err: Error) => {
-      multiplayerDebugLog.push('error', 'mDNS error', String(err));
-    });
+      this.zeroconf.on('remove', (name: string) => {
+        multiplayerDebugLog.push('event', 'mDNS removed', name);
+        this.resolvedPeers.delete(name);
+      });
+
+      this.zeroconf.on('error', (err: Error) => {
+        multiplayerDebugLog.push('error', 'mDNS error', String(err));
+      });
+    }
 
     this.zeroconf.scan(ZEROCONF_TYPE, ZEROCONF_PROTOCOL, ZEROCONF_DOMAIN);
     this.isScanning = true;
@@ -164,7 +172,9 @@ class LanService {
   async stopScanning(): Promise<void> {
     if (!this.isScanning) return;
     this.zeroconf.stop();
-    this.zeroconf.removeDeviceListeners();
+    // Deliberately not removeDeviceListeners(): that tears down the native
+    // event bridges the Zeroconf constructor installs and nothing re-adds
+    // them, so every later scan would run but never resolve a service.
     this.onDeviceFoundCb = null;
     this.isScanning = false;
     multiplayerDebugLog.push('info', 'LAN scanning stopped');
@@ -453,6 +463,11 @@ class LanService {
     this.role = null;
     this.buffer = '';
     this.messageQueue = [];
+    // Discovery is still live here when the peer vanished mid-session (the
+    // joiner never stops scanning once connected). Leaving the flags set makes
+    // the next startScanning/startAdvertising a silent no-op.
+    void this.stopAdvertising();
+    void this.stopScanning();
   }
 }
 
