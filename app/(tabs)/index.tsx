@@ -8,6 +8,7 @@ import { useGameStore } from '@/store/useGameStore';
 import { useCaptainStore } from '@/store/useCaptainStore';
 import { useStatsStore } from '@/store/useStatsStore';
 import { useMultiplayerStore } from '@/store/useMultiplayerStore';
+import { resetTutorials } from '@/store/tutorialStorage';
 import { GameColors } from '@/constants/theme';
 import { getRankTitle, translateRankTitle } from '@/models/types';
 import {
@@ -239,6 +240,7 @@ export default function HomeScreen() {
         <HapticPressable
           onPress={() => {
             clearCaptainName();
+            resetTutorials();
             setInputName('');
           }}
           style={({ pressed }) => [
