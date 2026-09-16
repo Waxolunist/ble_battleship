@@ -188,7 +188,7 @@ Game
 ## 5. Implementation Order
 
 1. **Rename Explore tab to Stats** - file rename + layout update.
-2. **Define the data model** - TypeScript types/interfaces in a `models/` directory.
+2. **Define the data model** - TypeScript types/interfaces in a `../../models` directory.
 3. **Home Screen 1: Name Entry** - text input, persist name with AsyncStorage.
 4. **Home Screen 2: Start Screen** - greeting + start button, create Game instance.
 5. **Stats Tab** - read and display persisted stats (stub with empty data initially).

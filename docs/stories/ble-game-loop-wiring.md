@@ -198,4 +198,4 @@ Tackle in order — each step leaves the AI path green so regressions are caught
 
 - The radio layer ([services/ble.ts](../../services/ble.ts)) is solid and gated by HELLO — see the BLE handshake hardening landed earlier on this branch.
 - The debug overlay ([components/ble/BLEDebugPanel.tsx](../../components/ble/BLEDebugPanel.tsx)) logs every TX/RX with payload; use it on both devices during Phase 4.
-- The wire protocol is documented in [BLE_INTEGRATION.md](../../BLE_INTEGRATION.md) — still accurate at the message level, just unimplemented in the UI hooks until this story lands.
+- The wire protocol is documented in [BLE_INTEGRATION.md](../plans/BLE_INTEGRATION.md) — still accurate at the message level, just unimplemented in the UI hooks until this story lands.

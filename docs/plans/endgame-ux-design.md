@@ -102,7 +102,7 @@ For **RETREAT:**
 
 A debug-only button to instantly trigger the victory sequence without playing through a full battle. Speeds up testing of the victory visualization and post-game navigation flow.
 
-**Feature flag:** Controlled by a boolean constant, e.g. `DEV_SHOW_FORCE_VICTORY` in a `constants/dev.ts` file. Set to `false` before any production build — the button must not render at all when the flag is off (not just hidden).
+**Feature flag:** Controlled by a boolean constant, e.g. `DEV_SHOW_FORCE_VICTORY` in a `../../constants/dev.ts` file. Set to `false` before any production build — the button must not render at all when the flag is off (not just hidden).
 
 **Placement:** Bottom-right corner of the battle screen, mirroring the retreat button on the left.
 

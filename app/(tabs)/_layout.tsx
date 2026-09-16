@@ -5,16 +5,16 @@ import { useTranslation } from 'react-i18next';
 import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
 
 export default function TabLayout() {
   const { t } = useTranslation('common');
-  const colorScheme = useColorScheme();
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme === 'dark' ? 'dark' : 'light'].tint,
+        tabBarActiveTintColor: Colors.dark.tint,
+        tabBarInactiveTintColor: Colors.dark.tabIconDefault,
+        tabBarStyle: { backgroundColor: Colors.dark.background },
         headerShown: false,
         tabBarButton: HapticTab,
       }}>

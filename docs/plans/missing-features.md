@@ -39,7 +39,7 @@
 | Status       | Item                       | Description                                                                                                                |
 | ------------ | -------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
 |              | Missing ship sprite assets | Battleship and Cruiser still use solid blue cell fallback — need proper sprite images.                                     |
-| Done         | Dev flag guard             | `DEV_SHOW_FORCE_VICTORY` is hardcoded `true` in `constants/dev.ts` — must be `false` or gated by `__DEV__` before release. |
+| Done         | Dev flag guard             | `DEV_SHOW_FORCE_VICTORY` is hardcoded `true` in `../../constants/dev.ts` — must be `false` or gated by `__DEV__` before release. |
 | Done         | Unused modal screen        | `app/modal.tsx` appears to be scaffold boilerplate — remove or repurpose.                                                  |
 | Low Priority | Accessibility labels       | Grid cells, buttons, and ship tray items lack `accessibilityLabel` / `accessibilityRole` props for screen reader support.  |
 | Won't Do     | Web platform testing       | Haptics are guarded for web but the grid gesture system (pan/drag) may not work correctly with mouse input.                |

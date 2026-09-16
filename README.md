@@ -25,6 +25,23 @@ In the output, you'll find options to open the app in a
 
 You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
 
+## Rebuild and deploy to the test phones
+
+After a code change, rebuild the release APK and reinstall it on both wirelessly-paired devices:
+
+```bash
+cd android && ./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a && cd ..
+adb -s $S22   install -r android/app/build/outputs/apk/release/app-release.apk
+adb -s $PIXEL install -r android/app/build/outputs/apk/release/app-release.apk
+
+adb -s $S22   shell monkey -p com.anonymous.hulls_and_hellfire -c android.intent.category.LAUNCHER 1
+adb -s $PIXEL shell monkey -p com.anonymous.hulls_and_hellfire -c android.intent.category.LAUNCHER 1
+```
+
+`$S22` and `$PIXEL` are the devices' `IP:PORT` endpoints from `adb devices`. See
+[docs/how-to/two-device-debugging.md](docs/how-to/two-device-debugging.md) for wireless pairing,
+and for the dev-build + Metro loop if you want Fast Refresh instead of a rebuild.
+
 ## Get a fresh project
 
 When you're ready, run:

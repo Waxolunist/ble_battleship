@@ -32,13 +32,13 @@ export function useCombat(opponent: Opponent): {
       setShotPhase({ x, y, grid: 'opponent', beat: 'locked', reticleColor: GameColors.gold });
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
 
-      // Beat 2 — Impact (400 ms): screen shake + heavy haptic
+      // Beat 2 — Impact (200 ms): screen shake + heavy haptic
       const t1 = setTimeout(() => {
         setShotPhase({ x, y, grid: 'opponent', beat: 'impact', reticleColor: GameColors.gold });
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => {});
-      }, 400);
+      }, 200);
 
-      // Beat 3 — Verdict (900 ms): resolve via opponent, show result
+      // Beat 3 — Verdict (450 ms): resolve via opponent, show result
       const t2 = setTimeout(async () => {
         const result = await opponent.resolvePlayerShot(x, y);
         setShotPhase({
@@ -56,14 +56,14 @@ export function useCombat(opponent: Opponent): {
               ? Haptics.ImpactFeedbackStyle.Medium
               : Haptics.ImpactFeedbackStyle.Light;
         Haptics.impactAsync(hapticStyle).catch(() => {});
-      }, 900);
+      }, 450);
 
-      // Clear phase and hand off to enemy (1800 ms total)
+      // Clear phase and hand off to enemy (900 ms total)
       const t3 = setTimeout(() => {
         setShotPhase(null);
         isFiring.current = false;
         setTurn('enemy');
-      }, 1800);
+      }, 900);
 
       playerTimers.current = [t1, t2, t3];
     },
@@ -79,20 +79,20 @@ export function useCombat(opponent: Opponent): {
       enemyTimers.current.forEach(clearTimeout);
       enemyTimers.current = [];
 
-      // Beat 1 — Locked (800 ms delay, then reticle + light haptic)
+      // Beat 1 — Locked (400 ms delay, then reticle + light haptic)
       const t1 = setTimeout(() => {
         markTargeted('player', x, y);
         setShotPhase({ x, y, grid: 'player', beat: 'locked', reticleColor: GameColors.red });
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-      }, 800);
+      }, 400);
 
-      // Beat 2 — Impact (1100 ms)
+      // Beat 2 — Impact (550 ms)
       const t2 = setTimeout(() => {
         setShotPhase({ x, y, grid: 'player', beat: 'impact', reticleColor: GameColors.red });
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => {});
-      }, 1100);
+      }, 550);
 
-      // Beat 3 — Verdict (1500 ms)
+      // Beat 3 — Verdict (750 ms)
       const t3 = setTimeout(() => {
         resolveShot('player', x, y);
         const field = useGameStore.getState().fields[y][x];
@@ -114,14 +114,14 @@ export function useCombat(opponent: Opponent): {
               : Haptics.ImpactFeedbackStyle.Light;
         Haptics.impactAsync(hapticStyle).catch(() => {});
         opponent.reportEnemyShotResolution(x, y, result);
-      }, 1500);
+      }, 750);
 
-      // Clear phase and return turn to player (2200 ms total)
+      // Clear phase and return turn to player (1100 ms total)
       const t4 = setTimeout(() => {
         setShotPhase(null);
         isEnemyFiring.current = false;
         setTurn('player');
-      }, 2200);
+      }, 1100);
 
       enemyTimers.current = [t1, t2, t3, t4];
     };
