@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "hulls_and_hellfire",
+    "name": "Hulls & Hellfire",
     "slug": "hulls_and_hellfire",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -20,10 +20,8 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "backgroundImage": "./assets/images/android-icon-background.png"
       },
       "predictiveBackGestureEnabled": false,
       "package": "com.anonymous.hulls_and_hellfire",
@@ -46,16 +44,27 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/bg.jpeg",
-          "resizeMode": "cover",
-          "backgroundColor": "#000000"
+          "backgroundColor": "#000000",
+          "ios": {
+            "image": "./assets/images/bg.jpeg",
+            "resizeMode": "cover",
+            "enableFullScreenImage_legacy": true,
+            "backgroundColor": "#000000"
+          },
+          "android": {
+            "image": "./assets/images/bg.jpeg",
+            "resizeMode": "cover",
+            "imageWidth": 288,
+            "backgroundColor": "#000000"
+          }
         }
       ],
       "expo-web-browser",
       "expo-asset",
       "expo-image",
       "expo-font",
-      "expo-localization"
+      "expo-localization",
+      "./plugins/with-android-fullscreen-splash"
     ],
     "experiments": {
       "typedRoutes": true,

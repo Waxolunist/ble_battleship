@@ -4,12 +4,13 @@ import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
+import { useCallback, useState } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 import '@/i18n';
 import { useLanguageStore } from '@/store/useLanguageStore';
 import { MultiplayerDebugPanel } from '@/components/multiplayer/MultiplayerDebugPanel';
+import { SplashOverlay } from '@/components/splash-overlay';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
@@ -26,11 +27,8 @@ export default function RootLayout() {
     BlackOpsOne: require('../assets/fonts/BlackOpsOne-Regular.ttf'),
   });
 
-  useEffect(() => {
-    if (fontsLoaded) SplashScreen.hideAsync();
-  }, [fontsLoaded]);
-
-  if (!fontsLoaded) return null;
+  const [splashDone, setSplashDone] = useState(false);
+  const handleSplashFinish = useCallback(() => setSplashDone(true), []);
 
   const theme =
     colorScheme === 'dark'
@@ -55,6 +53,7 @@ export default function RootLayout() {
         </ThemeProvider>
         <TourGuideOverlay />
         <MultiplayerDebugPanel />
+        {!splashDone && <SplashOverlay ready={fontsLoaded} onFinish={handleSplashFinish} />}
       </TourGuideProvider>
     </GestureHandlerRootView>
   );

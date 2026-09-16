@@ -120,6 +120,10 @@ export const GameColors = {
   statBarLoss: 'rgba(255, 80, 80, 0.75)',
   /** Kill bar fill */
   statBarKill: 'rgba(100, 210, 160, 0.8)',
+
+  // ── Splash ───────────────────────────────────────────────────────────
+  /** Solid backdrop behind the full-screen splash artwork */
+  splashBg: '#000000',
 } as const;
 
 const tintColorLight = '#0a7ea4';
