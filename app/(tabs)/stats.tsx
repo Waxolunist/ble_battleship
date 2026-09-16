@@ -1,20 +1,15 @@
 import { useTranslation } from 'react-i18next';
 import { IMAGES } from '@/constants/assets';
 import { Fonts, GameColors } from '@/constants/theme';
-import {
-  getRankTitle,
-  translateRankTitle,
-  translateShipType,
-  RANK_TIERS,
-  SHIP_FLEET,
-  SHIP_SIZES,
-} from '@/models/types';
-import type { ShipType } from '@/models/types';
+import { getRankTitle, translateRankTitle, RANK_TIERS, SHIP_FLEET } from '@/models/types';
 import { useCaptainStore } from '@/store/useCaptainStore';
 import type { ShipCounts } from '@/store/useStatsStore';
 import { useStatsStore } from '@/store/useStatsStore';
 import { resetTutorials } from '@/store/tutorialStorage';
 import { HapticPressable } from '@/components/haptic-pressable';
+import { StatBar } from '@/components/stat-bar';
+import { StatsShipList } from '@/components/stats-ship-list';
+import { StatsTotalRow } from '@/components/stats-total-row';
 import { useResponsive } from '@/hooks/useResponsive';
 import { ImageBackground, ScrollView, StyleSheet, Text, View } from 'react-native';
 
@@ -33,49 +28,6 @@ function SectionHeader({ label }: { label: string }) {
       <View style={styles.sectionLine} />
       <Text style={[styles.sectionLabel, { fontSize: fs(9) }]}>{label}</Text>
       <View style={styles.sectionLine} />
-    </View>
-  );
-}
-
-function StatBar({ value, max, color }: { value: number; max: number; color: string }) {
-  const fraction = max > 0 ? Math.min(value / max, 1) : 0;
-  return (
-    <View style={styles.barTrack}>
-      <View style={[styles.barFill, { width: `${fraction * 100}%`, backgroundColor: color }]} />
-    </View>
-  );
-}
-
-function ShipRow({
-  shipType,
-  count,
-  max,
-  color,
-  t,
-}: {
-  shipType: ShipType;
-  count: number;
-  max: number;
-  color: string;
-  t: any;
-}) {
-  const { s, fs } = useResponsive();
-  const size = SHIP_SIZES[shipType];
-  const pips = Array.from({ length: size });
-  return (
-    <View style={styles.shipRow}>
-      <View style={[styles.shipRowLeft, { width: s(100) }]}>
-        <Text style={[styles.shipName, { fontSize: fs(9) }]}>{translateShipType(shipType, t)}</Text>
-        <View style={styles.shipPips}>
-          {pips.map((_, i) => (
-            <View key={i} style={[styles.pip, { backgroundColor: color, opacity: 0.7 }]} />
-          ))}
-        </View>
-      </View>
-      <View style={styles.shipBarContainer}>
-        <StatBar value={count} max={max} color={color} />
-      </View>
-      <Text style={[styles.shipCount, { color, width: s(28), fontSize: fs(16) }]}>{count}</Text>
     </View>
   );
 }
@@ -229,9 +181,6 @@ export default function StatsScreen() {
   const noData = gamesPlayed === 0;
   const rank = translateRankTitle(getRankTitle(gamesPlayed, winRate), t);
 
-  const maxKills = Math.max(...SHIP_FLEET.map(t => (enemyShipsSunkByType as ShipCounts)[t]), 1);
-  const maxLost = Math.max(...SHIP_FLEET.map(t => (playerShipsLostByType as ShipCounts)[t]), 1);
-
   const scaledSection = {
     paddingVertical: s(16),
     paddingHorizontal: s(16),
@@ -365,59 +314,35 @@ export default function StatsScreen() {
             {/* ── Fleet Kills ───────────────────────────────────────────── */}
             <View style={[styles.section, scaledSection]}>
               <SectionHeader label={t('fleetKills.title')} />
-              <View style={styles.shipList}>
-                {SHIP_FLEET.map(shipType => (
-                  <ShipRow
-                    key={shipType}
-                    shipType={shipType}
-                    count={(enemyShipsSunkByType as ShipCounts)[shipType]}
-                    max={maxKills}
-                    color={GameColors.statBarKill}
-                    t={t}
-                  />
-                ))}
-              </View>
-              <View style={styles.totalKillsRow}>
-                <Text style={[styles.totalKillsLabel, { fontSize: fs(8) }]}>
-                  {t('fleetKills.total')}
-                </Text>
-                <Text
-                  style={[
-                    styles.totalKillsValue,
-                    { color: GameColors.statBarKill, fontSize: fs(16) },
-                  ]}>
-                  {SHIP_FLEET.reduce((acc, t) => acc + (enemyShipsSunkByType as ShipCounts)[t], 0)}
-                </Text>
-              </View>
+              <StatsShipList
+                counts={enemyShipsSunkByType as ShipCounts}
+                color={GameColors.statBarKill}
+              />
+              <StatsTotalRow
+                label={t('fleetKills.total')}
+                value={SHIP_FLEET.reduce(
+                  (acc, shipType) => acc + (enemyShipsSunkByType as ShipCounts)[shipType],
+                  0,
+                )}
+                color={GameColors.statBarKill}
+              />
             </View>
 
             {/* ── Ships Lost ────────────────────────────────────────────── */}
             <View style={[styles.section, styles.sectionLast, scaledSection]}>
               <SectionHeader label={t('shipsLost.title')} />
-              <View style={styles.shipList}>
-                {SHIP_FLEET.map(shipType => (
-                  <ShipRow
-                    key={shipType}
-                    shipType={shipType}
-                    count={(playerShipsLostByType as ShipCounts)[shipType]}
-                    max={maxLost}
-                    color={GameColors.statBarLoss}
-                    t={t}
-                  />
-                ))}
-              </View>
-              <View style={styles.totalKillsRow}>
-                <Text style={[styles.totalKillsLabel, { fontSize: fs(8) }]}>
-                  {t('shipsLost.total')}
-                </Text>
-                <Text
-                  style={[
-                    styles.totalKillsValue,
-                    { color: GameColors.statBarLoss, fontSize: fs(16) },
-                  ]}>
-                  {SHIP_FLEET.reduce((acc, t) => acc + (playerShipsLostByType as ShipCounts)[t], 0)}
-                </Text>
-              </View>
+              <StatsShipList
+                counts={playerShipsLostByType as ShipCounts}
+                color={GameColors.statBarLoss}
+              />
+              <StatsTotalRow
+                label={t('shipsLost.total')}
+                value={SHIP_FLEET.reduce(
+                  (acc, shipType) => acc + (playerShipsLostByType as ShipCounts)[shipType],
+                  0,
+                )}
+                color={GameColors.statBarLoss}
+              />
             </View>
           </>
         )}
@@ -639,65 +564,6 @@ const styles = StyleSheet.create({
   barFill: {
     height: '100%',
     borderRadius: 3,
-  },
-
-  // ── Ship rows ──
-  shipList: {
-    gap: 10,
-  },
-  shipRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  shipRowLeft: {
-    width: 100,
-    gap: 3,
-  },
-  shipName: {
-    fontFamily: Fonts.mono,
-    fontSize: 9,
-    letterSpacing: 2,
-    color: GameColors.labelDim,
-  },
-  shipPips: {
-    flexDirection: 'row',
-    gap: 2,
-  },
-  pip: {
-    width: 6,
-    height: 6,
-    borderRadius: 1,
-  },
-  shipBarContainer: {
-    flex: 1,
-  },
-  shipCount: {
-    fontFamily: 'BlackOpsOne',
-    fontSize: 16,
-    letterSpacing: 1,
-    width: 28,
-    textAlign: 'right',
-  },
-  totalKillsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: GameColors.blueBorder,
-    opacity: 0.7,
-  },
-  totalKillsLabel: {
-    fontFamily: Fonts.mono,
-    fontSize: 8,
-    letterSpacing: 2,
-    color: GameColors.labelFaded,
-  },
-  totalKillsValue: {
-    fontFamily: 'BlackOpsOne',
-    fontSize: 16,
-    letterSpacing: 1,
   },
 
   // ── Rank Progress Bar ──
