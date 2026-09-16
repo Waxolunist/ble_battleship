@@ -195,6 +195,34 @@ export function MultiplayerPanel({ onHostPress, onJoinPress }: MultiplayerPanelP
     }
   }, [requestPermissions, setState, addDiscoveredPeer, onJoinPress]);
 
+  // Manual escape hatch for a mixed-network pair: one phone sees Wi-Fi and
+  // waits on LAN while the other is on mobile data and is already showing the
+  // tap screen. Either side can drop to the NFC path on demand instead of
+  // waiting out LAN_SCAN_FALLBACK_MS (which never fires for a host at all).
+  const handleSwitchToNfc = useCallback(async () => {
+    multiplayerDebugLog.push('event', `UI: switch to NFC from ${state}`);
+    const hosting = state === 'HOST_ADVERTISING';
+    try {
+      if (hosting) {
+        await multiplayerService.stopAdvertising();
+      } else {
+        await multiplayerService.stopScanning();
+      }
+      setNetworkPath('nfc-webrtc');
+      if (hosting) {
+        await multiplayerService.startAdvertising(captainName, { pathOverride: 'nfc-webrtc' });
+      } else {
+        await multiplayerService.startScanning(
+          (id: string, name: string) => addDiscoveredPeer({ id, name }),
+          { pathOverride: 'nfc-webrtc' },
+        );
+      }
+    } catch (error) {
+      multiplayerDebugLog.push('error', 'UI: switch to NFC failed', String(error));
+      setState('IDLE');
+    }
+  }, [state, captainName, addDiscoveredPeer, setState]);
+
   const handleCancel = useCallback(async () => {
     multiplayerDebugLog.push('event', `UI: CANCEL from ${state}`);
     try {
@@ -280,7 +308,13 @@ export function MultiplayerPanel({ onHostPress, onJoinPress }: MultiplayerPanelP
           <Text style={styles.callsignLabel}>
             {t('multiplayer.yourCallsign')} {captainName}
           </Text>
-          <View style={styles.cancelRow}>
+          <Text style={styles.switchHint}>{t('multiplayer.orTapHint')}</Text>
+          <View style={styles.actionRow}>
+            <HapticPressable
+              onPress={handleSwitchToNfc}
+              style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}>
+              <Text style={styles.buttonText}>{t('multiplayer.tapInstead')}</Text>
+            </HapticPressable>
             <HapticPressable
               onPress={handleCancel}
               style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}>
@@ -311,7 +345,13 @@ export function MultiplayerPanel({ onHostPress, onJoinPress }: MultiplayerPanelP
               ))
             )}
           </View>
-          <View style={styles.cancelRow}>
+          <Text style={styles.switchHint}>{t('multiplayer.orTapHint')}</Text>
+          <View style={styles.actionRow}>
+            <HapticPressable
+              onPress={handleSwitchToNfc}
+              style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}>
+              <Text style={styles.buttonText}>{t('multiplayer.tapInstead')}</Text>
+            </HapticPressable>
             <HapticPressable
               onPress={handleCancel}
               style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}>
@@ -486,6 +526,18 @@ const styles = StyleSheet.create({
   cancelRow: {
     alignItems: 'flex-end',
     paddingVertical: 8,
+  },
+  actionRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 8,
+    paddingVertical: 8,
+  },
+  switchHint: {
+    color: GameColors.labelDim,
+    fontSize: 11,
+    fontFamily: Fonts.rounded,
+    textAlign: 'center',
   },
   handshakingContainer: {
     borderWidth: 1,

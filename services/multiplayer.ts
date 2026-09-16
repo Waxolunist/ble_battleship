@@ -76,10 +76,13 @@ class MultiplayerService {
     lanService.setOnCentralConnected(handler);
   }
 
-  async startAdvertising(captainName: string): Promise<void> {
+  async startAdvertising(
+    captainName: string,
+    opts?: { pathOverride?: NetworkPath },
+  ): Promise<void> {
     this.localCaptainName = captainName;
     this.role = 'host';
-    this.path = await getNetworkPath();
+    this.path = opts?.pathOverride ?? (await getNetworkPath());
     multiplayerDebugLog.push('event', 'startAdvertising →', `path=${this.path}`);
 
     if (this.path === 'lan') {
