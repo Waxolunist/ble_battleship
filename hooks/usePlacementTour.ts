@@ -16,9 +16,13 @@ const tourStorage: TourStorage = {
   },
 };
 
-function getPlacementTourConfig(t: (key: string) => string): TourGuideConfig {
+function getPlacementTourConfig(
+  t: (key: string) => string,
+  onTourEnd: () => void,
+): TourGuideConfig {
   return {
     tourId: 'placement',
+    onTourEnd,
     nextButtonText: t('tutorial:placement.next'),
     skipButtonText: t('tutorial:placement.skip'),
     doneButtonText: t('tutorial:placement.done'),
@@ -117,12 +121,16 @@ export function usePlacementTour(
 ) {
   const { t } = useTranslation('tutorial');
   const translate = t as unknown as (key: string) => string;
-  const { startTour } = useTourPersistence(tourStorage);
+  const { startTour, markCompleted } = useTourPersistence(tourStorage);
+
+  const handleTourEnd = useCallback(() => {
+    void markCompleted('placement');
+  }, [markCompleted]);
 
   useEffect(() => {
     void startTour(
       buildSteps(titleRef, trayRef, rotateRef, shuffleRef, translate),
-      getPlacementTourConfig(translate),
+      getPlacementTourConfig(translate, handleTourEnd),
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [t]);
@@ -130,10 +138,10 @@ export function usePlacementTour(
   const replayTour = useCallback(() => {
     void startTour(
       buildSteps(titleRef, trayRef, rotateRef, shuffleRef, translate),
-      getPlacementTourConfig(translate),
+      getPlacementTourConfig(translate, handleTourEnd),
       true,
     );
-  }, [startTour, titleRef, trayRef, rotateRef, shuffleRef, translate]);
+  }, [startTour, titleRef, trayRef, rotateRef, shuffleRef, translate, handleTourEnd]);
 
   return { replayTour };
 }

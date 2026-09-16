@@ -16,9 +16,10 @@ const tourStorage: TourStorage = {
   },
 };
 
-function getBattleTourConfig(t: (key: string) => string): TourGuideConfig {
+function getBattleTourConfig(t: (key: string) => string, onTourEnd: () => void): TourGuideConfig {
   return {
     tourId: 'battle',
+    onTourEnd,
     nextButtonText: t('tutorial:battle.next'),
     skipButtonText: t('tutorial:battle.skip'),
     doneButtonText: t('tutorial:battle.done'),
@@ -142,8 +143,12 @@ export function useBattleTour(
 ) {
   const { t } = useTranslation('tutorial');
   const translate = t as unknown as (key: string) => string;
-  const { startTour } = useTourPersistence(tourStorage);
+  const { startTour, markCompleted } = useTourPersistence(tourStorage);
   const hasStarted = useRef(false);
+
+  const handleTourEnd = useCallback(() => {
+    void markCompleted('battle');
+  }, [markCompleted]);
 
   useEffect(() => {
     if (!showOpponentField || hasStarted.current) return;
@@ -158,7 +163,7 @@ export function useBattleTour(
         retreatRef,
         translate,
       ),
-      getBattleTourConfig(translate),
+      getBattleTourConfig(translate, handleTourEnd),
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showOpponentField, t]);
@@ -174,7 +179,7 @@ export function useBattleTour(
         retreatRef,
         translate,
       ),
-      getBattleTourConfig(translate),
+      getBattleTourConfig(translate, handleTourEnd),
       true,
     );
   }, [
@@ -186,6 +191,7 @@ export function useBattleTour(
     enemyCounterRef,
     retreatRef,
     translate,
+    handleTourEnd,
   ]);
 
   return { replayTour };
