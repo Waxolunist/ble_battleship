@@ -28,6 +28,12 @@ export function isValidPlacement(
   });
 }
 
+// Ship ids must be unique within a grid: applyFire marks a sunk hull by id and
+// serializeFleet dedupes by id, so two ships sharing one id would sink and
+// serialize as a single ship. A timestamp is not enough — a fleet is placed in
+// a tight loop, well inside one millisecond.
+let shipSequence = 0;
+
 export function placeShip(
   fields: Field[][],
   shipType: ShipType,
@@ -35,7 +41,7 @@ export function placeShip(
   orientation: Orientation,
 ): Field[][] {
   const ship: Ship = {
-    id: `${shipType}-${Date.now()}`,
+    id: `${shipType}-${++shipSequence}`,
     type: shipType,
     parts: [],
     orientation,
