@@ -4,10 +4,11 @@ import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 import '@/i18n';
+import { preloadSounds } from '@/services/audio';
 import { useLanguageStore } from '@/store/useLanguageStore';
 import { MultiplayerDebugPanel } from '@/components/multiplayer/MultiplayerDebugPanel';
 import { SplashOverlay } from '@/components/splash-overlay';
@@ -26,6 +27,10 @@ export default function RootLayout() {
   const [fontsLoaded] = useFonts({
     BlackOpsOne: require('../assets/fonts/BlackOpsOne-Regular.ttf'),
   });
+
+  useEffect(() => {
+    preloadSounds(['uiTap']);
+  }, []);
 
   const [splashDone, setSplashDone] = useState(false);
   const handleSplashFinish = useCallback(() => setSplashDone(true), []);

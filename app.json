@@ -64,7 +64,8 @@
       "expo-image",
       "expo-font",
       "expo-localization",
-      "./plugins/with-android-fullscreen-splash"
+      "./plugins/with-android-fullscreen-splash",
+      "expo-audio"
     ],
     "experiments": {
       "typedRoutes": true,

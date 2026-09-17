@@ -1,3 +1,4 @@
+import { playSound } from '@/services/audio';
 import { Platform } from 'react-native';
 import {
   Easing,
@@ -42,6 +43,7 @@ export function useVictoryAnimation({
     hasTriggered.current = true;
     setIsVictory(true);
     onGameEnd?.('victory');
+    playSound('victoryFanfare');
 
     (async () => {
       // Haptics: medium × 3 → heavy

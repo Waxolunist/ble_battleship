@@ -1,5 +1,6 @@
 import { serializeFleet } from '@/engine/fleet-conversion';
 import type { Opponent } from '@/models/opponent';
+import { playSound } from '@/services/audio';
 import { leaveMultiplayerSession } from '@/services/multiplayer';
 import { useGameStore } from '@/store/useGameStore';
 import { useMultiplayerStore } from '@/store/useMultiplayerStore';
@@ -91,6 +92,7 @@ export function useBattleAnimations(opponent: Opponent): BattleAnimations {
         return;
       }
       startBattle(prepared);
+      playSound('battleStart');
       flashScale.value = 0.2;
       flashOpacity.value = withSequence(
         withTiming(1, { duration: 600, easing: Easing.out(Easing.cubic) }),
@@ -109,6 +111,7 @@ export function useBattleAnimations(opponent: Opponent): BattleAnimations {
   // retreat leaves the match outright — BYE tells the peer it was deliberate
   // rather than a dropped connection.
   const onRetreat = () => {
+    playSound('retreatAlarm');
     navigation.setOptions({ animation: 'none' });
     const isMultiplayer = useMultiplayerStore.getState().mode === 'multiplayer';
     if (isMultiplayer) {

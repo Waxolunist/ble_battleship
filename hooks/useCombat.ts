@@ -1,6 +1,7 @@
 import { GameColors } from '@/constants/theme';
 import type { Opponent } from '@/models/opponent';
 import type { ShotPhase } from '@/models/types';
+import { playSound, preloadSounds } from '@/services/audio';
 import { useGameStore } from '@/store/useGameStore';
 import * as Haptics from 'expo-haptics';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -18,6 +19,18 @@ export function useCombat(opponent: Opponent): {
   const isFiring = useRef(false);
   const isEnemyFiring = useRef(false);
 
+  useEffect(() => {
+    preloadSounds([
+      'targetLock',
+      'cannonFire',
+      'incomingShell',
+      'shotHit',
+      'shotMiss',
+      'shipSunk',
+      'sonarPing',
+    ]);
+  }, []);
+
   const onPlayerFire = useCallback(
     (x: number, y: number) => {
       if (isFiring.current) return;
@@ -31,11 +44,13 @@ export function useCombat(opponent: Opponent): {
       markTargeted('opponent', x, y);
       setShotPhase({ x, y, grid: 'opponent', beat: 'locked', reticleColor: GameColors.gold });
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+      playSound('targetLock');
 
       // Beat 2 — Impact (200 ms): screen shake + heavy haptic
       const t1 = setTimeout(() => {
         setShotPhase({ x, y, grid: 'opponent', beat: 'impact', reticleColor: GameColors.gold });
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => {});
+        playSound('cannonFire');
       }, 200);
 
       // Beat 3 — Verdict (450 ms): resolve via opponent, show result
@@ -56,6 +71,7 @@ export function useCombat(opponent: Opponent): {
               ? Haptics.ImpactFeedbackStyle.Medium
               : Haptics.ImpactFeedbackStyle.Light;
         Haptics.impactAsync(hapticStyle).catch(() => {});
+        playSound(result === 'sunk' ? 'shipSunk' : result === 'hit' ? 'shotHit' : 'shotMiss');
       }, 450);
 
       // Clear phase and hand off to enemy (900 ms total)
@@ -84,6 +100,7 @@ export function useCombat(opponent: Opponent): {
         markTargeted('player', x, y);
         setShotPhase({ x, y, grid: 'player', beat: 'locked', reticleColor: GameColors.red });
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+        playSound('incomingShell');
       }, 400);
 
       // Beat 2 — Impact (550 ms)
@@ -113,6 +130,7 @@ export function useCombat(opponent: Opponent): {
               ? Haptics.ImpactFeedbackStyle.Medium
               : Haptics.ImpactFeedbackStyle.Light;
         Haptics.impactAsync(hapticStyle).catch(() => {});
+        playSound(result === 'sunk' ? 'shipSunk' : result === 'hit' ? 'shotHit' : 'shotMiss');
         opponent.reportEnemyShotResolution(x, y, result);
       }, 750);
 
@@ -121,6 +139,12 @@ export function useCombat(opponent: Opponent): {
         setShotPhase(null);
         isEnemyFiring.current = false;
         setTurn('player');
+        // Silence the hand-back ping once the fleet is gone — the defeat
+        // sequence owns the audio from here.
+        const fleetAlive = useGameStore
+          .getState()
+          .fields.some(row => row.some(f => f.shipPart && f.status !== 'sunk'));
+        if (fleetAlive) playSound('sonarPing');
       }, 1100);
 
       enemyTimers.current = [t1, t2, t3, t4];

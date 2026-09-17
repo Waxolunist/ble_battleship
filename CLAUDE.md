@@ -72,6 +72,24 @@ const { impactAsync, ImpactFeedbackStyle } = await import('expo-haptics');
 impactAsync(ImpactFeedbackStyle.Heavy).catch(() => {});
 ```
 
+### Sound effects
+
+All sound lives in `assets/sounds/` and is declared in the `SOUNDS` map in [constants/assets.ts](constants/assets.ts). Play it through `playSound()` from [services/audio.ts](services/audio.ts) — never `require()` an audio file inline and never talk to `expo-audio` directly.
+
+```ts
+// ✗ bad
+const player = createAudioPlayer(require('@/assets/sounds/shot_hit.wav'));
+player.play();
+
+// ✓ good
+import { playSound } from '@/services/audio';
+playSound('shotHit');
+```
+
+`playSound()` never throws and restarts a sound that is still playing, so it is safe to call from timers, gesture callbacks and animation sequences. Call `preloadSounds([...])` in an effect when a screen mounts so its first cue isn't delayed by decoding.
+
+Sound pairs with haptics rather than replacing it: an event that earns a haptic beat usually earns a sound on the same beat. Adding a new sound means adding the file to `assets/sounds/`, a `SOUNDS` entry with a JSDoc line naming the event that fires it, and loudness-matching the file against its neighbours — every cue is levelled by RMS, not by peak.
+
 ### Typography
 
 The game has two font voices — military display and system UI. Use them consistently:

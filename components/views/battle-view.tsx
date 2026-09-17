@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { GameField } from '@/components/game-field';
 import { HapticPressable } from '@/components/haptic-pressable';
+import { playSound } from '@/services/audio';
 import { TutorialHelpButton } from '@/components/tutorial-help-button';
 import { DEV_SHOW_FORCE_VICTORY } from '@/constants/dev';
 import { GameColors } from '@/constants/theme';
@@ -192,7 +193,10 @@ export function BattleView({
             <Text style={styles.confirmMessage}>{t('retreat.confirmMessage')}</Text>
             <View style={styles.confirmButtons}>
               <Pressable
-                onPress={() => setConfirmingRetreat(false)}
+                onPress={() => {
+                  playSound('uiTap');
+                  setConfirmingRetreat(false);
+                }}
                 style={({ pressed }) => [styles.holdButton, pressed && styles.holdButtonPressed]}>
                 <Text style={styles.holdButtonText}>{t('retreat.holdTheLine')}</Text>
               </Pressable>

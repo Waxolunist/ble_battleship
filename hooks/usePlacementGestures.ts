@@ -1,6 +1,7 @@
 import { computeCell } from '@/components/game-field';
 import { buildPreviewCells, isValidPlacement } from '@/engine/placement';
 import type { ShipType } from '@/models/types';
+import { playSound, preloadSounds } from '@/services/audio';
 import { useGameStore } from '@/store/useGameStore';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
@@ -51,6 +52,10 @@ export function usePlacementGestures(cellSize: number): PlacementGestureHandlers
   const dragY = useSharedValue(0);
 
   useEffect(() => {
+    preloadSounds(['shipPickup', 'shipDrop', 'shipBlocked', 'shipRotate', 'fleetShuffle']);
+  }, []);
+
+  useEffect(() => {
     const id = setTimeout(() => {
       gridBodyRef.current?.measureInWindow((x, y) => {
         gridOriginRef.current = { x, y };
@@ -86,6 +91,7 @@ export function usePlacementGestures(cellSize: number): PlacementGestureHandlers
       });
       draggingShipRef.current = ship;
       setDraggingShip(ship);
+      playSound('shipPickup');
       updatePreview(ship, pageX, pageY);
     },
     [updatePreview],
@@ -160,22 +166,33 @@ export function usePlacementGestures(cellSize: number): PlacementGestureHandlers
           pageY <= tray.y + tray.height
         ) {
           removeShipFromBoard(ship, fromGridShipId);
+          playSound('shipDrop');
           return;
         }
       }
 
-      if (!valid) return;
+      if (!valid) {
+        playSound('shipBlocked');
+        return;
+      }
       placeShipOnBoard(ship, cells, orientation, fromGridShipId);
+      playSound('shipDrop');
     },
     [orientations, cellSize, fields, placeShipOnBoard, removeShipFromBoard],
   );
 
   const onOrientationToggle = useCallback(
-    (ship: ShipType) => toggleOrientation(ship),
+    (ship: ShipType) => {
+      playSound('shipRotate');
+      toggleOrientation(ship);
+    },
     [toggleOrientation],
   );
 
-  const onRandomize = useCallback(() => randomizeFleet(), [randomizeFleet]);
+  const onRandomize = useCallback(() => {
+    playSound('fleetShuffle');
+    randomizeFleet();
+  }, [randomizeFleet]);
 
   return {
     draggingShip,

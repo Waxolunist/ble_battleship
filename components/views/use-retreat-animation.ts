@@ -1,3 +1,4 @@
+import { playSound } from '@/services/audio';
 import { Platform } from 'react-native';
 import {
   Easing,
@@ -85,6 +86,7 @@ export function useRetreatAnimation({
     setConfirmingRetreat(false);
     setIsRetreating(true);
     onGameEnd?.('defeat');
+    playSound('defeatHorn');
 
     // Haptics: light → light → heavy (defeat sequence)
     if (Platform.OS !== 'web') {
@@ -174,6 +176,7 @@ export function useRetreatAnimation({
   };
 
   const handleRetreatPress = async () => {
+    playSound('retreatAlarm');
     if (Platform.OS !== 'web') {
       const { impactAsync, ImpactFeedbackStyle } = await import('expo-haptics');
       impactAsync(ImpactFeedbackStyle.Medium).catch(() => {});
