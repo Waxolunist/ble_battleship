@@ -1,33 +1,30 @@
-import {
-  MULTIPLAYER_HELLO_MAGIC,
-  MULTIPLAYER_HELLO_TIMEOUT_MS,
-  MULTIPLAYER_PROTOCOL_VERSION,
-} from '@/constants/multiplayer';
+import { MULTIPLAYER_HELLO_TIMEOUT_MS } from '@/constants/multiplayer';
 import { getNetworkPath, type NetworkPath } from './network-detector';
 import { lanService } from './lan';
 import { multiplayerDebugLog } from './multiplayer-debug-log';
 import * as nfc from './nfc';
+import {
+  buildHello,
+  describePayload,
+  Handshake,
+  MessageEmitter,
+  MessageQueue,
+  parseMessage,
+  validateHello,
+  type MultiplayerEventHandler,
+  type MultiplayerMessage,
+  type MultiplayerRole,
+} from './protocol';
 import { webrtcService } from './webrtc';
 
-// ─── Exported types ──────────────────────────────────────────────────────
-
-export type MultiplayerMessageType =
-  | 'HELLO'
-  | 'FLEET_READY'
-  | 'FIRE'
-  | 'SHOT_RESULT'
-  | 'GAME_OVER'
-  | 'REMATCH'
-  | 'BYE';
-
-export interface MultiplayerMessage {
-  type: MultiplayerMessageType;
-  data?: Record<string, unknown>;
-}
-
-export type MultiplayerRole = 'host' | 'joiner';
-
-export type MultiplayerEventHandler = (message: MultiplayerMessage) => void;
+// The wire format lives in protocol.ts; re-exported here so callers keep a
+// single entry point into the multiplayer layer.
+export type {
+  MultiplayerEventHandler,
+  MultiplayerMessage,
+  MultiplayerMessageType,
+  MultiplayerRole,
+} from './protocol';
 
 /** Sentinel peer ID used on the NFC+WebRTC path where there is no discovery step. */
 export const NFC_PEER_ID = 'nfc';
@@ -50,16 +47,24 @@ class MultiplayerService {
   private role: MultiplayerRole | null = null;
   private isConnected = false;
   private localCaptainName = '';
-  private messageQueue: MultiplayerMessage[] = [];
-  private messageHandlers: MultiplayerEventHandler[] = [];
+  private messageQueue = new MessageQueue();
+  private emitter = new MessageEmitter();
   private lanMessageUnsub: (() => void) | null = null;
   private webrtcRawUnsub: (() => void) | null = null;
 
   // HELLO state — used only on the NFC+WebRTC path.
-  private handshakeState: 'idle' | 'awaiting' | 'complete' = 'idle';
-  private handshakeTimer: ReturnType<typeof setTimeout> | null = null;
-  private handshakeResolve: ((peerName: string) => void) | null = null;
-  private handshakeReject: ((err: Error) => void) | null = null;
+  private handshake = new Handshake({
+    onTimeout: () =>
+      multiplayerDebugLog.push(
+        'error',
+        'WebRTC HELLO timeout',
+        `no valid HELLO within ${MULTIPLAYER_HELLO_TIMEOUT_MS}ms`,
+      ),
+    onFail: () =>
+      this.disconnect().catch(e =>
+        multiplayerDebugLog.push('warn', 'disconnect during handshake fail', String(e)),
+      ),
+  });
 
   private onDisconnectCb: (() => void) | null = null;
   private onCentralConnectedCb: ((peerName: string) => void) | null = null;
@@ -87,9 +92,7 @@ class MultiplayerService {
 
     if (this.path === 'lan') {
       this.lanMessageUnsub?.();
-      this.lanMessageUnsub = lanService.onMessage(msg =>
-        this._emitMessage(msg as MultiplayerMessage),
-      );
+      this.lanMessageUnsub = lanService.onMessage(msg => this._emitMessage(msg));
       lanService.setOnDisconnect(this.onDisconnectCb);
       lanService.setOnCentralConnected((peerName: string) => {
         this._flushQueue();
@@ -111,7 +114,7 @@ class MultiplayerService {
       await lanService.stopAdvertising();
     } else if (this.path === 'nfc-webrtc') {
       webrtcService.close();
-      this._abortHandshake('stopAdvertising');
+      this.handshake.abort('stopAdvertising');
     }
     if (this.role === 'host') this.role = null;
     multiplayerDebugLog.push('info', 'stopAdvertising');
@@ -137,9 +140,7 @@ class MultiplayerService {
 
     if (this.path === 'lan') {
       this.lanMessageUnsub?.();
-      this.lanMessageUnsub = lanService.onMessage(msg =>
-        this._emitMessage(msg as MultiplayerMessage),
-      );
+      this.lanMessageUnsub = lanService.onMessage(msg => this._emitMessage(msg));
       await lanService.startScanning(onDeviceFound);
     } else {
       // NFC+WebRTC joiner — read the host's offer on tap 1.
@@ -195,7 +196,7 @@ class MultiplayerService {
       await lanService.disconnect();
     } else if (this.path === 'nfc-webrtc') {
       webrtcService.close();
-      this._abortHandshake('disconnect');
+      this.handshake.abort('disconnect');
     }
 
     this._reset();
@@ -210,23 +211,15 @@ class MultiplayerService {
     }
 
     if (this.path === 'lan') {
-      await lanService.sendMessage(message as Parameters<typeof lanService.sendMessage>[0]);
+      await lanService.sendMessage(message);
     } else {
-      const json = JSON.stringify(message);
-      webrtcService.sendRaw(json);
-      multiplayerDebugLog.push(
-        'tx',
-        message.type,
-        message.data ? JSON.stringify(message.data) : undefined,
-      );
+      webrtcService.sendRaw(JSON.stringify(message));
+      multiplayerDebugLog.push('tx', message.type, describePayload(message));
     }
   }
 
   onMessage(handler: MultiplayerEventHandler): () => void {
-    this.messageHandlers.push(handler);
-    return () => {
-      this.messageHandlers = this.messageHandlers.filter(h => h !== handler);
-    };
+    return this.emitter.subscribe(handler);
   }
 
   getRole(): MultiplayerRole | null {
@@ -321,143 +314,63 @@ class MultiplayerService {
     });
 
     this.webrtcRawUnsub = webrtcService.onRawMessage(raw => {
-      try {
-        const message = JSON.parse(raw) as MultiplayerMessage;
-        multiplayerDebugLog.push(
-          'rx',
-          message.type,
-          message.data ? JSON.stringify(message.data) : undefined,
-        );
-
-        if (message.type === 'HELLO') {
-          this._handleIncomingHello(message);
-          return;
-        }
-
-        if (this.handshakeState !== 'complete') {
-          multiplayerDebugLog.push('warn', `dropped pre-handshake ${message.type}`);
-          return;
-        }
-
-        this._emitMessage(message);
-      } catch (e) {
-        multiplayerDebugLog.push('error', 'WebRTC RX parse failed', String(e));
+      const message = parseMessage(raw);
+      if (!message) {
+        multiplayerDebugLog.push('error', 'WebRTC RX parse failed', raw.slice(0, 120));
+        return;
       }
+
+      multiplayerDebugLog.push('rx', message.type, describePayload(message));
+
+      if (message.type === 'HELLO') {
+        this._handleIncomingHello(message);
+        return;
+      }
+
+      if (!this.handshake.isComplete()) {
+        multiplayerDebugLog.push('warn', `dropped pre-handshake ${message.type}`);
+        return;
+      }
+
+      this.emitter.emit(message);
     });
   }
 
   private _sendWebRTCHello(captainName: string): void {
-    const msg: MultiplayerMessage = {
-      type: 'HELLO',
-      data: {
-        magic: MULTIPLAYER_HELLO_MAGIC,
-        protocolVersion: MULTIPLAYER_PROTOCOL_VERSION,
-        captainName,
-      },
-    };
-    webrtcService.sendRaw(JSON.stringify(msg));
+    webrtcService.sendRaw(JSON.stringify(buildHello(captainName)));
     multiplayerDebugLog.push('info', 'WebRTC HELLO sent');
   }
 
   /** Returns a promise that resolves with the peer's captain name once HELLO completes. */
   private _awaitHello(): Promise<string> {
-    this._clearHandshakeTimer();
-    this.handshakeState = 'awaiting';
-    return new Promise<string>((resolve, reject) => {
-      this.handshakeResolve = resolve;
-      this.handshakeReject = reject;
-      this.handshakeTimer = setTimeout(() => {
-        multiplayerDebugLog.push(
-          'error',
-          'WebRTC HELLO timeout',
-          `no valid HELLO within ${MULTIPLAYER_HELLO_TIMEOUT_MS}ms`,
-        );
-        this._failHandshake(new Error('HELLO timeout'));
-      }, MULTIPLAYER_HELLO_TIMEOUT_MS);
-    });
+    return this.handshake.start();
   }
 
   private _handleIncomingHello(message: MultiplayerMessage): void {
-    const data = message.data ?? {};
-    const magic = data.magic;
-    const version = data.protocolVersion;
-    const peerName = typeof data.captainName === 'string' ? data.captainName : '';
-
-    if (magic !== MULTIPLAYER_HELLO_MAGIC) {
-      multiplayerDebugLog.push('error', 'WebRTC HELLO rejected', `bad magic: ${String(magic)}`);
-      this._failHandshake(new Error('Invalid HELLO magic'));
-      return;
-    }
-    if (version !== MULTIPLAYER_PROTOCOL_VERSION) {
-      multiplayerDebugLog.push(
-        'error',
-        'WebRTC HELLO rejected',
-        `version mismatch: ${String(version)}`,
+    const result = validateHello(message);
+    if (!result.ok) {
+      multiplayerDebugLog.push('error', 'WebRTC HELLO rejected', result.detail);
+      this.handshake.fail(
+        new Error(result.reason === 'magic' ? 'Invalid HELLO magic' : 'Protocol version mismatch'),
       );
-      this._failHandshake(new Error('Protocol version mismatch'));
       return;
     }
 
-    multiplayerDebugLog.push('info', 'WebRTC HELLO accepted', `peer "${peerName}"`);
+    multiplayerDebugLog.push('info', 'WebRTC HELLO accepted', `peer "${result.peerName}"`);
 
-    if (this.role === 'host') {
-      // Echo our HELLO, then resolve.
-      this._sendWebRTCHello(this.localCaptainName);
-      this._succeedHandshake(peerName);
-    } else {
-      // Joiner — host's echo resolves connect().
-      this._succeedHandshake(peerName);
-    }
-  }
-
-  private _clearHandshakeTimer(): void {
-    if (this.handshakeTimer) {
-      clearTimeout(this.handshakeTimer);
-      this.handshakeTimer = null;
-    }
-  }
-
-  private _succeedHandshake(peerName: string): void {
-    const resolve = this.handshakeResolve;
-    this._clearHandshakeTimer();
-    this.handshakeState = 'complete';
-    this.handshakeResolve = null;
-    this.handshakeReject = null;
-    resolve?.(peerName);
-  }
-
-  private _failHandshake(err: Error): void {
-    const reject = this.handshakeReject;
-    this._clearHandshakeTimer();
-    this.handshakeState = 'idle';
-    this.handshakeResolve = null;
-    this.handshakeReject = null;
-    this.disconnect().catch(e =>
-      multiplayerDebugLog.push('warn', 'disconnect during handshake fail', String(e)),
-    );
-    reject?.(err);
-  }
-
-  private _abortHandshake(reason: string): void {
-    if (this.handshakeState === 'idle') return;
-    const reject = this.handshakeReject;
-    this._clearHandshakeTimer();
-    this.handshakeState = 'idle';
-    this.handshakeResolve = null;
-    this.handshakeReject = null;
-    reject?.(new Error(`handshake aborted: ${reason}`));
+    // Host echoes its own HELLO first; the joiner's echo already resolved.
+    if (this.role === 'host') this._sendWebRTCHello(this.localCaptainName);
+    this.handshake.succeed(result.peerName);
   }
 
   // ─── Helpers ──────────────────────────────────────────────────────────────
 
   private _emitMessage(message: MultiplayerMessage): void {
-    this.messageHandlers.forEach(h => h(message));
+    this.emitter.emit(message);
   }
 
   private _flushQueue(): void {
-    const queued = this.messageQueue;
-    this.messageQueue = [];
-    for (const msg of queued) {
+    for (const msg of this.messageQueue.drain()) {
       this.sendMessage(msg).catch(e =>
         multiplayerDebugLog.push('error', 'flush failed', String(e)),
       );
@@ -468,9 +381,9 @@ class MultiplayerService {
     this.isConnected = false;
     this.role = null;
     this.path = null;
-    this.messageQueue = [];
+    this.messageQueue.clear();
     this.nfcAnswerSdp = null;
-    this._abortHandshake('reset');
+    this.handshake.abort('reset');
   }
 
   /** Test/mock hook — simulate receiving a message from the peer. */

@@ -2,7 +2,8 @@ import NetInfo from '@react-native-community/netinfo';
 
 export type NetworkPath = 'lan' | 'nfc-webrtc';
 
-function toPath(type: string): NetworkPath {
+/** Maps a NetInfo connection type to the transport path the game should use. */
+export function toPath(type: string): NetworkPath {
   return type === 'wifi' || type === 'other' ? 'lan' : 'nfc-webrtc';
 }
 

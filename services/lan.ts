@@ -1,24 +1,24 @@
-import {
-  MDNS_SERVICE_TYPE,
-  MULTIPLAYER_HELLO_MAGIC,
-  MULTIPLAYER_HELLO_TIMEOUT_MS,
-  MULTIPLAYER_PROTOCOL_VERSION,
-  TCP_PORT,
-} from '@/constants/multiplayer';
+import { MDNS_SERVICE_TYPE, MULTIPLAYER_HELLO_TIMEOUT_MS, TCP_PORT } from '@/constants/multiplayer';
 import TcpSocket from 'react-native-tcp-socket';
 import Zeroconf from 'react-native-zeroconf';
 import { multiplayerDebugLog } from './multiplayer-debug-log';
+import {
+  buildHello,
+  describePayload,
+  encodeNdjson,
+  Handshake,
+  MessageEmitter,
+  MessageQueue,
+  NdjsonBuffer,
+  parseMessage,
+  validateHello,
+  type MultiplayerEventHandler,
+  type MultiplayerMessage,
+} from './protocol';
 
 // Zeroconf expects type and protocol split out from the service type string.
 const [ZEROCONF_TYPE, ZEROCONF_PROTOCOL] = MDNS_SERVICE_TYPE.replace(/^_/, '').split('._');
 const ZEROCONF_DOMAIN = 'local.';
-
-interface Message {
-  type: string;
-  data?: Record<string, unknown>;
-}
-
-type MessageHandler = (message: Message) => void;
 
 interface ResolvedPeer {
   host: string;
@@ -48,16 +48,24 @@ class LanService {
   private isAdvertising = false;
   private isScanning = false;
   private localCaptainName = '';
-  private buffer = '';
-  private messageQueue: Message[] = [];
-  private messageHandlers: MessageHandler[] = [];
+  private buffer = new NdjsonBuffer();
+  private messageQueue = new MessageQueue();
+  private emitter = new MessageEmitter();
   private resolvedPeers = new Map<string, ResolvedPeer>();
   private zeroconfListenersBound = false;
 
-  private handshakeState: 'idle' | 'awaiting' | 'complete' = 'idle';
-  private handshakeTimer: ReturnType<typeof setTimeout> | null = null;
-  private handshakeResolve: ((peerName: string) => void) | null = null;
-  private handshakeReject: ((err: Error) => void) | null = null;
+  private handshake = new Handshake({
+    onTimeout: () =>
+      multiplayerDebugLog.push(
+        'error',
+        'LAN HELLO timeout',
+        `no valid HELLO within ${MULTIPLAYER_HELLO_TIMEOUT_MS}ms`,
+      ),
+    onFail: () =>
+      this.disconnect().catch(e =>
+        multiplayerDebugLog.push('warn', 'disconnect during handshake fail', String(e)),
+      ),
+  });
 
   private onDisconnectCb: (() => void) | null = null;
   private onCentralConnectedCb: ((peerName: string) => void) | null = null;
@@ -91,9 +99,9 @@ class LanService {
       // Close the server so no further clients can connect.
       this.server?.close();
       this.server = null;
-      this._startHandshakeAwait().catch(e =>
-        multiplayerDebugLog.push('warn', 'host handshake aborted', String(e)),
-      );
+      this.handshake
+        .start()
+        .catch(e => multiplayerDebugLog.push('warn', 'host handshake aborted', String(e)));
     });
 
     (this.server as { on(event: string, cb: (e: Error) => void): void }).on(
@@ -209,15 +217,8 @@ class LanService {
 
     this._attachSocketHandlers();
 
-    const helloPromise = this._startHandshakeAwait();
-    this._writeRaw({
-      type: 'HELLO',
-      data: {
-        magic: MULTIPLAYER_HELLO_MAGIC,
-        protocolVersion: MULTIPLAYER_PROTOCOL_VERSION,
-        captainName,
-      },
-    });
+    const helloPromise = this.handshake.start();
+    this._writeRaw(buildHello(captainName));
     multiplayerDebugLog.push('info', 'LAN HELLO sent, awaiting reply');
 
     const peerName = await helloPromise;
@@ -235,25 +236,18 @@ class LanService {
     this._teardown();
   }
 
-  async sendMessage(message: Message): Promise<void> {
+  async sendMessage(message: MultiplayerMessage): Promise<void> {
     if (!this.isConnected) {
       this.messageQueue.push(message);
       multiplayerDebugLog.push('warn', 'LAN TX queued (not connected)', message.type);
       return;
     }
     this._writeRaw(message);
-    multiplayerDebugLog.push(
-      'tx',
-      message.type,
-      message.data ? JSON.stringify(message.data) : undefined,
-    );
+    multiplayerDebugLog.push('tx', message.type, describePayload(message));
   }
 
-  onMessage(handler: MessageHandler): () => void {
-    this.messageHandlers.push(handler);
-    return () => {
-      this.messageHandlers = this.messageHandlers.filter(h => h !== handler);
-    };
+  onMessage(handler: MultiplayerEventHandler): () => void {
+    return this.emitter.subscribe(handler);
   }
 
   getRole(): 'host' | 'joiner' | null {
@@ -298,148 +292,70 @@ class LanService {
     });
   }
 
-  private _writeRaw(message: Message): void {
+  private _writeRaw(message: MultiplayerMessage): void {
     try {
-      const line = JSON.stringify(message) + '\n';
-      (this.socket as { write(data: string, encoding: string): void }).write(line, 'utf8');
+      (this.socket as { write(data: string, encoding: string): void }).write(
+        encodeNdjson(message),
+        'utf8',
+      );
     } catch (e) {
       multiplayerDebugLog.push('error', `LAN TX ${message.type} failed`, String(e));
     }
   }
 
   private _handleData(text: string): void {
-    this.buffer += text;
-    const lines = this.buffer.split('\n');
-    this.buffer = lines.pop() ?? '';
-    for (const line of lines) {
-      const trimmed = line.trim();
-      if (trimmed) this._handleLine(trimmed);
-    }
+    for (const line of this.buffer.push(text)) this._handleLine(line);
   }
 
   private _handleLine(line: string): void {
-    try {
-      const message = JSON.parse(line) as Message;
-      multiplayerDebugLog.push(
-        'rx',
-        message.type,
-        message.data ? JSON.stringify(message.data) : undefined,
-      );
-
-      if (message.type === 'HELLO') {
-        this._handleHello(message);
-        return;
-      }
-
-      if (this.handshakeState !== 'complete') {
-        multiplayerDebugLog.push('warn', `dropped pre-handshake ${message.type}`);
-        return;
-      }
-
-      this.messageHandlers.forEach(h => h(message));
-    } catch (e) {
-      multiplayerDebugLog.push('error', 'LAN RX parse failed', String(e));
+    const message = parseMessage(line);
+    if (!message) {
+      multiplayerDebugLog.push('error', 'LAN RX parse failed', line.slice(0, 120));
+      return;
     }
+
+    multiplayerDebugLog.push('rx', message.type, describePayload(message));
+
+    if (message.type === 'HELLO') {
+      this._handleHello(message);
+      return;
+    }
+
+    if (!this.handshake.isComplete()) {
+      multiplayerDebugLog.push('warn', `dropped pre-handshake ${message.type}`);
+      return;
+    }
+
+    this.emitter.emit(message);
   }
 
-  private _handleHello(message: Message): void {
-    const data = message.data ?? {};
-    const magic = data.magic;
-    const version = data.protocolVersion;
-    const peerName = typeof data.captainName === 'string' ? data.captainName : '';
-
-    if (magic !== MULTIPLAYER_HELLO_MAGIC) {
-      multiplayerDebugLog.push('error', 'HELLO rejected', `bad magic: ${String(magic)}`);
-      this._failHandshake(new Error('Invalid HELLO magic'));
-      return;
-    }
-    if (version !== MULTIPLAYER_PROTOCOL_VERSION) {
-      multiplayerDebugLog.push('error', 'HELLO rejected', `version mismatch: ${String(version)}`);
-      this._failHandshake(new Error('Protocol version mismatch'));
+  private _handleHello(message: MultiplayerMessage): void {
+    const result = validateHello(message);
+    if (!result.ok) {
+      multiplayerDebugLog.push('error', 'HELLO rejected', result.detail);
+      this.handshake.fail(
+        new Error(result.reason === 'magic' ? 'Invalid HELLO magic' : 'Protocol version mismatch'),
+      );
       return;
     }
 
-    multiplayerDebugLog.push('info', 'HELLO accepted', `peer "${peerName}"`);
+    multiplayerDebugLog.push('info', 'HELLO accepted', `peer "${result.peerName}"`);
 
     if (this.role === 'host') {
       // Reply with our own HELLO, promote the link.
-      this._writeRaw({
-        type: 'HELLO',
-        data: {
-          magic: MULTIPLAYER_HELLO_MAGIC,
-          protocolVersion: MULTIPLAYER_PROTOCOL_VERSION,
-          captainName: this.localCaptainName,
-        },
-      });
+      this._writeRaw(buildHello(this.localCaptainName));
       this.isConnected = true;
-      this._succeedHandshake(peerName);
+      this.handshake.succeed(result.peerName);
       this._flushQueue();
-      this.onCentralConnectedCb?.(peerName);
+      this.onCentralConnectedCb?.(result.peerName);
     } else {
       // Joiner — host's echo resolves connect().
-      this._succeedHandshake(peerName);
+      this.handshake.succeed(result.peerName);
     }
-  }
-
-  private _startHandshakeAwait(): Promise<string> {
-    this._clearHandshakeTimer();
-    this.handshakeState = 'awaiting';
-    return new Promise<string>((resolve, reject) => {
-      this.handshakeResolve = resolve;
-      this.handshakeReject = reject;
-      this.handshakeTimer = setTimeout(() => {
-        multiplayerDebugLog.push(
-          'error',
-          'LAN HELLO timeout',
-          `no valid HELLO within ${MULTIPLAYER_HELLO_TIMEOUT_MS}ms`,
-        );
-        this._failHandshake(new Error('HELLO timeout'));
-      }, MULTIPLAYER_HELLO_TIMEOUT_MS);
-    });
-  }
-
-  private _clearHandshakeTimer(): void {
-    if (this.handshakeTimer) {
-      clearTimeout(this.handshakeTimer);
-      this.handshakeTimer = null;
-    }
-  }
-
-  private _succeedHandshake(peerName: string): void {
-    const resolve = this.handshakeResolve;
-    this._clearHandshakeTimer();
-    this.handshakeState = 'complete';
-    this.handshakeResolve = null;
-    this.handshakeReject = null;
-    resolve?.(peerName);
-  }
-
-  private _failHandshake(err: Error): void {
-    const reject = this.handshakeReject;
-    this._clearHandshakeTimer();
-    this.handshakeState = 'idle';
-    this.handshakeResolve = null;
-    this.handshakeReject = null;
-    this.disconnect().catch(e =>
-      multiplayerDebugLog.push('warn', 'disconnect during handshake fail', String(e)),
-    );
-    reject?.(err);
-  }
-
-  private _abortHandshake(reason: string): void {
-    if (this.handshakeState === 'idle') return;
-    const reject = this.handshakeReject;
-    this._clearHandshakeTimer();
-    this.handshakeState = 'idle';
-    this.handshakeResolve = null;
-    this.handshakeReject = null;
-    reject?.(new Error(`handshake aborted: ${reason}`));
   }
 
   private _flushQueue(): void {
-    const queued = this.messageQueue;
-    this.messageQueue = [];
-    for (const msg of queued) {
+    for (const msg of this.messageQueue.drain()) {
       this.sendMessage(msg).catch(e =>
         multiplayerDebugLog.push('error', 'LAN flush failed', String(e)),
       );
@@ -452,7 +368,7 @@ class LanService {
   }
 
   private _teardown(): void {
-    this._abortHandshake('teardown');
+    this.handshake.abort('teardown');
     try {
       (this.socket as { destroy(): void } | null)?.destroy();
     } catch {
@@ -461,8 +377,8 @@ class LanService {
     this.socket = null;
     this.isConnected = false;
     this.role = null;
-    this.buffer = '';
-    this.messageQueue = [];
+    this.buffer.reset();
+    this.messageQueue.clear();
     // Discovery is still live here when the peer vanished mid-session (the
     // joiner never stops scanning once connected). Leaving the flags set makes
     // the next startScanning/startAdvertising a silent no-op.

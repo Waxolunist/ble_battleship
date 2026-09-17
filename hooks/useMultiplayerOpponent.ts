@@ -1,6 +1,12 @@
 import { placeFleet } from '@/engine/fleet-conversion';
 import type { GameOutcome, Opponent, PreparedBattle, ShotResult } from '@/models/opponent';
-import { GRID_SIZE, SHIP_FLEET, type ShipType } from '@/models/types';
+import type { ShipType } from '@/models/types';
+import {
+  parseFire,
+  parseFleetReady,
+  parseGameOverOutcome,
+  parseShotResult,
+} from '@/services/message-payloads';
 import { multiplayerService } from '@/services/multiplayer';
 import { useMultiplayerStore, type FleetPlacement } from '@/store/useMultiplayerStore';
 import { useGameStore } from '@/store/useGameStore';
@@ -17,38 +23,6 @@ interface PendingShot {
 // If the peer doesn't respond within this window, fall back to a locally
 // computed verdict (our mirror of the peer's fleet) so the UI never freezes.
 const SHOT_RESPONSE_TIMEOUT_MS = 10_000;
-
-const SHIP_TYPES = new Set<string>(SHIP_FLEET);
-
-function isCoord(value: unknown): value is number {
-  return typeof value === 'number' && Number.isInteger(value) && value >= 0 && value < GRID_SIZE;
-}
-
-function isShotResult(value: unknown): value is ShotResult {
-  return value === 'hit' || value === 'miss' || value === 'sunk';
-}
-
-function isOutcome(value: unknown): value is GameOutcome {
-  return value === 'victory' || value === 'defeat';
-}
-
-function isShipType(value: unknown): value is ShipType {
-  return typeof value === 'string' && SHIP_TYPES.has(value);
-}
-
-function parseFleetPayload(value: unknown): FleetPlacement[] | null {
-  if (!Array.isArray(value)) return null;
-  const result: FleetPlacement[] = [];
-  for (const entry of value) {
-    if (!entry || typeof entry !== 'object') return null;
-    const e = entry as Record<string, unknown>;
-    if (!isShipType(e.shipType)) return null;
-    if (!isCoord(e.x) || !isCoord(e.y)) return null;
-    if (e.orientation !== 'horizontal' && e.orientation !== 'vertical') return null;
-    result.push({ shipType: e.shipType, x: e.x, y: e.y, orientation: e.orientation });
-  }
-  return result;
-}
 
 function computeLocalShotResult(x: number, y: number): ShotResult {
   useGameStore.getState().resolveShot('opponent', x, y);
@@ -72,7 +46,7 @@ export function useMultiplayerOpponent(): Opponent {
     const unsubscribe = multiplayerService.onMessage(message => {
       switch (message.type) {
         case 'FLEET_READY': {
-          const fleet = parseFleetPayload(message.data?.fleet);
+          const fleet = parseFleetReady(message.data);
           if (!fleet) {
             console.warn('[useMultiplayerOpponent] dropped malformed FLEET_READY');
             break;
@@ -84,23 +58,21 @@ export function useMultiplayerOpponent(): Opponent {
           break;
         }
         case 'FIRE': {
-          const x = message.data?.x;
-          const y = message.data?.y;
-          if (!isCoord(x) || !isCoord(y)) {
+          const shot = parseFire(message.data);
+          if (!shot) {
             console.warn('[useMultiplayerOpponent] dropped malformed FIRE');
             break;
           }
-          enemyShotHandlerRef.current?.(x, y);
+          enemyShotHandlerRef.current?.(shot.x, shot.y);
           break;
         }
         case 'SHOT_RESULT': {
-          const x = message.data?.x;
-          const y = message.data?.y;
-          const result = message.data?.result;
-          if (!isCoord(x) || !isCoord(y) || !isShotResult(result)) {
+          const reported = parseShotResult(message.data);
+          if (!reported) {
             console.warn('[useMultiplayerOpponent] dropped malformed SHOT_RESULT');
             break;
           }
+          const { x, y, result } = reported;
           const pending = pendingShotRef.current;
           if (!pending || pending.x !== x || pending.y !== y) break;
           // Our opponent grid mirrors the peer's fleet (delivered via
@@ -120,7 +92,7 @@ export function useMultiplayerOpponent(): Opponent {
         case 'GAME_OVER': {
           // The payload carries the *sender's* outcome, so ours is the mirror
           // image. Older builds sent no payload and only on victory.
-          const peerOutcome = isOutcome(message.data?.outcome) ? message.data.outcome : 'victory';
+          const peerOutcome = parseGameOverOutcome(message.data);
           setState('GAME_OVER');
           gameOverSentRef.current = true;
           gameOverHandlerRef.current?.(peerOutcome === 'victory' ? 'defeat' : 'victory');
