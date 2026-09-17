@@ -3,6 +3,8 @@ export const IMAGES = {
   title: require('@/assets/images/title.webp'),
   reactLogo: require('@/assets/images/react-logo.png'),
   carrier: require('@/assets/images/carrier.png'),
+  battleship: require('@/assets/images/battleship.png'),
+  cruiser: require('@/assets/images/cruiser.png'),
   submarine: require('@/assets/images/submarine.png'),
   destroyer: require('@/assets/images/destroyer.png'),
 };

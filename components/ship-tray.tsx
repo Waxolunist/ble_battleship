@@ -16,6 +16,8 @@ const CELL_GAP = 2;
 
 const SHIP_IMAGES: Partial<Record<ShipType, ImageSourcePropType>> = {
   Carrier: IMAGES.carrier,
+  Battleship: IMAGES.battleship,
+  Cruiser: IMAGES.cruiser,
   Submarine: IMAGES.submarine,
   Destroyer: IMAGES.destroyer,
 };

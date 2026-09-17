@@ -30,6 +30,8 @@ const GRID_CELL_GAP = 1; // gap between cells in the grid body
 
 const SHIP_IMAGES: Partial<Record<ShipType, ImageSourcePropType>> = {
   Carrier: IMAGES.carrier,
+  Battleship: IMAGES.battleship,
+  Cruiser: IMAGES.cruiser,
   Submarine: IMAGES.submarine,
   Destroyer: IMAGES.destroyer,
 };
