@@ -1,4 +1,5 @@
 import { DragPreview } from '@/components/drag-preview';
+import { HapticPressable } from '@/components/haptic-pressable';
 import { LABEL_SIZE } from '@/components/game-field';
 import {
   MultiplayerConnectionGuard,
@@ -7,7 +8,7 @@ import {
 import { BattleView } from '@/components/views/battle-view';
 import { PlacementView } from '@/components/views/placement-view';
 import { IMAGES, LOCALE_IMAGES } from '@/constants/assets';
-import { GameColors } from '@/constants/theme';
+import { Fonts, GameColors } from '@/constants/theme';
 import { useTranslation } from 'react-i18next';
 import { useAIOpponent } from '@/hooks/useAIOpponent';
 import { useMultiplayerOpponent } from '@/hooks/useMultiplayerOpponent';
@@ -25,8 +26,8 @@ import { usePlacementTour } from '@/hooks/usePlacementTour';
 import { useBattleTour } from '@/hooks/useBattleTour';
 import { useRouter } from 'expo-router';
 import { useResponsive } from '@/hooks/useResponsive';
-import { Image, ImageBackground, StyleSheet, View } from 'react-native';
-import { useEffect, useRef, useState } from 'react';
+import { Image, ImageBackground, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -61,24 +62,71 @@ function MultiplayerBattleScreen() {
 
 function MultiplayerBattleContent() {
   const { t } = useTranslation('common');
+  const router = useRouter();
   const opponent = useMultiplayerOpponent();
-  const { requestRematch, rematchPending } = useMultiplayerGuard();
+  const { requestRematch, cancelRematch, rematchPending } = useMultiplayerGuard();
   const localFleetReady = useMultiplayerStore(s => s.localFleetReady);
   const remoteFleetReady = useMultiplayerStore(s => s.remoteFleetReady);
+  const resetGame = useGameStore(s => s.resetGame);
+
+  // Same exit as Make Port. There is no lesser exit from a placement wait: our
+  // fleet is already committed and the peer is mid-placement, so there is no
+  // screen left to go back to.
+  const handleLeaveWhileWaiting = useCallback(() => {
+    const mp = useMultiplayerStore.getState();
+    resetGame();
+    router.replace('/');
+    leaveMultiplayerSession().catch(err =>
+      console.error('[BattleScreen] leaving while waiting failed:', err),
+    );
+    mp.reset();
+  }, [resetGame, router]);
 
   return (
     <View style={StyleSheet.absoluteFill}>
       <BattleScreenBody opponent={opponent} onPlayAgain={requestRematch} />
       {localFleetReady && !remoteFleetReady && (
-        <MultiplayerWaitingOverlay message={t('multiplayer.waitingPlacement')} />
+        <MultiplayerWaitingOverlay
+          message={t('multiplayer.waitingPlacement')}
+          actionLabel={t('multiplayer.leaveMatch')}
+          onAction={handleLeaveWhileWaiting}
+          destructive
+        />
       )}
-      {rematchPending && <MultiplayerWaitingOverlay message={t('multiplayer.rematchRequested')} />}
+      {/* A withdrawn rematch drops back to the endgame screen, which still
+          offers Play Again and Make Port — so this one need not end the match. */}
+      {rematchPending && (
+        <MultiplayerWaitingOverlay
+          message={t('multiplayer.rematchRequested')}
+          actionLabel={t('multiplayer.cancel')}
+          onAction={cancelRematch}
+        />
+      )}
     </View>
   );
 }
 
-function MultiplayerWaitingOverlay({ message }: { message: string }) {
+// How long a wait may run before the overlay admits something may be wrong.
+// The heartbeat already ends a match when the peer's link dies, so a wait that
+// reaches this point is one where the peer is still answering pings and simply
+// has not acted — which is exactly the case a timeout must not end on its own.
+// The hint informs; leaving stays the player's call.
+const WAITING_HINT_MS = 30_000;
+
+function MultiplayerWaitingOverlay({
+  message,
+  actionLabel,
+  onAction,
+  destructive = false,
+}: {
+  message: string;
+  actionLabel: string;
+  onAction: () => void;
+  destructive?: boolean;
+}) {
+  const { t } = useTranslation('common');
   const pulse = useSharedValue(1);
+  const [hintShown, setHintShown] = useState(false);
 
   useEffect(() => {
     pulse.value = withRepeat(
@@ -91,11 +139,36 @@ function MultiplayerWaitingOverlay({ message }: { message: string }) {
     );
   }, [pulse]);
 
+  useEffect(() => {
+    const timer = setTimeout(() => setHintShown(true), WAITING_HINT_MS);
+    return () => clearTimeout(timer);
+  }, []);
+
   const textStyle = useAnimatedStyle(() => ({ opacity: pulse.value }));
 
   return (
     <View style={[StyleSheet.absoluteFill, styles.waitingOverlay]}>
       <Animated.Text style={[styles.waitingText, textStyle]}>{message}</Animated.Text>
+      {hintShown && <Text style={styles.waitingHint}>{t('multiplayer.waitingHint')}</Text>}
+      <HapticPressable
+        intensity={destructive ? 'Heavy' : 'Light'}
+        onPress={onAction}
+        style={({ pressed }) => [
+          styles.waitingActionButton,
+          destructive ? styles.waitingActionDestructive : styles.waitingActionNeutral,
+          pressed &&
+            (destructive
+              ? styles.waitingActionDestructivePressed
+              : styles.waitingActionNeutralPressed),
+        ]}>
+        <Text
+          style={[
+            styles.waitingActionText,
+            destructive ? styles.waitingActionTextDestructive : styles.waitingActionTextNeutral,
+          ]}>
+          {actionLabel}
+        </Text>
+      </HapticPressable>
     </View>
   );
 }
@@ -337,5 +410,44 @@ const styles = StyleSheet.create({
     letterSpacing: 3,
     textAlign: 'center',
     lineHeight: 30,
+  },
+  waitingHint: {
+    color: GameColors.labelDim,
+    fontFamily: Fonts.rounded,
+    fontSize: 13,
+    textAlign: 'center',
+    lineHeight: 19,
+    marginTop: 18,
+    marginHorizontal: 40,
+  },
+  waitingActionButton: {
+    marginTop: 28,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderWidth: 1,
+    borderRadius: 4,
+  },
+  waitingActionDestructive: {
+    borderColor: GameColors.red,
+  },
+  waitingActionDestructivePressed: {
+    backgroundColor: GameColors.retreatPressedBg,
+  },
+  waitingActionNeutral: {
+    borderColor: GameColors.blueBorder,
+  },
+  waitingActionNeutralPressed: {
+    backgroundColor: GameColors.bluePressedBg,
+  },
+  waitingActionText: {
+    fontFamily: 'BlackOpsOne',
+    fontSize: 11,
+    letterSpacing: 2,
+  },
+  waitingActionTextDestructive: {
+    color: GameColors.red,
+  },
+  waitingActionTextNeutral: {
+    color: GameColors.label,
   },
 });

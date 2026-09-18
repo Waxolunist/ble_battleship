@@ -55,6 +55,8 @@
     "connected": "VERBUNDEN",
     "waitingPlacement": "WARTE AUF GEGNER\nBEIM PLATZIEREN...",
     "rematchRequested": "REVANCHE ANGEFORDERT\nWARTE AUF GEGNER...",
+    "waitingHint": "Das dauert länger als üblich. Ihr Gegner ist möglicherweise nicht mehr da.",
+    "leaveMatch": "GEFECHT VERLASSEN",
     "gameCode": "SPIELCODE",
     "codeHint": "Gegner nicht in diesem WLAN? Diesen Code eingeben lassen.",
     "codePending": "CODE WIRD GEHOLT...",

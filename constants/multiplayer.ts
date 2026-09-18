@@ -40,7 +40,13 @@ export const RENDEZVOUS_POLL_MS = 1500;
 /** How long a host waits on a code before giving up on it. */
 export const RENDEZVOUS_TIMEOUT_MS = 10 * 60 * 1000;
 
-export const MULTIPLAYER_PROTOCOL_VERSION = '1';
+/**
+ * Bumped to 2 for REMATCH_CANCEL. A version 1 build drops unknown message
+ * types on the floor, so it would ignore the withdrawal and still believe a
+ * rematch was coming — then start a battle its peer had already backed out of.
+ * A refused handshake is the kinder failure.
+ */
+export const MULTIPLAYER_PROTOCOL_VERSION = '2';
 
 /**
  * App-level handshake magic. After the transport link is up, both sides must

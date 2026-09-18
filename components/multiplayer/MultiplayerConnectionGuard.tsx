@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 
 interface GuardContext {
   requestRematch: () => void;
+  cancelRematch: () => void;
   rematchPending: boolean;
 }
 
@@ -95,6 +96,16 @@ export function MultiplayerConnectionGuard({ children }: { children: React.React
     });
   }, [startNewBattle]);
 
+  // Peer withdrew. Forgetting their request is the whole point: leave it
+  // standing and our own Play Again would satisfy a pairing of one and drop us
+  // into a battle the peer is not in.
+  useEffect(() => {
+    return multiplayerService.onMessage(message => {
+      if (message.type !== 'REMATCH_CANCEL') return;
+      peerRequestedRef.current = false;
+    });
+  }, []);
+
   const requestRematch = useCallback(() => {
     localRequestedRef.current = true;
     setRematchPending(true);
@@ -110,8 +121,18 @@ export function MultiplayerConnectionGuard({ children }: { children: React.React
     }
   }, [startNewBattle]);
 
+  const cancelRematch = useCallback(() => {
+    localRequestedRef.current = false;
+    setRematchPending(false);
+    multiplayerService.sendMessage({ type: 'REMATCH_CANCEL' }).catch(err => {
+      // Nothing to roll back: we are out of the pairing either way, and a peer
+      // that missed this still cannot start a battle without our REMATCH.
+      console.error('[MultiplayerConnectionGuard] REMATCH_CANCEL send failed:', err);
+    });
+  }, []);
+
   return (
-    <MultiplayerGuardContext.Provider value={{ requestRematch, rematchPending }}>
+    <MultiplayerGuardContext.Provider value={{ requestRematch, cancelRematch, rematchPending }}>
       {children}
     </MultiplayerGuardContext.Provider>
   );

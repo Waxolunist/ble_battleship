@@ -23,6 +23,7 @@ export type MultiplayerMessageType =
   | 'SHOT_RESULT'
   | 'GAME_OVER'
   | 'REMATCH'
+  | 'REMATCH_CANCEL'
   | 'BYE'
   | 'PING'
   | 'PONG';
@@ -43,6 +44,7 @@ const MESSAGE_TYPES = new Set<string>([
   'SHOT_RESULT',
   'GAME_OVER',
   'REMATCH',
+  'REMATCH_CANCEL',
   'BYE',
   'PING',
   'PONG',

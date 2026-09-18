@@ -55,6 +55,8 @@
     "connected": "CONNECTED",
     "waitingPlacement": "WAITING FOR OPPONENT\nTO FINISH PLACEMENT...",
     "rematchRequested": "REMATCH REQUESTED\nAWAITING OPPONENT...",
+    "waitingHint": "This is taking longer than usual. Your opponent may have stepped away.",
+    "leaveMatch": "LEAVE MATCH",
     "gameCode": "GAME CODE",
     "codeHint": "Opponent not on this Wi-Fi? Have them enter this code.",
     "codePending": "GETTING CODE...",

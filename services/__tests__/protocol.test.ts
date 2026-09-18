@@ -69,6 +69,10 @@ describe('parseMessage', () => {
     expect(parseMessage('{"type":"DROP_TABLE"}')).toBeNull();
   });
 
+  it('accepts a rematch withdrawal', () => {
+    expect(parseMessage('{"type":"REMATCH_CANCEL"}')).toEqual({ type: 'REMATCH_CANCEL' });
+  });
+
   it('rejects a non-string type', () => {
     expect(parseMessage('{"type":7}')).toBeNull();
   });
@@ -203,6 +207,15 @@ describe('buildHello / validateHello', () => {
   it('survives the encode/parse round trip', () => {
     const parsed = parseMessage(encodeNdjson(buildHello('NELSON')).trim())!;
     expect(validateHello(parsed)).toEqual({ ok: true, peerName: 'NELSON' });
+  });
+
+  // REMATCH_CANCEL is invisible to a version 1 peer, which drops unknown types
+  // silently and would go on believing a rematch was still coming. The bump is
+  // what keeps the two apart, so a regression here is a desync in the field.
+  it('refuses to pair with the protocol version that predates REMATCH_CANCEL', () => {
+    const hello = buildHello('NELSON');
+    hello.data!.protocolVersion = '1';
+    expect(validateHello(hello)).toMatchObject({ ok: false, reason: 'version' });
   });
 
   it('rejects a HELLO with the wrong magic', () => {
