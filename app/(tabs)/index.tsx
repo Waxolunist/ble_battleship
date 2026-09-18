@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FadeIn } from '@/components/fade-in';
 import { MultiplayerPanel } from '@/components/multiplayer/MultiplayerPanel';
@@ -14,7 +14,6 @@ import { getRankTitle, translateRankTitle } from '@/models/types';
 import {
   ImageBackground,
   Keyboard,
-  KeyboardAvoidingView,
   Platform,
   StyleSheet,
   Text,
@@ -33,7 +32,25 @@ export default function HomeScreen() {
   const { state: mpState, setMode } = useMultiplayerStore();
   const [inputName, setInputName] = useState('');
   const inputRef = useRef<TextInput>(null);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
   const { s, fs } = useResponsive();
+
+  // Android's edge-to-edge window is not resized by the IME, so KeyboardAvoidingView
+  // never sees it. Track the keyboard directly and pad the column instead.
+  useEffect(() => {
+    const show = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      e => setKeyboardHeight(e.endCoordinates.height),
+    );
+    const hide = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => setKeyboardHeight(0),
+    );
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
 
   const confirmed = captainName.length > 0;
 
@@ -189,10 +206,14 @@ export default function HomeScreen() {
   return (
     <ImageBackground source={IMAGES.bg} style={styles.background} resizeMode="cover">
       <View style={styles.overlay} />
-      <KeyboardAvoidingView
-        style={styles.content}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}>
+      <View
+        style={[
+          styles.content,
+          keyboardHeight > 0 && {
+            paddingTop: s(8),
+            paddingBottom: keyboardHeight + s(24),
+          },
+        ]}>
         <FadeIn translateY={-40}>
           <Image source={IMAGES.title} style={styles.title} contentFit="contain" />
         </FadeIn>
@@ -234,7 +255,7 @@ export default function HomeScreen() {
             </View>
           )}
         </View>
-      </KeyboardAvoidingView>
+      </View>
       <MultiplayerPanel />
       {confirmed && (
         <HapticPressable
