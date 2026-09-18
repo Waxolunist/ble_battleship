@@ -1,0 +1,3 @@
+- lobby music
+- better sounds
+- don't allow press or fire, when lost
