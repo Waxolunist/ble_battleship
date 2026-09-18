@@ -143,8 +143,7 @@ export function buildHello(captainName: string): MultiplayerMessage {
 }
 
 export type HelloValidation =
-  | { ok: true; peerName: string }
-  | { ok: false; reason: 'magic' | 'version'; detail: string };
+  { ok: true; peerName: string } | { ok: false; reason: 'magic' | 'version'; detail: string };
 
 /** Check a peer's HELLO against our magic and protocol version. */
 export function validateHello(message: MultiplayerMessage): HelloValidation {

@@ -11,9 +11,7 @@ export const DEV_SHOW_FORCE_VICTORY = false;
  * Leave unset in production builds (defaults to device locale).
  */
 export const DEV_FORCE_LANGUAGE = process.env.EXPO_PUBLIC_DEV_FORCE_LANGUAGE as
-  | 'en'
-  | 'de'
-  | undefined;
+  'en' | 'de' | undefined;
 
 /**
  * DEV_SHOW_MULTIPLAYER_DEBUG — renders a collapsible overlay that streams
