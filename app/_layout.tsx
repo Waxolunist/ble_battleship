@@ -10,6 +10,7 @@ import 'react-native-reanimated';
 import '@/i18n';
 import { preloadSounds } from '@/services/audio';
 import { useLanguageStore } from '@/store/useLanguageStore';
+import { usePlayerStore } from '@/store/usePlayerStore';
 import { MultiplayerDebugPanel } from '@/components/multiplayer/MultiplayerDebugPanel';
 import { SplashOverlay } from '@/components/splash-overlay';
 
@@ -24,6 +25,9 @@ export const unstable_settings = {
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   useLanguageStore();
+  // Touch the store so the persisted player id rehydrates (or is minted) at
+  // launch, well before anyone can press HOST and advertise it.
+  usePlayerStore();
   const [fontsLoaded] = useFonts({
     BlackOpsOne: require('../assets/fonts/BlackOpsOne-Regular.ttf'),
   });

@@ -1,7 +1,7 @@
-/** Unit tests for pure logic (engine, protocol). No React Native runtime. */
+/** Unit tests for pure logic (engine, protocol, stores). No React Native runtime. */
 module.exports = {
   testEnvironment: 'node',
-  roots: ['<rootDir>/engine', '<rootDir>/models', '<rootDir>/services'],
+  roots: ['<rootDir>/engine', '<rootDir>/models', '<rootDir>/services', '<rootDir>/store'],
   testMatch: ['**/__tests__/**/*.test.ts'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1',

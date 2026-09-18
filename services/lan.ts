@@ -8,6 +8,7 @@ import {
 } from '@/constants/multiplayer';
 import TcpSocket from 'react-native-tcp-socket';
 import Zeroconf from 'react-native-zeroconf';
+import { getPlayerId } from '@/store/usePlayerStore';
 import { multiplayerDebugLog } from './multiplayer-debug-log';
 import {
   buildHello,
@@ -61,6 +62,8 @@ class LanService {
   private messageQueue = new MessageQueue();
   private emitter = new MessageEmitter();
   private resolvedPeers = new Map<string, ResolvedPeer>();
+  // mDNS removals arrive by service name, but peers are keyed by identity.
+  private serviceNameToId = new Map<string, string>();
   private zeroconfListenersBound = false;
 
   private handshake = new Handshake({
@@ -140,13 +143,16 @@ class LanService {
       },
     );
 
+    // The service name is not reliable identity: mDNS renames a duplicate to
+    // "CHRIS (2)" behind our back. Carry both the real identity and the name
+    // the player chose in TXT records, and read those on the other side.
     this.zeroconf.publishService(
       ZEROCONF_TYPE,
       ZEROCONF_PROTOCOL,
       ZEROCONF_DOMAIN,
       captainName,
       TCP_PORT,
-      {},
+      { pid: getPlayerId(), cn: captainName },
     );
 
     this.isAdvertising = true;
@@ -170,6 +176,7 @@ class LanService {
     // Addresses resolved in a previous scan may point at a host that has since
     // left; zeroconf re-resolves everything still present, so start empty.
     this.resolvedPeers.clear();
+    this.serviceNameToId.clear();
     multiplayerDebugLog.push('event', 'LAN startScanning →', MDNS_SERVICE_TYPE);
 
     // Bound once for the life of the instance: the handlers read
@@ -179,17 +186,24 @@ class LanService {
       this.zeroconfListenersBound = true;
 
       this.zeroconf.on('resolved', (service: Record<string, unknown>) => {
-        const name = String(service.name ?? '');
+        const serviceName = String(service.name ?? '');
+        const txt = (service.txt ?? {}) as Record<string, unknown>;
+        // A peer advertising no id predates this and can only be keyed by name.
+        const id = String(txt.pid ?? serviceName);
+        const name = String(txt.cn ?? serviceName);
         const host = String((service.addresses as string[] | undefined)?.[0] ?? service.host ?? '');
         const port = Number(service.port ?? TCP_PORT);
-        multiplayerDebugLog.push('event', 'mDNS resolved', `${name} @ ${host}:${port}`);
-        this.resolvedPeers.set(name, { host, port });
-        this.onDeviceFoundCb?.(name, name);
+        multiplayerDebugLog.push('event', 'mDNS resolved', `${name} [${id}] @ ${host}:${port}`);
+        this.resolvedPeers.set(id, { host, port });
+        this.serviceNameToId.set(serviceName, id);
+        this.onDeviceFoundCb?.(id, name);
       });
 
-      this.zeroconf.on('remove', (name: string) => {
-        multiplayerDebugLog.push('event', 'mDNS removed', name);
-        this.resolvedPeers.delete(name);
+      this.zeroconf.on('remove', (serviceName: string) => {
+        multiplayerDebugLog.push('event', 'mDNS removed', serviceName);
+        const id = this.serviceNameToId.get(serviceName);
+        this.serviceNameToId.delete(serviceName);
+        if (id) this.resolvedPeers.delete(id);
       });
 
       this.zeroconf.on('error', (err: Error) => {
