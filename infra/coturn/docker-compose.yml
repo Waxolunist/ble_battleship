@@ -1,0 +1,13 @@
+services:
+  coturn:
+    image: coturn/coturn:4.6
+    container_name: hhfh-coturn
+    restart: unless-stopped
+    # Host networking is the sane choice for coturn: the relay port range would
+    # otherwise need publishing port-by-port, and coturn sees the real client
+    # address rather than Docker's bridge address.
+    network_mode: host
+    volumes:
+      - ./turnserver.conf:/etc/coturn/turnserver.conf:ro
+      - /etc/letsencrypt/live/turn.v-collaborate.com:/etc/coturn/certs:ro
+    command: ["-c", "/etc/coturn/turnserver.conf"]

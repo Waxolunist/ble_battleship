@@ -1,4 +1,4 @@
-import { STUN_SERVER_URL } from '@/constants/multiplayer';
+import { ICE_SERVERS } from '@/constants/multiplayer';
 import { RTCPeerConnection, RTCSessionDescription } from 'react-native-webrtc';
 
 type RTCDataChannelType = ReturnType<RTCPeerConnection['createDataChannel']>;
@@ -11,7 +11,7 @@ const OPEN_TIMEOUT_MS = 30_000;
 const ICE_GATHERING_TIMEOUT_MS = 15_000;
 
 const ICE_CONFIG = {
-  iceServers: [{ urls: STUN_SERVER_URL }],
+  iceServers: ICE_SERVERS,
 };
 
 /**

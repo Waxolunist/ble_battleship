@@ -4,8 +4,28 @@ export const MDNS_SERVICE_TYPE = '_hhfh._tcp';
 /** TCP port used for LAN game connections. */
 export const TCP_PORT = 48648;
 
-/** STUN server for WebRTC NAT traversal on the NFC+WebRTC path. */
-export const STUN_SERVER_URL = 'stun:stun.l.google.com:19302';
+/** Host running our coturn instance — serves both STUN and TURN. */
+const TURN_HOST = 'turn.v-collaborate.com';
+
+/**
+ * ICE servers for the off-LAN relay path. STUN alone fails behind symmetric
+ * NAT, which carrier-grade mobile NAT frequently is, so TURN is listed as the
+ * fallback that actually completes those connections.
+ *
+ * The credential is injected at build time from EXPO_PUBLIC_TURN_CREDENTIAL
+ * (see .env.example) rather than committed — this repo is public. Note that
+ * EXPO_PUBLIC_* values are inlined into the JS bundle, so this keeps the secret
+ * out of git but not out of a shipped binary. Time-limited HMAC credentials
+ * minted by the signalling rendezvous are the real fix; see infra/coturn.
+ */
+export const ICE_SERVERS = [
+  { urls: `stun:${TURN_HOST}:3478` },
+  {
+    urls: [`turn:${TURN_HOST}:3478?transport=udp`, `turns:${TURN_HOST}:5349`],
+    username: 'hhfh',
+    credential: process.env.EXPO_PUBLIC_TURN_CREDENTIAL ?? '',
+  },
+];
 
 export const MULTIPLAYER_PROTOCOL_VERSION = '1';
 

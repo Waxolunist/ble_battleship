@@ -45,3 +45,4 @@ app-example
 
 .idea/
 .claude/
+.env
