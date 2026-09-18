@@ -233,9 +233,11 @@ def gen_retreat_alarm():
     t_sweep1 = t[:half]
     t_sweep2 = t[half:] - t[half]
     
-    freq_sweep = np.linspace(400, 750, half)
-    sweep1 = np.sign(np.sin(2 * np.pi * freq_sweep * t_sweep1)) * np.exp(-t_sweep1 * 2)
-    sweep2 = np.sign(np.sin(2 * np.pi * freq_sweep * t_sweep2)) * np.exp(-t_sweep2 * 2)
+    # Built per sweep: an odd sample count leaves the second half one longer
+    freq_sweep1 = np.linspace(400, 750, len(t_sweep1))
+    freq_sweep2 = np.linspace(400, 750, len(t_sweep2))
+    sweep1 = np.sign(np.sin(2 * np.pi * freq_sweep1 * t_sweep1)) * np.exp(-t_sweep1 * 2)
+    sweep2 = np.sign(np.sin(2 * np.pi * freq_sweep2 * t_sweep2)) * np.exp(-t_sweep2 * 2)
     
     return np.concatenate([sweep1, sweep2])
 
@@ -243,27 +245,46 @@ def gen_retreat_alarm():
 # BATCH EXECUTION
 # ==========================================
 cues = [
-    ("ui_tap.wav", gen_ui_tap(), 0.060),
-    ("ship_pickup.wav", gen_ship_pickup(), 0.080),
-    ("ship_drop.wav", gen_ship_drop(), 0.090),
-    ("ship_blocked.wav", gen_ship_blocked(), 0.080),
-    ("ship_rotate.wav", gen_ship_rotate(), 0.043),
-    ("fleet_shuffle.wav", gen_fleet_shuffle(), 0.045),
-    ("battle_start.wav", gen_battle_start(), 0.200),
-    ("sonar_ping.wav", gen_sonar_ping(), 0.090),
-    ("target_lock.wav", gen_target_lock(), 0.080),
-    ("cannon_fire.wav", gen_cannon_fire(), 0.149),
-    ("incoming_shell.wav", gen_incoming_shell(), 0.120),
-    ("shot_hit.wav", gen_shot_hit(), 0.171),
-    ("shot_miss.wav", gen_shot_miss(), 0.093),
-    ("ship_sunk.wav", gen_ship_sunk(), 0.196),
-    ("victory_fanfare.wav", gen_victory_fanfare(), 0.200),
-    ("defeat_horn.wav", gen_defeat_horn(), 0.200),
-    ("retreat_alarm.wav", gen_retreat_alarm(), 0.140),
+    ("ui_tap.wav", gen_ui_tap, 0.060),
+    ("ship_pickup.wav", gen_ship_pickup, 0.080),
+    ("ship_drop.wav", gen_ship_drop, 0.090),
+    ("ship_blocked.wav", gen_ship_blocked, 0.080),
+    ("ship_rotate.wav", gen_ship_rotate, 0.043),
+    ("fleet_shuffle.wav", gen_fleet_shuffle, 0.045),
+    ("battle_start.wav", gen_battle_start, 0.200),
+    ("sonar_ping.wav", gen_sonar_ping, 0.090),
+    ("target_lock.wav", gen_target_lock, 0.080),
+    ("cannon_fire.wav", gen_cannon_fire, 0.149),
+    ("incoming_shell.wav", gen_incoming_shell, 0.120),
+    ("shot_hit.wav", gen_shot_hit, 0.171),
+    ("shot_miss.wav", gen_shot_miss, 0.093),
+    ("ship_sunk.wav", gen_ship_sunk, 0.196),
+    ("victory_fanfare.wav", gen_victory_fanfare, 0.200),
+    ("defeat_horn.wav", gen_defeat_horn, 0.200),
+    ("retreat_alarm.wav", gen_retreat_alarm, 0.140),
 ]
 
 if __name__ == "__main__":
-    print("Generating Hulls & Hellfire audio placeholders...")
-    for filename, signal, rms in cues:
-        generate_wav(filename, signal, rms)
-    print("Done! All 17 cues generated successfully.")
+    import argparse
+
+    names = [name[: -len(".wav")] for name, _, _ in cues]
+    parser = argparse.ArgumentParser(
+        description="Generate the Hulls & Hellfire audio cues."
+    )
+    parser.add_argument(
+        "cue",
+        nargs="?",
+        choices=names,
+        help="Name of a single cue to generate (default: all of them).",
+    )
+    args = parser.parse_args()
+
+    if args.cue:
+        filename, generator, rms = next(c for c in cues if c[0] == f"{args.cue}.wav")
+        generate_wav(filename, generator(), rms)
+        print("Done!")
+    else:
+        print("Generating Hulls & Hellfire audio placeholders...")
+        for filename, generator, rms in cues:
+            generate_wav(filename, generator(), rms)
+        print(f"Done! All {len(cues)} cues generated successfully.")
