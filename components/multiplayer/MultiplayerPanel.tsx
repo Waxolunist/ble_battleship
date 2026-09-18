@@ -240,7 +240,17 @@ export function MultiplayerPanel({ onHostPress, onJoinPress }: MultiplayerPanelP
     setState('IDLE');
   }, [state, connectedPeer, setState]);
 
-  if (!available) {
+  // The home screen swaps the panel's slot for the captain-name input while the
+  // name is unset. Tear down anything in flight so a half-finished host/join
+  // cannot outlive the UI that would let the player cancel it.
+  const nameEntryOpen = captainName.length === 0;
+  useEffect(() => {
+    if (nameEntryOpen && state !== 'IDLE') {
+      void handleCancel();
+    }
+  }, [nameEntryOpen, state, handleCancel]);
+
+  if (!available || nameEntryOpen) {
     return null;
   }
 
