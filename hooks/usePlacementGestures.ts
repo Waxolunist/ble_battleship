@@ -4,7 +4,7 @@ import type { ShipType } from '@/models/types';
 import { playSound, preloadSounds } from '@/services/audio';
 import { useGameStore } from '@/store/useGameStore';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { View } from 'react-native';
+import { Platform, View } from 'react-native';
 import type { SharedValue } from 'react-native-reanimated';
 import { useSharedValue } from 'react-native-reanimated';
 
@@ -184,6 +184,13 @@ export function usePlacementGestures(cellSize: number): PlacementGestureHandlers
   const onOrientationToggle = useCallback(
     (ship: ShipType) => {
       playSound('shipRotate');
+      if (Platform.OS !== 'web') {
+        import('expo-haptics')
+          .then(({ impactAsync, ImpactFeedbackStyle }) => {
+            impactAsync(ImpactFeedbackStyle.Medium).catch(() => {});
+          })
+          .catch(() => {});
+      }
       toggleOrientation(ship);
     },
     [toggleOrientation],
