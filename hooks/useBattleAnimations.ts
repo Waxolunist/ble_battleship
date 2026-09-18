@@ -4,8 +4,7 @@ import { playSound } from '@/services/audio';
 import { leaveMultiplayerSession } from '@/services/multiplayer';
 import { useGameStore } from '@/store/useGameStore';
 import { useMultiplayerStore } from '@/store/useMultiplayerStore';
-import { useNavigation } from '@react-navigation/native';
-import { useRouter } from 'expo-router';
+import { useNavigation, useRouter } from 'expo-router';
 import {
   Easing,
   useAnimatedStyle,

@@ -63,7 +63,7 @@ export function SplashOverlay({ ready, onFinish }: Props) {
 
 const styles = StyleSheet.create({
   container: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: GameColors.splashBg,
     zIndex: 100,
   },
