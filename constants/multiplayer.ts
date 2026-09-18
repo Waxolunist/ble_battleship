@@ -37,5 +37,19 @@ export const MULTIPLAYER_PROTOCOL_VERSION = '1';
  */
 export const MULTIPLAYER_HELLO_MAGIC = 'HHFH-HELLO';
 
+/**
+ * Liveness heartbeat. A phone leaving Wi-Fi mid-match never sends a FIN or an
+ * RST — the socket simply goes quiet — so neither side learns anything from TCP
+ * and both wait forever. Each end pings on an interval and watches how long it
+ * has been since *any* byte arrived; silence past the timeout means the peer is
+ * gone. Deliberately tight: three missed beats, so a dropped link surfaces in
+ * about three seconds rather than never.
+ */
+export const HEARTBEAT_INTERVAL_MS = 1000;
+export const HEARTBEAT_TIMEOUT_MS = 3000;
+
+/** How often the watchdog compares now() against the last inbound byte. */
+export const HEARTBEAT_CHECK_MS = 500;
+
 /** How long to wait for the peer's HELLO before dropping the link. */
 export const MULTIPLAYER_HELLO_TIMEOUT_MS = 3000;

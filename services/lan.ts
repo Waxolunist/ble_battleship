@@ -1,4 +1,11 @@
-import { MDNS_SERVICE_TYPE, MULTIPLAYER_HELLO_TIMEOUT_MS, TCP_PORT } from '@/constants/multiplayer';
+import {
+  HEARTBEAT_CHECK_MS,
+  HEARTBEAT_INTERVAL_MS,
+  HEARTBEAT_TIMEOUT_MS,
+  MDNS_SERVICE_TYPE,
+  MULTIPLAYER_HELLO_TIMEOUT_MS,
+  TCP_PORT,
+} from '@/constants/multiplayer';
 import TcpSocket from 'react-native-tcp-socket';
 import Zeroconf from 'react-native-zeroconf';
 import { multiplayerDebugLog } from './multiplayer-debug-log';
@@ -68,6 +75,11 @@ class LanService {
   });
 
   private onDisconnectCb: (() => void) | null = null;
+
+  // Heartbeat state — see HEARTBEAT_* in constants/multiplayer.ts.
+  private pingTimer: ReturnType<typeof setInterval> | null = null;
+  private watchdogTimer: ReturnType<typeof setInterval> | null = null;
+  private lastInboundAt = 0;
   private onCentralConnectedCb: ((peerName: string) => void) | null = null;
   private onDeviceFoundCb: ((id: string, name: string) => void) | null = null;
 
@@ -223,6 +235,7 @@ class LanService {
 
     const peerName = await helloPromise;
     this.isConnected = true;
+    this._startHeartbeat();
     this._flushQueue();
     multiplayerDebugLog.push('info', 'LAN handshake complete', `host "${peerName}"`);
     return peerName;
@@ -270,6 +283,8 @@ class LanService {
     };
 
     sock.on('data', (raw: Uint8Array | string) => {
+      // Any byte proves the peer is still there, even a malformed one.
+      this.lastInboundAt = Date.now();
       const text = typeof raw === 'string' ? raw : new TextDecoder().decode(raw);
       this._handleData(text);
     });
@@ -326,7 +341,44 @@ class LanService {
       return;
     }
 
+    // Heartbeat traffic is transport bookkeeping; the game never sees it.
+    if (message.type === 'PING') {
+      this._writeRaw({ type: 'PONG' });
+      return;
+    }
+    if (message.type === 'PONG') return;
+
     this.emitter.emit(message);
+  }
+
+  // ─── Heartbeat ────────────────────────────────────────────────────────────
+
+  private _startHeartbeat(): void {
+    this._stopHeartbeat();
+    this.lastInboundAt = Date.now();
+
+    this.pingTimer = setInterval(() => {
+      if (!this.isConnected) return;
+      this._writeRaw({ type: 'PING' });
+    }, HEARTBEAT_INTERVAL_MS);
+
+    // Compared against a timestamp rather than counting missed replies: a
+    // blocked JS thread delays our own timer too, and counting would then call
+    // a live peer dead.
+    this.watchdogTimer = setInterval(() => {
+      if (!this.isConnected) return;
+      const silentFor = Date.now() - this.lastInboundAt;
+      if (silentFor < HEARTBEAT_TIMEOUT_MS) return;
+      multiplayerDebugLog.push('error', 'heartbeat timeout → peer lost', `${silentFor}ms silent`);
+      this._peerLeft();
+    }, HEARTBEAT_CHECK_MS);
+  }
+
+  private _stopHeartbeat(): void {
+    if (this.pingTimer) clearInterval(this.pingTimer);
+    if (this.watchdogTimer) clearInterval(this.watchdogTimer);
+    this.pingTimer = null;
+    this.watchdogTimer = null;
   }
 
   private _handleHello(message: MultiplayerMessage): void {
@@ -345,6 +397,7 @@ class LanService {
       // Reply with our own HELLO, promote the link.
       this._writeRaw(buildHello(this.localCaptainName));
       this.isConnected = true;
+      this._startHeartbeat();
       this.handshake.succeed(result.peerName);
       this._flushQueue();
       this.onCentralConnectedCb?.(result.peerName);
@@ -368,6 +421,7 @@ class LanService {
   }
 
   private _teardown(): void {
+    this._stopHeartbeat();
     this.handshake.abort('teardown');
     try {
       (this.socket as { destroy(): void } | null)?.destroy();

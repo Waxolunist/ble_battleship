@@ -48,6 +48,15 @@ describe('parseMessage', () => {
     expect(parseMessage('{"data":{"x":1}}')).toBeNull();
   });
 
+  it('accepts the heartbeat types', () => {
+    expect(parseMessage('{"type":"PING"}')).toEqual({ type: 'PING' });
+    expect(parseMessage('{"type":"PONG"}')).toEqual({ type: 'PONG' });
+  });
+
+  it('round-trips a heartbeat through the NDJSON framing', () => {
+    expect(parseMessage(encodeNdjson({ type: 'PING' }).trim())).toEqual({ type: 'PING' });
+  });
+
   it('rejects an unknown message type', () => {
     expect(parseMessage('{"type":"DROP_TABLE"}')).toBeNull();
   });
