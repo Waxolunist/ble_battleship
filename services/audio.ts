@@ -36,9 +36,9 @@ export function playSound(name: SoundName) {
   try {
     ensureAudioMode();
     const player = getPlayer(name);
-    if (player.playing) {
-      player.seekTo(0).catch(() => {});
-    }
+    // A one-shot that has run to the end leaves its playhead parked there,
+    // where play() is a no-op, so every cue is rewound before it fires.
+    player.seekTo(0).catch(() => {});
     player.play();
   } catch {
     // audio unavailable on this device — the game plays on without it
