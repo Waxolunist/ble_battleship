@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.io import wavfile
+from scipy.signal import lfilter
 
 SAMPLE_RATE = 44100
 
@@ -186,44 +187,108 @@ def gen_ship_sunk():
 
 # --- Endgame ---
 def gen_victory_fanfare():
-    duration = 2.40
+    duration = 2.00
     t = np.linspace(0, duration, int(SAMPLE_RATE * duration), False)
     sig = np.zeros_like(t)
-    # Triplet lead-in (G3, C4, E4) -> Sustained Chord (C4 Major)
-    lead_notes = [196.00, 261.63, 329.63] 
-    for i, n in enumerate(lead_notes):
-        start = i * 0.2
-        mask = (t >= start) & (t < start + 0.2)
+
+    # Brass call transcribed from the reference take: two pickups (G4, A3)
+    # into a rising D major arpeggio, held on A4, resolving up to D5.
+    notes = [
+        (0.000, 0.14, 392.00, 2.0),
+        (0.140, 0.16, 220.00, 2.0),
+        (0.385, 0.11, 293.66, 2.0),
+        (0.517, 0.11, 369.99, 2.0),
+        (0.645, 0.48, 440.00, 0.5),
+        (1.115, 0.50, 587.33, 4.0),
+    ]
+    for start, dur, f0, decay in notes:
+        mask = (t >= start) & (t < start + dur)
         ts = t[mask] - start
-        sig[mask] += np.sin(2 * np.pi * n * ts) * np.exp(-ts * 5)
-        
-    # Sustained major chord hits at 0.6s
-    chord_start = 0.6
-    c_mask = (t >= chord_start)
-    tc = t[c_mask] - chord_start
-    chord = (np.sin(2 * np.pi * 261.63 * tc) + 
-             np.sin(2 * np.pi * 329.63 * tc) + 
-             np.sin(2 * np.pi * 392.00 * tc)) / 3.0
-    sig[c_mask] += chord * np.exp(-tc * 1.2)
-    
-    drum = (t >= chord_start) * np.sin(2 * np.pi * 45 * (t - chord_start)) * np.exp(-(t - chord_start) * 8)
-    return sig * 0.8 + drum * 0.4
+        body = np.exp(-ts * decay)
+        attack = np.minimum(ts / 0.012, 1.0)
+        release = np.minimum((dur - ts) / 0.05, 1.0)
+        env = attack * release * body
+
+        # Every attack in the reference lands ~20 cents sharp and settles,
+        # and held notes pick up a slow player's vibrato once they ring on
+        vibrato = 0.0007 * np.sin(2 * np.pi * 5.5 * ts) * np.minimum(ts / 0.25, 1.0)
+        freq = f0 * (1 + 0.012 * np.exp(-ts * 40) + vibrato)
+        phase = 2 * np.pi * np.cumsum(freq) / SAMPLE_RATE
+
+        # A brass tone brightens as it blossoms: the reference's held note
+        # rolls off at about h**-0.25 while its short pickups sit near
+        # h**-0.75. Sweeping that exponent as the note develops is what keeps
+        # the timbre off a static sawtooth.
+        bloom = np.minimum(ts / 0.25, 1.0) * body
+
+        voice = np.zeros_like(ts)
+        for h in range(1, 21):
+            partial = f0 * h
+            if partial > 12000:
+                break
+            # The bell's own cliff, steep but not the brick wall of a
+            # truncated harmonic series
+            cut = np.exp(-((partial / 5000.0) ** 4))
+            # Real partials are not phase-locked; aligned ones stack each
+            # attack into a single spike that reads as additive synthesis
+            offset = np.random.rand() * 2 * np.pi
+            voice += np.sin(phase * h + offset) * h ** (-0.75 + 0.5 * bloom) * cut
+        voice /= 3.0
+
+        breath = (np.random.rand(len(ts)) * 2 - 1) * np.exp(-ts * 30)
+        sig[mask] += (voice + breath * 0.2) * env
+
+    # The take ends on a bell-like D6 that rings out under the last note
+    bell_start = 1.115
+    b_mask = t >= bell_start
+    tb = t[b_mask] - bell_start
+    sig[b_mask] += np.sin(2 * np.pi * 1174.66 * tb) * np.exp(-tb * 4.0) * 0.5
+
+    # A short room around the horn: the reference never goes fully silent
+    # between notes, and the reflections are most of what sells it as played
+    ir_len = int(SAMPLE_RATE * 0.22)
+    ir_t = np.arange(ir_len) / SAMPLE_RATE
+    ir = (np.random.rand(ir_len) * 2 - 1) * np.exp(-ir_t * 14)
+    ir[0] = 0.0
+    wet = np.convolve(sig, ir)[: len(sig)]
+    wet /= np.max(np.abs(wet))
+    return sig + wet * 0.30
 
 def gen_defeat_horn():
     duration = 2.60
     t = np.linspace(0, duration, int(SAMPLE_RATE * duration), False)
-    # Add harmonics to base sine for "foghorn" thickness
-    horn1_base = 110.0
-    horn1 = (np.sin(2 * np.pi * horn1_base * t) + 0.3 * np.sin(2 * np.pi * horn1_base * 2 * t))
-    env1 = (t < 0.9) * np.exp(-t * 1.5)
-    
-    t2 = t - 1.0
-    horn2_base = 73.42 # Lower D2
-    horn2 = (np.sin(2 * np.pi * horn2_base * t2) + 0.3 * np.sin(2 * np.pi * horn2_base * 2 * t2))
-    env2 = (t >= 1.0) * np.exp(-t2 * 1.2)
-    
-    sea_noise = (np.random.rand(len(t)) * 2 - 1) * 0.15 * np.exp(-t * 0.3)
-    return (horn1 * env1 + horn2 * env2) * 0.8 + sea_noise
+    sig = np.zeros_like(t)
+
+    # Two foghorn blasts falling a fifth in D, answering the victory call
+    blasts = [(0.00, 1.00, 110.00), (1.05, 1.55, 73.42)]
+    for start, dur, f0 in blasts:
+        mask = (t >= start) & (t < start + dur)
+        ts = t[mask] - start
+        # Air pressure sags over the blast, so the pitch droops with it
+        freq = f0 * (1 - 0.015 * np.minimum(ts / dur, 1.0))
+        phase = 2 * np.pi * np.cumsum(freq) / SAMPLE_RATE
+
+        # A detuned second voice gives the slow beating of a real horn
+        voice = np.zeros_like(ts)
+        for h, amp in [(1, 1.0), (2, 0.5), (3, 0.28), (4, 0.12), (5, 0.06)]:
+            voice += (np.sin(phase * h) + np.sin(phase * h * 1.004)) * amp
+        voice /= 4.0
+
+        swell = np.minimum(ts / 0.18, 1.0)
+        release = np.minimum((dur - ts) / 0.35, 1.0)
+        sig[mask] += voice * swell * release * np.exp(-ts * 0.5)
+
+    # Sea wash under the horns. Two leaky integrators tilt white noise down
+    # into a swell; the final high-pass strips the DC drift they introduce,
+    # which a plain cumulative sum would leave as inaudible rumble.
+    wash = np.random.rand(len(t)) * 2 - 1
+    for _ in range(2):
+        wash = lfilter([1.0], [1.0, -0.99], wash)
+    wash = lfilter([1.0, -1.0], [1.0, -0.99], wash)
+    wash /= np.max(np.abs(wash))
+    sig += wash * 0.3 * np.minimum(t / 0.5, 1.0)
+
+    return sig
 
 def gen_retreat_alarm():
     duration = 1.40
