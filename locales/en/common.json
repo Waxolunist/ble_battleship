@@ -54,6 +54,15 @@
     "connecting": "CONNECTING...",
     "connected": "CONNECTED",
     "waitingPlacement": "WAITING FOR OPPONENT\nTO FINISH PLACEMENT...",
-    "rematchRequested": "REMATCH REQUESTED\nAWAITING OPPONENT..."
+    "rematchRequested": "REMATCH REQUESTED\nAWAITING OPPONENT...",
+    "gameCode": "GAME CODE",
+    "codeHint": "Opponent not on this Wi-Fi? Have them enter this code.",
+    "codePending": "GETTING CODE...",
+    "codeUnavailable": "Code unavailable",
+    "joinWithCode": "JOIN WITH CODE",
+    "enterCodePrompt": "Not on the same Wi-Fi?",
+    "enterCodePlaceholder": "CODE",
+    "codeNotFound": "No game found for that code.",
+    "codeFailed": "Could not reach the game server."
   }
 }

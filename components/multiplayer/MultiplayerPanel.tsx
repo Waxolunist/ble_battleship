@@ -4,8 +4,8 @@ import { useMultiplayerPermissions } from '@/hooks/useMultiplayerPermissions';
 import { useMultiplayerStore } from '@/store/useMultiplayerStore';
 import { useCaptainStore } from '@/store/useCaptainStore';
 import { useTranslation } from 'react-i18next';
-import { useEffect, useRef, useCallback } from 'react';
-import { Alert, Animated, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useRef, useCallback, useState } from 'react';
+import { Alert, Animated, StyleSheet, Text, TextInput, View } from 'react-native';
 import { PlayerListItem } from './PlayerListItem';
 import { multiplayerService } from '@/services/multiplayer';
 import { multiplayerDebugLog } from '@/services/multiplayer-debug-log';
@@ -18,10 +18,22 @@ interface MultiplayerPanelProps {
 export function MultiplayerPanel({ onHostPress, onJoinPress }: MultiplayerPanelProps) {
   const { t } = useTranslation('common');
   const { available, isChecking, requestPermissions } = useMultiplayerPermissions();
-  const { state, discoveredPeers, setState, connectedPeer, addDiscoveredPeer, setConnectedPeer } =
-    useMultiplayerStore();
+  const {
+    state,
+    discoveredPeers,
+    setState,
+    connectedPeer,
+    addDiscoveredPeer,
+    setDiscoveredPeers,
+    setConnectedPeer,
+  } = useMultiplayerStore();
   const { captainName } = useCaptainStore();
   const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  // Host's code from the rendezvous, and the joiner's typed one.
+  const [hostCode, setHostCode] = useState<string | null>(null);
+  const [codeError, setCodeError] = useState<string | null>(null);
+  const [enteredCode, setEnteredCode] = useState('');
 
   // Surface disconnects as an alert and reset.
   useEffect(() => {
@@ -105,8 +117,13 @@ export function MultiplayerPanel({ onHostPress, onJoinPress }: MultiplayerPanelP
     multiplayerDebugLog.push('info', `UI: permissions ${permitted ? 'granted' : 'denied'}`);
     if (permitted) {
       try {
+        setHostCode(null);
+        setCodeError(null);
         setState('HOST_ADVERTISING');
-        await multiplayerService.startAdvertising(captainName);
+        await multiplayerService.startAdvertising(captainName, {
+          onCode: setHostCode,
+          onCodeFailed: () => setCodeError(t('multiplayer.codeUnavailable')),
+        });
         onHostPress?.();
       } catch (error) {
         console.error('[UI] Failed to start advertising:', error);
@@ -114,7 +131,7 @@ export function MultiplayerPanel({ onHostPress, onJoinPress }: MultiplayerPanelP
         setState('IDLE');
       }
     }
-  }, [requestPermissions, setState, captainName, onHostPress]);
+  }, [requestPermissions, setState, captainName, onHostPress, t]);
 
   const handleJoinPress = useCallback(async () => {
     multiplayerDebugLog.push('event', 'UI: JOIN pressed');
@@ -122,6 +139,9 @@ export function MultiplayerPanel({ onHostPress, onJoinPress }: MultiplayerPanelP
     multiplayerDebugLog.push('info', `UI: permissions ${permitted ? 'granted' : 'denied'}`);
     if (permitted) {
       try {
+        // A new scan starts from nothing: peers found last time may be gone,
+        // and a stale row that fails to connect is worse than an empty list.
+        setDiscoveredPeers([]);
         setState('SCANNING');
         await multiplayerService.startScanning((id: string, name: string) => {
           addDiscoveredPeer({ id, name });
@@ -133,7 +153,30 @@ export function MultiplayerPanel({ onHostPress, onJoinPress }: MultiplayerPanelP
         setState('IDLE');
       }
     }
-  }, [requestPermissions, setState, addDiscoveredPeer, onJoinPress]);
+  }, [requestPermissions, setState, addDiscoveredPeer, setDiscoveredPeers, onJoinPress]);
+
+  const handleJoinWithCode = useCallback(async () => {
+    const code = enteredCode.trim().toUpperCase();
+    if (code.length < 6) return;
+    multiplayerDebugLog.push('event', 'UI: JOIN WITH CODE', code);
+    setCodeError(null);
+    try {
+      await multiplayerService.stopScanning();
+      setState('CONNECTING');
+      setState('HANDSHAKING');
+      const peerName = await multiplayerService.connectWithCode(code, captainName);
+      setConnectedPeer({ id: code, name: peerName || t('multiplayer.opponent'), version: '1' });
+      setEnteredCode('');
+      setState('LOBBY');
+    } catch (error) {
+      const reason = (error as { reason?: string }).reason;
+      multiplayerDebugLog.push('error', 'UI: code join failed', String(error));
+      setCodeError(
+        reason === 'no-such-game' ? t('multiplayer.codeNotFound') : t('multiplayer.codeFailed'),
+      );
+      setState('SCANNING');
+    }
+  }, [enteredCode, captainName, setConnectedPeer, setState, t]);
 
   const handleCancel = useCallback(async () => {
     multiplayerDebugLog.push('event', `UI: CANCEL from ${state}`);
@@ -149,8 +192,12 @@ export function MultiplayerPanel({ onHostPress, onJoinPress }: MultiplayerPanelP
       console.error('[UI] Failed to cancel operation:', error);
       multiplayerDebugLog.push('error', 'UI: cancel failed', String(error));
     }
+    setHostCode(null);
+    setCodeError(null);
+    setEnteredCode('');
+    setDiscoveredPeers([]);
     setState('IDLE');
-  }, [state, connectedPeer, setState]);
+  }, [state, connectedPeer, setState, setDiscoveredPeers]);
 
   // The home screen swaps the panel's slot for the captain-name input while the
   // name is unset. Tear down anything in flight so a half-finished host/join
@@ -209,6 +256,13 @@ export function MultiplayerPanel({ onHostPress, onJoinPress }: MultiplayerPanelP
           <Text style={styles.callsignLabel}>
             {t('multiplayer.yourCallsign')} {captainName}
           </Text>
+          <View style={styles.codeBlock}>
+            <Text style={styles.codeLabel}>{t('multiplayer.gameCode')}</Text>
+            <Text style={styles.codeValue}>
+              {codeError ?? hostCode ?? t('multiplayer.codePending')}
+            </Text>
+            <Text style={styles.codeHint}>{t('multiplayer.codeHint')}</Text>
+          </View>
           <View style={styles.actionRow}>
             <HapticPressable
               onPress={handleCancel}
@@ -240,7 +294,29 @@ export function MultiplayerPanel({ onHostPress, onJoinPress }: MultiplayerPanelP
               ))
             )}
           </View>
-          <View style={styles.actionRow}>
+          <Text style={styles.codeHint}>{t('multiplayer.enterCodePrompt')}</Text>
+          <TextInput
+            style={styles.codeInput}
+            value={enteredCode}
+            onChangeText={text => setEnteredCode(text.toUpperCase().slice(0, 6))}
+            autoCapitalize="characters"
+            autoCorrect={false}
+            maxLength={6}
+            placeholder={t('multiplayer.enterCodePlaceholder')}
+            placeholderTextColor={GameColors.labelDim}
+          />
+          {codeError ? <Text style={styles.codeErrorText}>{codeError}</Text> : null}
+          <View style={styles.codeActionRow}>
+            <HapticPressable
+              onPress={handleJoinWithCode}
+              disabled={enteredCode.trim().length < 6}
+              style={({ pressed }) => [
+                styles.button,
+                pressed && styles.buttonPressed,
+                enteredCode.trim().length < 6 && styles.buttonDisabled,
+              ]}>
+              <Text style={styles.buttonText}>{t('multiplayer.join')}</Text>
+            </HapticPressable>
             <HapticPressable
               onPress={handleCancel}
               style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}>
@@ -381,6 +457,66 @@ const styles = StyleSheet.create({
   },
   peerList: {
     marginVertical: 8,
+  },
+  codeBlock: {
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderWidth: 1,
+    borderColor: GameColors.blueBorderDim,
+    borderRadius: 8,
+    backgroundColor: GameColors.blueButton,
+  },
+  codeLabel: {
+    color: GameColors.label,
+    fontSize: 11,
+    fontFamily: Fonts.rounded,
+    letterSpacing: 2,
+  },
+  codeValue: {
+    color: GameColors.gold,
+    fontSize: 28,
+    fontFamily: 'BlackOpsOne',
+    // The code gets read aloud and copied by eye; wide tracking keeps the
+    // characters from running together.
+    letterSpacing: 6,
+  },
+  codeHint: {
+    color: GameColors.labelDim,
+    fontSize: 12,
+    fontFamily: Fonts.rounded,
+    textAlign: 'center',
+    marginTop: 8,
+  },
+  codeActionRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 8,
+  },
+  codeInput: {
+    alignSelf: 'center',
+    width: '70%',
+    marginTop: 6,
+    height: 44,
+    borderWidth: 1,
+    borderColor: GameColors.blueBorder,
+    borderRadius: 8,
+    backgroundColor: GameColors.navyBg,
+    color: GameColors.gold,
+    fontFamily: Fonts.mono,
+    fontSize: 20,
+    letterSpacing: 6,
+    textAlign: 'center',
+  },
+  codeErrorText: {
+    color: GameColors.red,
+    fontSize: 12,
+    fontFamily: Fonts.rounded,
+    textAlign: 'center',
+    marginTop: 6,
   },
   nopeersText: {
     color: GameColors.labelDim,

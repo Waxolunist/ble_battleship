@@ -76,6 +76,15 @@ export function parseMessage(raw: string): MultiplayerMessage | null {
   };
 }
 
+/**
+ * Heartbeat frames are transport bookkeeping, not game traffic. At one ping a
+ * second each way they would bury everything else in the debug trace, so they
+ * are kept out of it — only a timeout is worth a line.
+ */
+export function isHeartbeatMessage(message: MultiplayerMessage): boolean {
+  return message.type === 'PING' || message.type === 'PONG';
+}
+
 /** Short, log-safe rendering of a message's payload. */
 export function describePayload(message: MultiplayerMessage): string | undefined {
   return message.data ? JSON.stringify(message.data) : undefined;
@@ -156,6 +165,73 @@ export function validateHello(message: MultiplayerMessage): HelloValidation {
     ok: true,
     peerName: typeof data.captainName === 'string' ? data.captainName : '',
   };
+}
+
+interface HeartbeatOptions {
+  intervalMs: number;
+  timeoutMs: number;
+  checkMs: number;
+  /** Emit one PING on the transport. */
+  sendPing: () => void;
+  /** The peer has gone quiet for longer than timeoutMs. */
+  onTimeout: (silentMs: number) => void;
+  /** Injectable clock, for tests. */
+  now?: () => number;
+}
+
+/**
+ * Liveness watchdog, shared by both transports.
+ *
+ * A peer that leaves the network sends nothing to say so — no FIN on a TCP
+ * socket, no close event on a data channel — so silence is the only signal
+ * there is. Each side pings on an interval and measures how long it has been
+ * since anything arrived.
+ *
+ * It compares timestamps rather than counting missed replies on purpose: a
+ * blocked JS thread delays our own ping timer too, and a count would then
+ * declare a perfectly live peer dead.
+ */
+export class Heartbeat {
+  private pingTimer: ReturnType<typeof setInterval> | null = null;
+  private watchdogTimer: ReturnType<typeof setInterval> | null = null;
+  private lastInboundAt = 0;
+
+  constructor(private readonly options: HeartbeatOptions) {}
+
+  private clock(): number {
+    return (this.options.now ?? Date.now)();
+  }
+
+  isRunning(): boolean {
+    return this.pingTimer !== null;
+  }
+
+  start(): void {
+    this.stop();
+    this.lastInboundAt = this.clock();
+
+    this.pingTimer = setInterval(() => this.options.sendPing(), this.options.intervalMs);
+    this.watchdogTimer = setInterval(() => {
+      const silentFor = this.clock() - this.lastInboundAt;
+      if (silentFor < this.options.timeoutMs) return;
+      // Stop first: onTimeout tears the link down, and a watchdog still armed
+      // would fire again on the way out.
+      this.stop();
+      this.options.onTimeout(silentFor);
+    }, this.options.checkMs);
+  }
+
+  stop(): void {
+    if (this.pingTimer) clearInterval(this.pingTimer);
+    if (this.watchdogTimer) clearInterval(this.watchdogTimer);
+    this.pingTimer = null;
+    this.watchdogTimer = null;
+  }
+
+  /** Any byte from the peer proves it is still there, even a malformed one. */
+  noteInbound(): void {
+    this.lastInboundAt = this.clock();
+  }
 }
 
 export type HandshakeState = 'idle' | 'awaiting' | 'complete';

@@ -11,6 +11,7 @@ import {
   MessageEmitter,
   MessageQueue,
   NdjsonBuffer,
+  isHeartbeatMessage,
   parseMessage,
   validateHello,
   type MultiplayerMessage,
@@ -46,6 +47,13 @@ describe('parseMessage', () => {
 
   it('rejects an object with no type', () => {
     expect(parseMessage('{"data":{"x":1}}')).toBeNull();
+  });
+
+  it('flags heartbeat frames so they stay out of the debug trace', () => {
+    expect(isHeartbeatMessage({ type: 'PING' })).toBe(true);
+    expect(isHeartbeatMessage({ type: 'PONG' })).toBe(true);
+    expect(isHeartbeatMessage({ type: 'FIRE' })).toBe(false);
+    expect(isHeartbeatMessage({ type: 'HELLO' })).toBe(false);
   });
 
   it('accepts the heartbeat types', () => {

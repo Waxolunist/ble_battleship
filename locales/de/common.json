@@ -54,6 +54,15 @@
     "connecting": "VERBINDUNG...",
     "connected": "VERBUNDEN",
     "waitingPlacement": "WARTE AUF GEGNER\nBEIM PLATZIEREN...",
-    "rematchRequested": "REVANCHE ANGEFORDERT\nWARTE AUF GEGNER..."
+    "rematchRequested": "REVANCHE ANGEFORDERT\nWARTE AUF GEGNER...",
+    "gameCode": "SPIELCODE",
+    "codeHint": "Gegner nicht in diesem WLAN? Diesen Code eingeben lassen.",
+    "codePending": "CODE WIRD GEHOLT...",
+    "codeUnavailable": "Code nicht verfügbar",
+    "joinWithCode": "MIT CODE BEITRETEN",
+    "enterCodePrompt": "Nicht im selben WLAN?",
+    "enterCodePlaceholder": "CODE",
+    "codeNotFound": "Kein Spiel zu diesem Code gefunden.",
+    "codeFailed": "Spielserver nicht erreichbar."
   }
 }

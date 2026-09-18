@@ -27,6 +27,19 @@ export const ICE_SERVERS = [
   },
 ];
 
+/**
+ * Signalling rendezvous (infra/rendezvous) — pairs phones that cannot see each
+ * other on a LAN. Set EXPO_PUBLIC_RENDEZVOUS_URL to override per build.
+ */
+export const RENDEZVOUS_URL =
+  process.env.EXPO_PUBLIC_RENDEZVOUS_URL ?? 'https://hhfh.v-collaborate.com';
+
+/** How often the host asks whether the joiner has answered yet. */
+export const RENDEZVOUS_POLL_MS = 1500;
+
+/** How long a host waits on a code before giving up on it. */
+export const RENDEZVOUS_TIMEOUT_MS = 10 * 60 * 1000;
+
 export const MULTIPLAYER_PROTOCOL_VERSION = '1';
 
 /**
