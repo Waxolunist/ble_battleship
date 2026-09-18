@@ -14,7 +14,6 @@
         "CFBundleLocalizations": ["en", "de"],
         "CFBundleDevelopmentRegion": "en",
         "NSLocalNetworkUsageDescription": "Local network access is used to discover and connect to nearby players on the same WiFi network.",
-        "NFCReaderUsageDescription": "NFC is used to exchange connection details when playing multiplayer over mobile data.",
         "NSBonjourServices": ["_hhfh._tcp"]
       }
     },
@@ -29,7 +28,6 @@
         "path": "./android/app/src/main/res/xml/locales_config.xml"
       },
       "permissions": [
-        "android.permission.NFC",
         "android.permission.ACCESS_WIFI_STATE",
         "android.permission.CHANGE_WIFI_MULTICAST_STATE",
         "android.permission.INTERNET"

@@ -54,10 +54,6 @@
     "connecting": "VERBINDUNG...",
     "connected": "VERBUNDEN",
     "waitingPlacement": "WARTE AUF GEGNER\nBEIM PLATZIEREN...",
-    "rematchRequested": "REVANCHE ANGEFORDERT\nWARTE AUF GEGNER...",
-    "tapPhonesPrompt": "HANDYS ZUSAMMENHALTEN",
-    "tapPhonesHint": "Handys Rücken an Rücken halten",
-    "tapInstead": "TAP",
-    "orTapHint": "Gegner nicht im selben WLAN? Per Handy-Tipp verbinden."
+    "rematchRequested": "REVANCHE ANGEFORDERT\nWARTE AUF GEGNER..."
   }
 }

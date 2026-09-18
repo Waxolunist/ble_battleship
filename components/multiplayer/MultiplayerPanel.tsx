@@ -4,18 +4,11 @@ import { useMultiplayerPermissions } from '@/hooks/useMultiplayerPermissions';
 import { useMultiplayerStore } from '@/store/useMultiplayerStore';
 import { useCaptainStore } from '@/store/useCaptainStore';
 import { useTranslation } from 'react-i18next';
-import { useEffect, useRef, useCallback, useState } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { Alert, Animated, StyleSheet, Text, View } from 'react-native';
 import { PlayerListItem } from './PlayerListItem';
-import { multiplayerService, NFC_PEER_ID } from '@/services/multiplayer';
+import { multiplayerService } from '@/services/multiplayer';
 import { multiplayerDebugLog } from '@/services/multiplayer-debug-log';
-import { getNetworkPath, onNetworkChange, type NetworkPath } from '@/services/network-detector';
-
-// How long to scan on LAN before falling back to the NFC path (Scenario 3).
-// Android mDNS routinely takes 5–7s to resolve a service on a healthy network,
-// so anything tighter drops players onto the NFC screen while discovery is
-// still working.
-const LAN_SCAN_FALLBACK_MS = 20_000;
 
 interface MultiplayerPanelProps {
   onHostPress?: () => void;
@@ -29,15 +22,6 @@ export function MultiplayerPanel({ onHostPress, onJoinPress }: MultiplayerPanelP
     useMultiplayerStore();
   const { captainName } = useCaptainStore();
   const pulseAnim = useRef(new Animated.Value(1)).current;
-
-  const [networkPath, setNetworkPath] = useState<NetworkPath | null>(null);
-
-  // Track the preferred path so the UI shows the right screen before the user
-  // presses HOST or JOIN. Following network changes keeps the NFC fallback
-  // below from latching: re-joining Wi-Fi puts us back on the LAN path.
-  useEffect(() => {
-    return onNetworkChange(setNetworkPath);
-  }, []);
 
   // Surface disconnects as an alert and reset.
   useEffect(() => {
@@ -93,35 +77,6 @@ export function MultiplayerPanel({ onHostPress, onJoinPress }: MultiplayerPanelP
     }
   }, [state, pulseAnim]);
 
-  // Scenario 3 — LAN scan fallback: if we've been scanning on LAN with no
-  // peers discovered for LAN_SCAN_FALLBACK_MS, stop the LAN scan and restart
-  // on the NFC+WebRTC path so the players can tap phones together instead.
-  const discoveredPeersCount = discoveredPeers.length;
-  useEffect(() => {
-    if (state !== 'SCANNING' || networkPath !== 'lan' || discoveredPeersCount > 0) return;
-
-    const timer = setTimeout(() => {
-      void (async () => {
-        multiplayerDebugLog.push('event', 'UI: LAN scan timeout → NFC fallback');
-        await multiplayerService.stopScanning();
-        setNetworkPath('nfc-webrtc');
-        try {
-          await multiplayerService.startScanning(
-            (id: string, name: string) => addDiscoveredPeer({ id, name }),
-            { pathOverride: 'nfc-webrtc' },
-          );
-        } catch (err) {
-          multiplayerDebugLog.push('error', 'UI: NFC fallback scan failed', String(err));
-          setState('IDLE');
-        }
-      })();
-    }, LAN_SCAN_FALLBACK_MS);
-
-    return () => clearTimeout(timer);
-  }, [state, networkPath, discoveredPeersCount, addDiscoveredPeer, setState]);
-
-  // NFC joiner — after tap 1 the service calls onDeviceFound(NFC_PEER_ID, '').
-  // Auto-connect immediately so the user only needs to tap phones twice total.
   const handleConnectToDevice = useCallback(
     async (deviceId: string, deviceName: string) => {
       multiplayerDebugLog.push('event', 'UI: peer tapped → CONNECTING', deviceId);
@@ -144,22 +99,12 @@ export function MultiplayerPanel({ onHostPress, onJoinPress }: MultiplayerPanelP
     [setState, setConnectedPeer, captainName, t],
   );
 
-  useEffect(() => {
-    if (networkPath !== 'nfc-webrtc') return;
-    const nfcPeer = discoveredPeers.find(p => p.id === NFC_PEER_ID);
-    if (!nfcPeer || state !== 'SCANNING') return;
-    handleConnectToDevice(NFC_PEER_ID, '');
-  }, [discoveredPeers, networkPath, state, handleConnectToDevice]);
-
   const handleHostPress = useCallback(async () => {
     multiplayerDebugLog.push('event', 'UI: HOST pressed');
     const permitted = await requestPermissions();
     multiplayerDebugLog.push('info', `UI: permissions ${permitted ? 'granted' : 'denied'}`);
     if (permitted) {
       try {
-        // Re-checked per attempt: a stale path from a previous attempt would
-        // show the wrong waiting screen.
-        setNetworkPath(await getNetworkPath());
         setState('HOST_ADVERTISING');
         await multiplayerService.startAdvertising(captainName);
         onHostPress?.();
@@ -177,15 +122,10 @@ export function MultiplayerPanel({ onHostPress, onJoinPress }: MultiplayerPanelP
     multiplayerDebugLog.push('info', `UI: permissions ${permitted ? 'granted' : 'denied'}`);
     if (permitted) {
       try {
-        const path = await getNetworkPath();
-        setNetworkPath(path);
         setState('SCANNING');
-        await multiplayerService.startScanning(
-          (id: string, name: string) => {
-            addDiscoveredPeer({ id, name });
-          },
-          { pathOverride: path },
-        );
+        await multiplayerService.startScanning((id: string, name: string) => {
+          addDiscoveredPeer({ id, name });
+        });
         onJoinPress?.();
       } catch (error) {
         console.error('[UI] Failed to start scanning:', error);
@@ -194,34 +134,6 @@ export function MultiplayerPanel({ onHostPress, onJoinPress }: MultiplayerPanelP
       }
     }
   }, [requestPermissions, setState, addDiscoveredPeer, onJoinPress]);
-
-  // Manual escape hatch for a mixed-network pair: one phone sees Wi-Fi and
-  // waits on LAN while the other is on mobile data and is already showing the
-  // tap screen. Either side can drop to the NFC path on demand instead of
-  // waiting out LAN_SCAN_FALLBACK_MS (which never fires for a host at all).
-  const handleSwitchToNfc = useCallback(async () => {
-    multiplayerDebugLog.push('event', `UI: switch to NFC from ${state}`);
-    const hosting = state === 'HOST_ADVERTISING';
-    try {
-      if (hosting) {
-        await multiplayerService.stopAdvertising();
-      } else {
-        await multiplayerService.stopScanning();
-      }
-      setNetworkPath('nfc-webrtc');
-      if (hosting) {
-        await multiplayerService.startAdvertising(captainName, { pathOverride: 'nfc-webrtc' });
-      } else {
-        await multiplayerService.startScanning(
-          (id: string, name: string) => addDiscoveredPeer({ id, name }),
-          { pathOverride: 'nfc-webrtc' },
-        );
-      }
-    } catch (error) {
-      multiplayerDebugLog.push('error', 'UI: switch to NFC failed', String(error));
-      setState('IDLE');
-    }
-  }, [state, captainName, addDiscoveredPeer, setState]);
 
   const handleCancel = useCallback(async () => {
     multiplayerDebugLog.push('event', `UI: CANCEL from ${state}`);
@@ -286,27 +198,6 @@ export function MultiplayerPanel({ onHostPress, onJoinPress }: MultiplayerPanelP
     );
   }
 
-  // NFC path — HOST or SCAN: show "TAP PHONES TOGETHER" screen.
-  if ((state === 'HOST_ADVERTISING' || state === 'SCANNING') && networkPath === 'nfc-webrtc') {
-    return (
-      <View style={styles.panel}>
-        <View style={styles.nfcContainer}>
-          <Animated.Text style={[styles.nfcPrompt, { opacity: pulseAnim }]}>
-            {t('multiplayer.tapPhonesPrompt')}
-          </Animated.Text>
-          <Text style={styles.nfcHint}>{t('multiplayer.tapPhonesHint')}</Text>
-          <View style={styles.cancelRow}>
-            <HapticPressable
-              onPress={handleCancel}
-              style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}>
-              <Text style={styles.buttonText}>{t('multiplayer.cancel')}</Text>
-            </HapticPressable>
-          </View>
-        </View>
-      </View>
-    );
-  }
-
   // LAN path — HOST: show "WAITING FOR PLAYERS…" with the game room name.
   if (state === 'HOST_ADVERTISING') {
     return (
@@ -318,13 +209,7 @@ export function MultiplayerPanel({ onHostPress, onJoinPress }: MultiplayerPanelP
           <Text style={styles.callsignLabel}>
             {t('multiplayer.yourCallsign')} {captainName}
           </Text>
-          <Text style={styles.switchHint}>{t('multiplayer.orTapHint')}</Text>
           <View style={styles.actionRow}>
-            <HapticPressable
-              onPress={handleSwitchToNfc}
-              style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}>
-              <Text style={styles.buttonText}>{t('multiplayer.tapInstead')}</Text>
-            </HapticPressable>
             <HapticPressable
               onPress={handleCancel}
               style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}>
@@ -355,13 +240,7 @@ export function MultiplayerPanel({ onHostPress, onJoinPress }: MultiplayerPanelP
               ))
             )}
           </View>
-          <Text style={styles.switchHint}>{t('multiplayer.orTapHint')}</Text>
           <View style={styles.actionRow}>
-            <HapticPressable
-              onPress={handleSwitchToNfc}
-              style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}>
-              <Text style={styles.buttonText}>{t('multiplayer.tapInstead')}</Text>
-            </HapticPressable>
             <HapticPressable
               onPress={handleCancel}
               style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}>
@@ -458,29 +337,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '900',
     letterSpacing: 3,
-  },
-  nfcContainer: {
-    borderWidth: 1,
-    borderColor: GameColors.blueBorder,
-    borderRadius: 4,
-    backgroundColor: GameColors.navyBg,
-    paddingHorizontal: 12,
-    paddingVertical: 16,
-    gap: 8,
-    alignItems: 'center',
-  },
-  nfcPrompt: {
-    color: GameColors.gold,
-    fontSize: 16,
-    fontFamily: 'BlackOpsOne',
-    letterSpacing: 3,
-    textAlign: 'center',
-  },
-  nfcHint: {
-    color: GameColors.labelDim,
-    fontSize: 12,
-    fontFamily: Fonts.rounded,
-    textAlign: 'center',
   },
   advertisingContainer: {
     borderWidth: 1,
