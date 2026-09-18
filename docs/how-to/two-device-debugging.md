@@ -114,15 +114,15 @@ adb -s $PIXEL install -r android/app/build/outputs/apk/release/app-release.apk
 Launch:
 
 ```bash
-adb -s $S22   shell monkey -p com.anonymous.hulls_and_hellfire -c android.intent.category.LAUNCHER 1
-adb -s $PIXEL shell monkey -p com.anonymous.hulls_and_hellfire -c android.intent.category.LAUNCHER 1
+adb -s $S22   shell monkey -p com.vcollaborate.hulls_and_hellfire -c android.intent.category.LAUNCHER 1
+adb -s $PIXEL shell monkey -p com.vcollaborate.hulls_and_hellfire -c android.intent.category.LAUNCHER 1
 ```
 
 If an install fails with `INSTALL_FAILED_UPDATE_INCOMPATIBLE`, a differently-signed build (e.g. an
 older debug APK) is already there — uninstall first:
 
 ```bash
-adb -s $S22 uninstall com.anonymous.hulls_and_hellfire
+adb -s $S22 uninstall com.vcollaborate.hulls_and_hellfire
 ```
 
 ### Dev build + Metro (iterating on code)
@@ -152,8 +152,8 @@ most reliable option — it keeps `localhost:8081` valid on the phone:
 adb -s $S22   reverse tcp:8081 tcp:8081
 adb -s $PIXEL reverse tcp:8081 tcp:8081
 
-adb -s $S22   shell monkey -p com.anonymous.hulls_and_hellfire -c android.intent.category.LAUNCHER 1
-adb -s $PIXEL shell monkey -p com.anonymous.hulls_and_hellfire -c android.intent.category.LAUNCHER 1
+adb -s $S22   shell monkey -p com.vcollaborate.hulls_and_hellfire -c android.intent.category.LAUNCHER 1
+adb -s $PIXEL shell monkey -p com.vcollaborate.hulls_and_hellfire -c android.intent.category.LAUNCHER 1
 ```
 
 Metro has to stay running for as long as the dev build is in use. The `reverse` tunnel is tied to
@@ -162,7 +162,7 @@ reloading the app. If the app is already showing the error screen, fix the tunne
 force-stop and relaunch it:
 
 ```bash
-adb -s $S22 shell am force-stop com.anonymous.hulls_and_hellfire
+adb -s $S22 shell am force-stop com.vcollaborate.hulls_and_hellfire
 ```
 
 If `reverse` is not available, shake the phone (or `adb -s $S22 shell input keyevent 82`) →
@@ -221,7 +221,7 @@ also drops wireless adb, so start logcat before switching, or rely on the in-app
 ## 6. Force-kill / disconnect testing
 
 ```bash
-adb -s $PIXEL shell am force-stop com.anonymous.hulls_and_hellfire
+adb -s $PIXEL shell am force-stop com.vcollaborate.hulls_and_hellfire
 ```
 
 The other device should surface a connection-lost state within a couple of seconds.

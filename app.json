@@ -9,7 +9,7 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.hulls-and-hellfire",
+      "bundleIdentifier": "com.vcollaborate.hulls-and-hellfire",
       "infoPlist": {
         "CFBundleLocalizations": ["en", "de"],
         "CFBundleDevelopmentRegion": "en",
@@ -24,7 +24,7 @@
         "backgroundImage": "./assets/images/android-icon-background.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.hulls_and_hellfire",
+      "package": "com.vcollaborate.hulls_and_hellfire",
       "localeConfig": {
         "path": "./android/app/src/main/res/xml/locales_config.xml"
       },

@@ -163,7 +163,7 @@ adb devices
 adb -s <SERIAL_B> install -r android/app/build/outputs/apk/debug/app-debug.apk
 
 # Launch the app on device B
-adb -s <SERIAL_B> shell monkey -p com.anonymous.hulls_and_hellfire -c android.intent.category.LAUNCHER 1
+adb -s <SERIAL_B> shell monkey -p com.vcollaborate.hulls_and_hellfire -c android.intent.category.LAUNCHER 1
 Both phones will connect to the Metro bundler on your Mac over USB; no LAN needed.
 
 3. Watch logs while testing (optional but useful)
@@ -191,7 +191,7 @@ REMATCH	Both: → REMATCH / ← REMATCH → returns to PLACEMENT
 While mid-battle on device B (the joiner):
 
 
-adb -s <SERIAL_B> shell am force-stop com.anonymous.hulls_and_hellfire
+adb -s <SERIAL_B> shell am force-stop com.vcollaborate.hulls_and_hellfire
 On device A, the <BLEConnectionGuard> should fire the connection-lost alert within a couple of seconds.
 
 6. AI regression check (AC #4)
