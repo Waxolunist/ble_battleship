@@ -27,6 +27,8 @@ export const LOCALE_IMAGES = {
  * other; swap in real recordings under the same names and nothing else changes.
  */
 export const SOUNDS = {
+  /** The splash artwork fades and the app opens. */
+  appLaunch: require('@/assets/sounds/app_launch.wav'),
   /** Generic button press — every `HapticPressable`. */
   uiTap: require('@/assets/sounds/ui_tap.wav'),
   /** A ship is lifted off the tray or the grid. */

@@ -29,7 +29,7 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
-    preloadSounds(['uiTap']);
+    preloadSounds(['appLaunch', 'uiTap']);
   }, []);
 
   const [splashDone, setSplashDone] = useState(false);

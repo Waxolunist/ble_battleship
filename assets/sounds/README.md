@@ -21,7 +21,7 @@ understated so the drama moments have room to hit.
 
 ## The files
 
-All seventeen cues live in this folder. They are **synthesised placeholders** —
+All eighteen cues live in this folder. They are **synthesised placeholders** —
 correct in length, shape and relative loudness, ready to be swapped for real
 recordings under the same filenames without touching any code.
 
@@ -30,6 +30,12 @@ recordings under the same filenames without touching any code.
   relative volumes. Match the loudness column when replacing a file.
 - Declared in the `SOUNDS` map in [`constants/assets.ts`](../../constants/assets.ts)
   and played only through `playSound()` in [`services/audio.ts`](../../services/audio.ts).
+
+### Launch
+
+| File | Key | Fires when | Character | Length | RMS |
+|---|---|---|---|---|---|
+| `app_launch.wav` | `appLaunch` | The splash artwork has loaded and begins its cross-fade into the app | An engine room swelling up to pressure on a low D, with one struck ship's bell over it and the sea underneath. The ship waking up, not a fanfare — it sits well below the endgame stingers. | 1.80 s | 0.130 |
 
 ### Interface
 

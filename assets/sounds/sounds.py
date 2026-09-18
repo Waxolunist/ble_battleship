@@ -43,6 +43,52 @@ def generate_wav(filename, signal, target_rms):
 # CUE GENERATORS
 # ==========================================
 
+# --- Launch ---
+def gen_app_launch():
+    duration = 1.80
+    t = np.linspace(0, duration, int(SAMPLE_RATE * duration), False)
+    sig = np.zeros_like(t)
+
+    # Engine room coming up to pressure on the same low D the defeat horn
+    # answers on. The slow drift keeps it breathing; a fixed pitch here reads
+    # as a test tone rather than machinery.
+    drift = 1 + 0.004 * np.sin(2 * np.pi * 0.7 * t)
+    phase = 2 * np.pi * np.cumsum(73.42 * drift) / SAMPLE_RATE
+    engine = np.sin(phase) + 0.4 * np.sin(phase * 2) + 0.15 * np.sin(phase * 3)
+    swell = np.minimum(t / 0.55, 1.0) * np.exp(-np.maximum(t - 0.9, 0.0) * 1.4)
+    sig += engine / 1.55 * swell * 0.55
+
+    # One struck ship's bell over it. A bell's partials are inharmonic — the
+    # tierce and quint are what stop it reading as a plain sine chord — and the
+    # high ones die first, so each partial carries its own decay rate.
+    strike = 0.30
+    b_mask = t >= strike
+    tb = t[b_mask] - strike
+    bell = np.zeros_like(tb)
+    for ratio, amp, decay in [
+        (0.50, 0.45, 1.4),  # hum
+        (1.00, 1.00, 1.8),  # prime
+        (1.19, 0.55, 2.6),  # tierce
+        (1.50, 0.40, 3.2),  # quint
+        (2.00, 0.35, 4.0),  # nominal
+        (2.55, 0.18, 6.0),
+        (3.01, 0.10, 8.0),
+    ]:
+        bell += np.sin(2 * np.pi * 587.33 * ratio * tb) * amp * np.exp(-tb * decay)
+    # The clapper itself — without the tick the bell fades up instead of being hit
+    tick = (np.random.rand(len(tb)) * 2 - 1) * np.exp(-tb * 220)
+    sig[b_mask] += (bell / 3.0 + tick * 0.35) * 0.9
+
+    # Sea under the whole thing, built like the defeat horn's wash
+    wash = np.random.rand(len(t)) * 2 - 1
+    for _ in range(2):
+        wash = lfilter([1.0], [1.0, -0.99], wash)
+    wash = lfilter([1.0, -1.0], [1.0, -0.99], wash)
+    wash /= np.max(np.abs(wash))
+    sig += wash * 0.25 * np.minimum(t / 0.40, 1.0)
+
+    return sig
+
 # --- Interface ---
 def gen_ui_tap():
     duration = 0.06
@@ -310,6 +356,7 @@ def gen_retreat_alarm():
 # BATCH EXECUTION
 # ==========================================
 cues = [
+    ("app_launch.wav", gen_app_launch, 0.130),
     ("ui_tap.wav", gen_ui_tap, 0.060),
     ("ship_pickup.wav", gen_ship_pickup, 0.080),
     ("ship_drop.wav", gen_ship_drop, 0.090),

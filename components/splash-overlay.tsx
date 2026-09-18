@@ -10,6 +10,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { IMAGES } from '@/constants/assets';
+import { playSound } from '@/services/audio';
 import { GameColors } from '@/constants/theme';
 
 const FADE_MS = 450;
@@ -36,6 +37,7 @@ export function SplashOverlay({ ready, onFinish }: Props) {
 
   useEffect(() => {
     if (!ready || !imageReady) return;
+    playSound('appLaunch');
     opacity.value = withTiming(
       0,
       { duration: FADE_MS, easing: Easing.out(Easing.cubic) },
