@@ -10,3 +10,4 @@ Documentation for Hulls & Hellfire, organized using the [Diataxis](https://diata
 ## How-to guides
 
 - [Run on two Android devices (wireless only)](how-to/two-device-debugging.md)
+- [Test single-player with a bot](how-to/single-player-bot-testing.md)

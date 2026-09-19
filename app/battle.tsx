@@ -24,6 +24,7 @@ import { useCaptainStore } from '@/store/useCaptainStore';
 import { useStatsStore, computeFieldShotStats, computeSunkShipTypes } from '@/store/useStatsStore';
 import { usePlacementTour } from '@/hooks/usePlacementTour';
 import { useBattleTour } from '@/hooks/useBattleTour';
+import { useKeepAwake } from 'expo-keep-awake';
 import { useRouter } from 'expo-router';
 import { useResponsive } from '@/hooks/useResponsive';
 import { Image, ImageBackground, StyleSheet, Text, View } from 'react-native';
@@ -180,6 +181,13 @@ function BattleScreenBody({
   opponent: Opponent;
   onPlayAgain?: () => void;
 }) {
+  // Placement and battle are both spent watching rather than touching — laying
+  // a fleet out, then sitting through the enemy's turn — so the screen dims and
+  // then locks mid-match on a default timeout. Held for this route only, and
+  // released on the way out; the harbour and the stats screen have no business
+  // keeping a phone awake.
+  useKeepAwake();
+
   const { i18n, t } = useTranslation();
   const locale = (i18n.language === 'de' ? 'de' : 'en') as keyof typeof LOCALE_IMAGES;
   const { width, s } = useResponsive();

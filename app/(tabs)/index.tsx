@@ -105,7 +105,7 @@ export default function HomeScreen() {
       aspectRatio: 0.8,
     },
     nameContainer: {
-      width: '80%',
+      width: '92%',
       alignItems: 'center',
       gap: s(8),
     },
@@ -155,6 +155,10 @@ export default function HomeScreen() {
     },
     welcomeText: {
       color: '#fff',
+      // BlackOpsOne paints wider than it measures, so the rank and name runs
+      // lose their outer glyphs without room either side. s(28) is ~24dp here;
+      // s(8) was not enough and clipped CADET at both ends.
+      paddingHorizontal: s(28),
       fontSize: fs(20),
       fontWeight: '800',
       letterSpacing: 2,
