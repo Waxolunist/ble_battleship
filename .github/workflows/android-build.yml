@@ -63,8 +63,15 @@ jobs:
       - name: Prebuild Android
         run: npx expo prebuild --platform android --no-install
 
+      # The APK is ~175 MB with every ABI and its symbol tables, and
+      # packageRelease is where a runner that has run out of room gives up.
+      - name: Report disk space
+        run: df -h /
+
+      # packageRelease failed here with the cause swallowed; --stacktrace is
+      # what turns "a failure occurred" into something actionable.
       - name: Build for Android
-        run: cd android && ./gradlew assembleRelease
+        run: cd android && ./gradlew assembleRelease --stacktrace
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
