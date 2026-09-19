@@ -68,8 +68,11 @@ jobs:
       # and its symbol tables are in it. gradle.properties is generated and
       # gitignored, so the override has to be appended after prebuild; last
       # entry wins. The runner has 16 GB.
+      # printf, not echo: the generated file ends without a trailing newline,
+      # so appending directly welds the setting onto the last property and
+      # breaks both.
       - name: Raise the Gradle heap
-        run: echo 'org.gradle.jvmargs=-Xmx6g -XX:MaxMetaspaceSize=1g' >> android/gradle.properties
+        run: printf '\norg.gradle.jvmargs=-Xmx6g -XX:MaxMetaspaceSize=1g\n' >> android/gradle.properties
 
       - name: Build for Android
         run: cd android && ./gradlew assembleRelease --stacktrace
