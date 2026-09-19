@@ -16,20 +16,31 @@ own haptic, and the screen shakes when a shell lands. Losing is *LOST AT SEA*.
 
 Sound follows that register. Every cue should read as **brass, iron, water and
 ordnance** — dry, weighty, mechanical. Nothing chiptune, nothing cute, no
-melodic jingles outside the two endgame stingers. The ambient UI stays quiet and
-understated so the drama moments have room to hit.
+melodic jingles outside the two endgame stingers and the harbour bed, which is
+written not to be noticed. The ambient UI stays quiet and understated so the
+drama moments have room to hit.
 
 ## The files
 
-All eighteen cues live in this folder. They are **synthesised placeholders** —
-correct in length, shape and relative loudness, ready to be swapped for real
-recordings under the same filenames without touching any code.
+All eighteen cues and the one music bed live in this folder. They are
+**synthesised placeholders** — correct in length, shape and relative loudness,
+ready to be swapped for real recordings under the same filenames without
+touching any code.
 
 - Mono, 44.1 kHz, 16-bit WAV.
 - Levelled by **RMS, not peak**, so a klaxon and a water splash sit at sensible
   relative volumes. Match the loudness column when replacing a file.
 - Declared in the `SOUNDS` map in [`constants/assets.ts`](../../constants/assets.ts)
-  and played only through `playSound()` in [`services/audio.ts`](../../services/audio.ts).
+  and played only through [`services/audio.ts`](../../services/audio.ts) —
+  `playSound()` for the cues, `playMusic()` / `stopMusic()` for the bed.
+
+### Harbour
+
+One looping bed rather than a cue, and the only file here that is music.
+
+| File | Key | Fires when | Character | Length | RMS |
+|---|---|---|---|---|---|
+| `lobby_music.wav` | `lobbyMusic` | The harbour screen takes focus; stops when it loses it | A low string section in D minor over sea wash, with one foghorn far enough off to be weather rather than a signal. It circles D–F–A–G and goes home, so nothing resolves and nothing arrives — it has to bear being heard fifty times while a player types a name. By a wide margin the quietest file in the set. | 24.00 s loop | 0.020 |
 
 ### Launch
 
@@ -82,6 +93,17 @@ whistle is timed so it lands exactly on the verdict.
 | `victory_fanfare.wav` | `victoryFanfare` | The last enemy ship is sunk | Three rising notes into a sustained major chord over a drum hit. Earned and martial, not celebratory — the game does not do confetti. | 2.40 s | 0.200 |
 | `defeat_horn.wav` | `defeatHorn` | The player's last ship is sunk, or they confirm the retreat | Two foghorn blasts, the second lower and longer, over a bed of sea noise. Final and slow; it plays under the fleet submerging column by column. | 2.60 s | 0.200 |
 | `retreat_alarm.wav` | `retreatAlarm` | The retreat confirmation is raised, or the player leaves during placement | A two-sweep klaxon with a harsh edge on it. This one asks a question — *are you sure* — so it is urgent rather than conclusive. | 1.40 s | 0.140 |
+
+### Replacing the music
+
+The bed is the one file here where the loop matters more than the length. It is
+built to fold its own tail back over its head, so the last 2.5 s crossfades into
+the first and the wrap lands mid-note; a replacement has to be seamless the same
+way or the seam will be the most noticeable thing on the screen.
+
+It is also mixed against a phone speaker, which has nothing useful below about
+500 Hz. Weighting a quiet bed toward the bass is how you end up with a file that
+measures correctly and is inaudible on a handset.
 
 ## Replacing a placeholder
 

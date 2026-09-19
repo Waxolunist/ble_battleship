@@ -81,8 +81,7 @@ def gen_app_launch():
 
     # Sea under the whole thing, built like the defeat horn's wash
     wash = np.random.rand(len(t)) * 2 - 1
-    for _ in range(2):
-        wash = lfilter([1.0], [1.0, -0.99], wash)
+    wash = lfilter([1.0], [1.0, -0.985], wash)
     wash = lfilter([1.0, -1.0], [1.0, -0.99], wash)
     wash /= np.max(np.abs(wash))
     sig += wash * 0.25 * np.minimum(t / 0.40, 1.0)
@@ -328,8 +327,7 @@ def gen_defeat_horn():
     # into a swell; the final high-pass strips the DC drift they introduce,
     # which a plain cumulative sum would leave as inaudible rumble.
     wash = np.random.rand(len(t)) * 2 - 1
-    for _ in range(2):
-        wash = lfilter([1.0], [1.0, -0.99], wash)
+    wash = lfilter([1.0], [1.0, -0.985], wash)
     wash = lfilter([1.0, -1.0], [1.0, -0.99], wash)
     wash /= np.max(np.abs(wash))
     sig += wash * 0.3 * np.minimum(t / 0.5, 1.0)
@@ -352,10 +350,134 @@ def gen_retreat_alarm():
     
     return np.concatenate([sweep1, sweep2])
 
+# --- Lobby ---
+def gen_lobby_music():
+    """
+    A 24 s loop, not a cue. It sits under the harbour screen while the player
+    picks a name or waits for an opponent, so it has to survive being heard
+    fifty times without ever asking to be listened to: no melody that resolves,
+    no arrival, nothing that would make a player notice the seam.
+    """
+    duration = 24.0
+    crossfade = 2.5
+    n = int(SAMPLE_RATE * duration)
+    total = duration + crossfade
+    t = np.linspace(0, total, int(SAMPLE_RATE * total), False)
+    sig = np.zeros_like(t)
+
+    def bowed(ts, f0, dur, ensemble=3):
+        """
+        One bowed note, played by a section rather than a soloist. Three players
+        never quite agree on pitch, and that disagreement — not the waveform —
+        is most of what separates strings from a sawtooth oscillator.
+        """
+        voice = np.zeros_like(ts)
+        spread = [(-0.0043, 0.8), (0.0, 1.0), (0.0038, 0.8)][:ensemble]
+        for detune, weight in spread:
+            # A player leans into a long note and settles. Held pitch that does
+            # not move reads as an oscillator whatever the timbre does.
+            vib = 0.0024 * np.sin(2 * np.pi * 4.6 * ts + np.random.rand() * 6.283)
+            vib *= np.minimum(ts / 1.2, 1.0)
+            drift = 0.0016 * np.sin(2 * np.pi * 0.21 * ts + np.random.rand() * 6.283)
+            freq = f0 * (1 + detune) * (1 + vib + drift)
+            phase = 2 * np.pi * np.cumsum(freq) / SAMPLE_RATE
+            for h in range(1, 25):
+                partial = f0 * h
+                if partial > 9000:
+                    break
+                # Gut and horsehair rather than brass: the upper partials leave
+                # early, which is what keeps this dark enough to ignore.
+                cut = np.exp(-((partial / 3300.0) ** 2))
+                offset = np.random.rand() * 6.283
+                voice += np.sin(phase * h + offset) * h ** -1.15 * cut * weight
+        voice /= 9.0
+
+        # The bow itself. A little scratch riding the attack is the tell that
+        # something is being drawn across a string by hand.
+        bow = np.random.rand(len(ts)) * 2 - 1
+        bow = lfilter([1.0], [1.0, -0.86], bow)
+        bow /= np.max(np.abs(bow)) + 1e-9
+
+        attack = np.minimum(ts / 0.8, 1.0) ** 1.6
+        release = np.minimum(np.maximum(dur - ts, 0.0) / 1.4, 1.0)
+        return (voice + bow * 0.06 * np.exp(-ts * 1.1)) * attack * release
+
+    def place(start, dur, f0, gain, ensemble=3):
+        mask = (t >= start) & (t < start + dur)
+        if not mask.any():
+            return
+        sig[mask] += bowed(t[mask] - start, f0, dur, ensemble) * gain
+
+    # Cello line in D minor, the key the whole set lives in — the same D the
+    # engine room wakes on and the foghorn falls to. It circles D-F-A-G and
+    # goes home, which is a shape with no destination: nothing here resolves
+    # anywhere the ear can anticipate.
+    place(0.00, 7.00, 146.83, 0.78)   # D3
+    place(5.80, 5.20, 174.61, 0.60)   # F3
+    place(10.40, 5.60, 220.00, 0.54)  # A3
+    place(15.20, 5.00, 196.00, 0.57)  # G3
+    # Runs past the loop point on purpose: the wrap lands mid-note, where a
+    # seam has nothing to catch on.
+    place(19.60, 7.00, 146.83, 0.74)
+
+    # Double bass under all of it, breathing on a slow swell. Two octaves below
+    # the line, so it is felt rather than followed.
+    drone_env = 0.55 + 0.45 * np.sin(2 * np.pi * t / duration - np.pi / 2)
+    sig += bowed(t, 73.42, total + 10.0, ensemble=2) * 0.20 * drone_env
+    # The fifth arrives late and leaves before the loop does, which is the only
+    # event in the piece.
+    fifth = np.clip(np.sin(np.pi * (t - 7.0) / 13.0), 0, 1) ** 1.5
+    sig += bowed(t, 110.00, total + 10.0, ensemble=2) * 0.13 * fifth
+
+    # One foghorn, far enough off that it is weather rather than a signal.
+    horn_start = 12.6
+    h_mask = t >= horn_start
+    th = t[h_mask] - horn_start
+    hd = 2.4
+    horn = np.zeros_like(th)
+    for h, amp in [(1, 1.0), (2, 0.42), (3, 0.16)]:
+        horn += (np.sin(2 * np.pi * 73.42 * h * th)
+                 + np.sin(2 * np.pi * 73.42 * h * 1.004 * th)) * amp
+    horn /= 3.2
+    henv = np.minimum(th / 0.5, 1.0) * np.minimum(np.maximum(hd - th, 0.0) / 0.9, 1.0)
+    # Distance is a low-pass and a delay, not just a fader
+    horn = lfilter([1.0], [1.0, -0.82], horn * henv)
+    sig[h_mask] += horn * 0.10
+
+    # Sea underneath, the same wash the defeat horn stands on. Two leaky
+    # integrators tilt white noise down into a swell; the high-pass strips the
+    # DC drift they leave behind.
+    wash = np.random.rand(len(t)) * 2 - 1
+    wash = lfilter([1.0], [1.0, -0.985], wash)
+    wash = lfilter([1.0, -1.0], [1.0, -0.99], wash)
+    wash /= np.max(np.abs(wash))
+    # Slow sets rolling through, period chosen not to divide the loop evenly
+    swell = 0.62 + 0.38 * np.sin(2 * np.pi * t / 7.3 + 1.1)
+    sig += wash * 0.17 * swell
+
+    # A long room around the whole thing. The reflections are what put the
+    # players in a space instead of in a mixer.
+    ir_len = int(SAMPLE_RATE * 1.1)
+    ir_t = np.arange(ir_len) / SAMPLE_RATE
+    ir = (np.random.rand(ir_len) * 2 - 1) * np.exp(-ir_t * 3.4)
+    ir[0] = 0.0
+    wet = np.convolve(sig, ir)[: len(sig)]
+    wet /= np.max(np.abs(wet))
+    sig = sig + wet * 0.45
+
+    # Fold the tail back over the head so the loop has no seam. Everything
+    # above is written to still be sounding at the wrap, so the crossfade has
+    # material on both sides of it.
+    out = sig[:n].copy()
+    xf = int(SAMPLE_RATE * crossfade)
+    ramp = np.linspace(0.0, 1.0, xf)
+    out[:xf] = out[:xf] * ramp + sig[n : n + xf] * (1.0 - ramp)
+    return out
 # ==========================================
 # BATCH EXECUTION
 # ==========================================
 cues = [
+    ("lobby_music.wav", gen_lobby_music, 0.020),
     ("app_launch.wav", gen_app_launch, 0.130),
     ("ui_tap.wav", gen_ui_tap, 0.060),
     ("ship_pickup.wav", gen_ship_pickup, 0.080),

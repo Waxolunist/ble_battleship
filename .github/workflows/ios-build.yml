@@ -49,18 +49,30 @@ jobs:
         working-directory: ios
         run: pod install
 
+      # prebuild names the project after expo.name ("Hulls & Hellfire" ->
+      # HullsHellfire), not after the URL scheme. Reading it back off disk keeps
+      # this job working the next time the app is renamed.
+      - name: Resolve Xcode workspace
+        id: xcode
+        working-directory: ios
+        run: |
+          name="$(ls -d *.xcworkspace | head -1)"
+          echo "workspace=$name" >> "$GITHUB_OUTPUT"
+          echo "scheme=${name%.xcworkspace}" >> "$GITHUB_OUTPUT"
+
       - name: Build for iOS
         working-directory: ios
         run: |
           xcodebuild \
-            -workspace hullsandhellfire.xcworkspace \
-            -scheme hullsandhellfire \
+            -workspace '${{ steps.xcode.outputs.workspace }}' \
+            -scheme '${{ steps.xcode.outputs.scheme }}' \
             -configuration Release \
-            -destination 'platform=iOS Simulator,name=iPhone 16' \
-            -derivedDataPath build
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO
 
       - name: Upload iOS Simulator Build
         uses: actions/upload-artifact@v4
         with:
           name: ios-simulator-build
-          path: ios/build/Build/Products/Release-iphonesimulator/hullsandhellfire.app
+          path: ios/build/Build/Products/Release-iphonesimulator/${{ steps.xcode.outputs.scheme }}.app

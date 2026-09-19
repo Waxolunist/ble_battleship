@@ -27,6 +27,8 @@ export const LOCALE_IMAGES = {
  * other; swap in real recordings under the same names and nothing else changes.
  */
 export const SOUNDS = {
+  /** Loops under the harbour screen for as long as the player stays there. */
+  lobbyMusic: require('@/assets/sounds/lobby_music.wav'),
   /** The splash artwork fades and the app opens. */
   appLaunch: require('@/assets/sounds/app_launch.wav'),
   /** Generic button press — every `HapticPressable`. */

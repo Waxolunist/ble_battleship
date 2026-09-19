@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
-import { useRouter } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FadeIn } from '@/components/fade-in';
 import { MultiplayerPanel } from '@/components/multiplayer/MultiplayerPanel';
@@ -23,6 +23,7 @@ import {
 import { HapticPressable } from '@/components/haptic-pressable';
 import { IMAGES } from '@/constants/assets';
 import { useResponsive } from '@/hooks/useResponsive';
+import { playMusic, stopMusic } from '@/services/audio';
 
 export default function HomeScreen() {
   const { t } = useTranslation('common');
@@ -34,6 +35,16 @@ export default function HomeScreen() {
   const inputRef = useRef<TextInput>(null);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const { s, fs } = useResponsive();
+
+  // Tied to focus rather than mount: this screen lives in a tab navigator and
+  // stays mounted behind Stats and behind the battle, so an unmount cleanup
+  // would leave the harbour playing over both.
+  useFocusEffect(
+    useCallback(() => {
+      playMusic('lobbyMusic');
+      return stopMusic;
+    }, []),
+  );
 
   // Android's edge-to-edge window is not resized by the IME, so KeyboardAvoidingView
   // never sees it. Track the keyboard directly and pad the column instead.
