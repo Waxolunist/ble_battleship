@@ -63,13 +63,14 @@ jobs:
       - name: Prebuild Android
         run: npx expo prebuild --platform android --no-install
 
-      # The APK is ~175 MB with every ABI and its symbol tables, and
-      # packageRelease is where a runner that has run out of room gives up.
-      - name: Report disk space
-        run: df -h /
+      # prebuild writes -Xmx2048m, which packages the APK on a dev machine and
+      # runs out of heap doing it here — the artifact is ~175 MB once every ABI
+      # and its symbol tables are in it. gradle.properties is generated and
+      # gitignored, so the override has to be appended after prebuild; last
+      # entry wins. The runner has 16 GB.
+      - name: Raise the Gradle heap
+        run: echo 'org.gradle.jvmargs=-Xmx6g -XX:MaxMetaspaceSize=1g' >> android/gradle.properties
 
-      # packageRelease failed here with the cause swallowed; --stacktrace is
-      # what turns "a failure occurred" into something actionable.
       - name: Build for Android
         run: cd android && ./gradlew assembleRelease --stacktrace
 
